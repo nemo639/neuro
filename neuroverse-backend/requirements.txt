@@ -1,0 +1,50 @@
+# NeuroVerse Backend Requirements
+# FastAPI & Server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+
+# Database
+sqlalchemy>=2.0.25
+asyncpg>=0.29.0
+greenlet>=3.0.0
+
+# Authentication & Security
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.1.0
+
+# Validation & Settings
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+email-validator>=2.1.0
+
+# Email (for OTP)
+aiosmtplib>=3.0.0
+
+# Utilities
+python-dateutil>=2.8.2
+
+# ML/AI (placeholders - uncomment when models are ready)
+# torch>=2.0.0
+# torchaudio>=2.0.0
+# torchvision>=0.15.0
+# transformers>=4.35.0
+# librosa>=0.10.0
+# numpy>=1.24.0
+# scipy>=1.11.0
+# scikit-learn>=1.3.0
+# shap>=0.44.0
+
+# PDF Generation (uncomment when implementing reports)
+# reportlab>=4.0.0
+# fpdf2>=2.7.0
+
+# Image Processing (for facial analysis)
+# opencv-python>=4.8.0
+# pillow>=10.0.0
+
+# Development
+httpx>=0.26.0
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
