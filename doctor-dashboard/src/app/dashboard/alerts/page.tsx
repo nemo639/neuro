@@ -1,269 +1,213 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bell,
   AlertTriangle,
-  TrendingUp,
-  Brain,
-  Activity,
-  Check,
+  AlertCircle,
+  Info,
+  CheckCircle2,
+  Eye,
   X,
-  ChevronRight,
   Clock,
 } from 'lucide-react';
+import { dashboardApi } from '@/lib/api';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 },
-  },
+const cv = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } };
+const iv = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
+
+type Alert = {
+  id: string;
+  type: 'critical' | 'warning' | 'info' | 'success';
+  title: string;
+  message: string;
+  patient_name?: string;
+  created_at: string;
+  is_read: boolean;
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
-
-// Mock alerts data
-const mockAlerts = [
-  {
-    id: 'critical_1',
-    type: 'critical',
-    title: 'Critical Risk Level',
-    message: 'Hassan Raza\'s AD risk score has exceeded 85. Immediate attention required.',
-    patient_name: 'Hassan Raza',
-    severity: 'critical',
-    is_read: false,
-    created_at: '2026-02-02T08:30:00Z',
-  },
-  {
-    id: 'high_risk_2',
-    type: 'high_risk',
-    title: 'High Risk Alert',
-    message: 'Ahmed Khan shows significant cognitive decline in recent SDMT test.',
-    patient_name: 'Ahmed Khan',
-    severity: 'warning',
-    is_read: false,
-    created_at: '2026-02-02T07:15:00Z',
-  },
-  {
-    id: 'new_test_3',
-    type: 'new_test',
-    title: 'New Test Completed',
-    message: 'Fatima Ali has completed the motor function assessment.',
-    patient_name: 'Fatima Ali',
-    severity: 'info',
-    is_read: false,
-    created_at: '2026-02-01T16:45:00Z',
-  },
-  {
-    id: 'pending_4',
-    type: 'pending_review',
-    title: 'Pending Review',
-    message: 'Zainab Ahmed\'s speech test results are awaiting your review.',
-    patient_name: 'Zainab Ahmed',
-    severity: 'info',
-    is_read: true,
-    created_at: '2026-02-01T14:20:00Z',
-  },
-  {
-    id: 'trend_5',
-    type: 'trend',
-    title: 'Positive Trend',
-    message: 'Muhammad Usman\'s PD risk score has decreased by 15% this month.',
-    patient_name: 'Muhammad Usman',
-    severity: 'success',
-    is_read: true,
-    created_at: '2026-02-01T10:00:00Z',
-  },
-];
-
-const severityConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  critical: { icon: AlertTriangle, color: 'text-neuro-red', bg: 'bg-neuro-red/10 border-neuro-red/20' },
-  warning: { icon: AlertTriangle, color: 'text-neuro-orange', bg: 'bg-neuro-orange/10 border-neuro-orange/20' },
-  info: { icon: Bell, color: 'text-neuro-blue', bg: 'bg-neuro-blue/10 border-neuro-blue/20' },
-  success: { icon: TrendingUp, color: 'text-neuro-green', bg: 'bg-neuro-green/10 border-neuro-green/20' },
+const alertConfig: Record<string, { icon: React.ElementType; bg: string; iconBg: string; iconColor: string }> = {
+  critical: { icon: AlertTriangle, bg: 'bg-red-50', iconBg: 'bg-red-100', iconColor: 'text-red-600' },
+  warning: { icon: AlertCircle, bg: 'bg-amber-50', iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+  info: { icon: Info, bg: 'bg-blue-50', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+  success: { icon: CheckCircle2, bg: 'bg-emerald-50', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
 };
 
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState(mockAlerts);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'unread' | 'critical' | 'warning'>('all');
 
-  const filteredAlerts = alerts.filter((alert) => {
-    if (filter === 'unread') return !alert.is_read;
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await dashboardApi.getAlerts();
+        setAlerts(res.alerts || []);
+      } catch {
+        setAlerts([
+          { id: '1', type: 'critical', title: 'High AD Risk Detected', message: 'Patient Ahmed Khan has an AD risk score of 78%, exceeding the critical threshold. Immediate review recommended.', patient_name: 'Ahmed Khan', created_at: '2026-02-06T08:30:00', is_read: false },
+          { id: '2', type: 'warning', title: 'Pending Test Review', message: 'Sara Qureshi completed a gait analysis test that requires your review within 48 hours.', patient_name: 'Sara Qureshi', created_at: '2026-02-05T16:15:00', is_read: false },
+          { id: '3', type: 'info', title: 'New Patient Assigned', message: 'Bilal Hassan has been assigned to you. Review their initial assessment data at your earliest convenience.', patient_name: 'Bilal Hassan', created_at: '2026-02-05T10:00:00', is_read: true },
+          { id: '4', type: 'success', title: 'Report Generated', message: 'Monthly assessment report for January 2026 has been successfully generated and is ready for download.', created_at: '2026-02-04T09:00:00', is_read: true },
+          { id: '5', type: 'critical', title: 'PD Risk Alert', message: 'Patient Maryam Noor PD risk score increased by 15% in the last assessment. Review patient history.', patient_name: 'Maryam Noor', created_at: '2026-02-03T14:30:00', is_read: false },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const markRead = (id: string) => setAlerts(alerts.map((a) => (a.id === id ? { ...a, is_read: true } : a)));
+  const markAllRead = () => setAlerts(alerts.map((a) => ({ ...a, is_read: true })));
+  const dismiss = (id: string) => setAlerts(alerts.filter((a) => a.id !== id));
+
+  const filtered = alerts.filter((a) => {
+    if (filter === 'unread') return !a.is_read;
+    if (filter === 'critical') return a.type === 'critical';
+    if (filter === 'warning') return a.type === 'warning';
     return true;
   });
 
   const unreadCount = alerts.filter((a) => !a.is_read).length;
+  const criticalCount = alerts.filter((a) => a.type === 'critical').length;
 
-  const markAsRead = (alertId: string) => {
-    setAlerts(alerts.map((a) => (a.id === alertId ? { ...a, is_read: true } : a)));
+  const fmtDate = (iso: string) => {
+    try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+    catch { return iso; }
   };
 
-  const markAllAsRead = () => {
-    setAlerts(alerts.map((a) => ({ ...a, is_read: true })));
-  };
-
-  const dismissAlert = (alertId: string) => {
-    setAlerts(alerts.filter((a) => a.id !== alertId));
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-6"
-    >
-      {/* Header */}
-      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-neuro-dark">Alerts</h1>
-          <p className="text-neuro-dark/60 mt-1">
-            Stay updated on important patient events
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {unreadCount > 0 && (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={markAllAsRead}
-              className="px-4 py-2 text-neuro-purple font-medium hover:bg-neuro-purple/10 rounded-xl transition-colors"
-            >
-              Mark all as read
-            </motion.button>
+    <motion.div variants={cv} initial="hidden" animate="visible">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6">
+        {/* ════ LEFT ════ */}
+        <div className="space-y-6 min-w-0">
+          {/* Header */}
+          <motion.div variants={iv} className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-dash-dark">Alerts</h1>
+              <p className="text-sm text-dash-muted mt-0.5">{unreadCount} unread notifications</p>
+            </div>
+            {unreadCount > 0 && (
+              <button onClick={markAllRead} className="btn-secondary text-xs">Mark all read</button>
+            )}
+          </motion.div>
+
+          {/* Filter Pills */}
+          <motion.div variants={iv} className="flex flex-wrap gap-2">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'unread', label: `Unread (${unreadCount})` },
+              { key: 'critical', label: `Critical (${criticalCount})` },
+              { key: 'warning', label: 'Warnings' },
+            ].map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setFilter(t.key as any)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all
+                  ${filter === t.key ? 'bg-dash-dark text-white' : 'bg-white text-dash-muted border border-dash-border hover:bg-dash-bg'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </motion.div>
+
+          {/* Alerts List */}
+          <motion.div variants={iv} className="space-y-3">
+            {filtered.map((alert) => {
+              const cfg = alertConfig[alert.type] || alertConfig.info;
+              const Icon = cfg.icon;
+              return (
+                <div
+                  key={alert.id}
+                  className={`card p-4 transition-all hover:shadow-md ${!alert.is_read ? 'ring-1 ring-gray-200' : ''}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-xl ${cfg.iconBg} flex items-center justify-center flex-shrink-0`}>
+                      <Icon className={`w-4 h-4 ${cfg.iconColor}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h4 className="font-semibold text-dash-dark text-sm">{alert.title}</h4>
+                        {!alert.is_read && <span className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />}
+                      </div>
+                      <p className="text-xs text-gray-500 mb-1.5 line-clamp-2">{alert.message}</p>
+                      <div className="flex items-center gap-3 text-[11px] text-gray-400">
+                        {alert.patient_name && <span>{alert.patient_name}</span>}
+                        <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{fmtDate(alert.created_at)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      {!alert.is_read && (
+                        <button onClick={() => markRead(alert.id)} className="p-1.5 hover:bg-gray-100 rounded-lg" title="Mark read">
+                          <Eye className="w-3.5 h-3.5 text-gray-400" />
+                        </button>
+                      )}
+                      <button onClick={() => dismiss(alert.id)} className="p-1.5 hover:bg-gray-100 rounded-lg" title="Dismiss">
+                        <X className="w-3.5 h-3.5 text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </motion.div>
+
+          {filtered.length === 0 && (
+            <div className="text-center py-16">
+              <Bell className="w-8 h-8 text-dash-border mx-auto mb-2" />
+              <p className="text-sm text-dash-muted">No alerts</p>
+            </div>
           )}
-          <span className="px-4 py-2 bg-neuro-red/10 text-neuro-red rounded-xl font-medium">
-            {unreadCount} Unread
-          </span>
         </div>
-      </motion.div>
 
-      {/* Filter Tabs */}
-      <motion.div variants={itemVariants} className="flex gap-2">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-xl font-medium transition-all
-            ${filter === 'all' 
-              ? 'bg-neuro-purple text-white' 
-              : 'bg-white/80 text-neuro-dark/60 hover:bg-neuro-bg'}`}
-        >
-          All Alerts
-        </button>
-        <button
-          onClick={() => setFilter('unread')}
-          className={`px-4 py-2 rounded-xl font-medium transition-all
-            ${filter === 'unread' 
-              ? 'bg-neuro-purple text-white' 
-              : 'bg-white/80 text-neuro-dark/60 hover:bg-neuro-bg'}`}
-        >
-          Unread ({unreadCount})
-        </button>
-      </motion.div>
+        {/* ════ RIGHT — Summary Panel ════ */}
+        <motion.div variants={iv} className="space-y-4">
+          {/* Overview Card */}
+          <div className="card p-5">
+            <h4 className="text-sm font-semibold text-dash-dark mb-4">Overview</h4>
+            <div className="space-y-3">
+              {[
+                { label: 'Total Alerts', value: alerts.length, bg: 'bg-accent/10', color: '#C6E94B' },
+                { label: 'Unread', value: unreadCount, bg: 'bg-blue-50', color: '#3B82F6' },
+                { label: 'Critical', value: criticalCount, bg: 'bg-red-50', color: '#EF4444' },
+              ].map((s) => (
+                <div key={s.label} className={`${s.bg} rounded-xl p-3 flex items-center justify-between`}>
+                  <span className="text-xs text-gray-600">{s.label}</span>
+                  <span className="text-lg font-bold" style={{ color: s.color }}>{s.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      {/* Alerts List */}
-      <motion.div variants={itemVariants} className="space-y-4">
-        {filteredAlerts.map((alert) => {
-          const config = severityConfig[alert.severity];
-          const Icon = config.icon;
-
-          return (
-            <motion.div
-              key={alert.id}
-              variants={itemVariants}
-              whileHover={{ x: 4 }}
-              className={`relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 border transition-all
-                ${!alert.is_read ? 'border-l-4 border-l-neuro-purple shadow-neuro' : 'border-white/50'}
-                hover:shadow-neuro`}
-            >
-              {/* Unread Indicator */}
-              {!alert.is_read && (
-                <div className="absolute top-4 right-4 w-3 h-3 bg-neuro-purple rounded-full animate-pulse" />
+          {/* Recent Critical */}
+          <div className="card p-5">
+            <h4 className="text-sm font-semibold text-dash-dark mb-3">Recent Critical</h4>
+            <div className="space-y-2">
+              {alerts.filter(a => a.type === 'critical').slice(0, 3).map((a) => (
+                <div key={a.id} className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-gray-700 truncate">{a.title}</p>
+                    <p className="text-[10px] text-gray-400">{a.patient_name || 'System'}</p>
+                  </div>
+                </div>
+              ))}
+              {alerts.filter(a => a.type === 'critical').length === 0 && (
+                <p className="text-xs text-gray-400">No critical alerts</p>
               )}
-
-              <div className="flex items-start gap-4">
-                {/* Icon */}
-                <div className={`p-3 rounded-xl ${config.bg} border`}>
-                  <Icon className={`w-5 h-5 ${config.color}`} />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-neuro-dark">{alert.title}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${config.bg} ${config.color}`}>
-                      {alert.severity}
-                    </span>
-                  </div>
-                  <p className="text-neuro-dark/70 mb-2">{alert.message}</p>
-                  <div className="flex items-center gap-4 text-sm text-neuro-dark/50">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {new Date(alert.created_at).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                    <span>Patient: {alert.patient_name}</span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  {!alert.is_read && (
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => markAsRead(alert.id)}
-                      className="p-2 hover:bg-neuro-green/10 rounded-lg transition-colors"
-                      title="Mark as read"
-                    >
-                      <Check className="w-5 h-5 text-neuro-green" />
-                    </motion.button>
-                  )}
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => dismissAlert(alert.id)}
-                    className="p-2 hover:bg-neuro-red/10 rounded-lg transition-colors"
-                    title="Dismiss"
-                  >
-                    <X className="w-5 h-5 text-neuro-red/60" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-2 hover:bg-neuro-bg rounded-lg transition-colors"
-                    title="View details"
-                  >
-                    <ChevronRight className="w-5 h-5 text-neuro-dark/60" />
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </motion.div>
-
-      {/* Empty State */}
-      {filteredAlerts.length === 0 && (
-        <motion.div
-          variants={itemVariants}
-          className="text-center py-16"
-        >
-          <Bell className="w-16 h-16 text-neuro-dark/20 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-neuro-dark mb-2">No alerts</h3>
-          <p className="text-neuro-dark/60">
-            {filter === 'unread' ? 'All caught up! No unread alerts.' : 'No alerts to display.'}
-          </p>
+            </div>
+          </div>
         </motion.div>
-      )}
+      </div>
     </motion.div>
   );
 }

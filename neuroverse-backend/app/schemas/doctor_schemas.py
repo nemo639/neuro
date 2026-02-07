@@ -111,6 +111,24 @@ class DoctorProfileUpdate(BaseModel):
 
 # ==================== DASHBOARD SCHEMAS ====================
 
+class TestCategoryCount(BaseModel):
+    category: str
+    count: int
+    color: str
+
+class MonthlyPatientFlow(BaseModel):
+    month: str
+    new_patients: int
+    discharged: int
+
+class WeeklyVisit(BaseModel):
+    day: str
+    visits: int
+
+class RiskDistribution(BaseModel):
+    level: str
+    count: int
+
 class DoctorDashboard(BaseModel):
     doctor_name: str
     specialization: str
@@ -118,8 +136,13 @@ class DoctorDashboard(BaseModel):
     pending_reviews: int
     reports_today: int
     critical_alerts: int
+    tests_completed: int
     recent_patients: List["PatientSummary"]
     pending_diagnostics: List["PendingDiagnostic"]
+    tests_by_category: List[TestCategoryCount]
+    monthly_patient_flow: List[MonthlyPatientFlow]
+    weekly_visits: List[WeeklyVisit]
+    risk_distribution: List[RiskDistribution]
 
 
 class PatientSummary(BaseModel):
@@ -128,8 +151,8 @@ class PatientSummary(BaseModel):
     age: int
     gender: Optional[str] = None
     risk_level: str  # Low, Moderate, High
-    ad_risk_score: int
-    pd_risk_score: int
+    ad_risk_score: float = 0.0
+    pd_risk_score: float = 0.0
     last_test_date: Optional[datetime] = None
     last_test_category: Optional[str] = None
 

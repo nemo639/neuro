@@ -14,13 +14,13 @@ export function getRiskLevel(score: number): 'Low' | 'Moderate' | 'High' {
 export function getRiskColor(level: string): string {
   switch (level.toLowerCase()) {
     case 'low':
-      return 'text-neuro-green bg-neuro-green/10';
+      return 'text-emerald-600 bg-emerald-100';
     case 'moderate':
-      return 'text-neuro-orange bg-neuro-orange/10';
+      return 'text-amber-600 bg-amber-100';
     case 'high':
-      return 'text-neuro-red bg-neuro-red/10';
+      return 'text-red-600 bg-red-100';
     default:
-      return 'text-neuro-dark bg-neuro-dark/10';
+      return 'text-gray-600 bg-gray-100';
   }
 }
 
@@ -114,16 +114,16 @@ export function getCategoryIcon(category: string): string {
 export function getCategoryColor(category: string): string {
   switch (category.toLowerCase()) {
     case 'cognitive':
-      return 'bg-neuro-purple/10 text-neuro-purple border-neuro-purple/20';
+      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     case 'speech':
-      return 'bg-neuro-blue/10 text-neuro-blue border-neuro-blue/20';
+      return 'bg-blue-100 text-blue-700 border-blue-200';
     case 'motor':
-      return 'bg-neuro-green/10 text-neuro-green border-neuro-green/20';
+      return 'bg-green-100 text-green-700 border-green-200';
     case 'gait':
-      return 'bg-neuro-orange/10 text-neuro-orange border-neuro-orange/20';
+      return 'bg-amber-100 text-amber-700 border-amber-200';
     case 'facial':
-      return 'bg-neuro-pink/10 text-neuro-pink border-neuro-pink/20';
+      return 'bg-pink-100 text-pink-700 border-pink-200';
     default:
-      return 'bg-neuro-dark/10 text-neuro-dark border-neuro-dark/20';
+      return 'bg-gray-100 text-gray-700 border-gray-200';
   }
 }

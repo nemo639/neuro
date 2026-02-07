@@ -1,490 +1,474 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Users,
-  FileCheck,
-  AlertTriangle,
-  TrendingUp,
-  Brain,
-  Activity,
-  Clock,
-  ArrowUpRight,
-  ArrowDownRight,
-  ChevronRight,
-  Sparkles,
-  Heart,
-  Zap,
-  Hand,
+  Users, FileText, ChevronRight, ArrowUpRight, ArrowDownRight,
+  ClipboardCheck, BarChart3, Calendar, MoreHorizontal, AlertTriangle,
+  Loader2, Brain, Activity, TrendingUp, Zap, Clock,
 } from 'lucide-react';
-import { dashboardApi } from '@/lib/api';
-import { getRiskColor, formatTimeAgo } from '@/lib/utils';
-import { CategoryIcon } from '@/components/CategoryIcon';
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
+  PieChart, Pie, Cell, ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, RadialBarChart, RadialBar, Legend,
 } from 'recharts';
-import Link from 'next/link';
+import { dashboardApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
+const container = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.06 } } };
+const item = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
+
+/* ─── Multi-color bar palette ─── */
+const BAR_COLORS = ['#C6E94B', '#6366F1', '#A855F7', '#FB923C', '#EC4899', '#22D3EE', '#818CF8'];
+
+/* ─── Fallback data when API fails ─── */
+const FALLBACK = {
+  total_patients: 0, pending_reviews: 0, reports_today: 0,
+  critical_alerts: 0, tests_completed: 0,
+  recent_patients: [],
+  pending_diagnostics: [],
+  tests_by_category: [
+    { category: 'Cognitive', count: 120, color: '#C6E94B' },
+    { category: 'Speech', count: 95, color: '#6366F1' },
+    { category: 'Motor', count: 80, color: '#A855F7' },
+    { category: 'Gait', count: 65, color: '#FB923C' },
+    { category: 'Facial', count: 50, color: '#EC4899' },
+  ],
+  monthly_patient_flow: [
+    { month: 'Jul', new_patients: 24, discharged: 12 },
+    { month: 'Aug', new_patients: 32, discharged: 18 },
+    { month: 'Sep', new_patients: 28, discharged: 22 },
+    { month: 'Oct', new_patients: 38, discharged: 20 },
+    { month: 'Nov', new_patients: 42, discharged: 25 },
+    { month: 'Dec', new_patients: 35, discharged: 30 },
+    { month: 'Jan', new_patients: 48, discharged: 28 },
+    { month: 'Feb', new_patients: 52, discharged: 32 },
+  ],
+  weekly_visits: [
+    { day: 'Mon', visits: 18 }, { day: 'Tue', visits: 24 }, { day: 'Wed', visits: 32 },
+    { day: 'Thu', visits: 28 }, { day: 'Fri', visits: 38 }, { day: 'Sat', visits: 14 },
+    { day: 'Sun', visits: 8 },
+  ],
+  risk_distribution: [
+    { level: 'Low', count: 85 }, { level: 'Moderate', count: 42 }, { level: 'High', count: 18 },
+  ],
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      ease: 'easeOut',
-    },
-  },
+/* ─── Custom Tooltip ─── */
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload) return null;
+  return (
+    <div className="bg-white p-3 rounded-xl shadow-elevated border border-dash-border">
+      <p className="text-xs font-semibold text-dash-dark mb-1">{label}</p>
+      {payload.map((entry: any, i: number) => (
+        <p key={i} className="text-xs text-dash-muted">
+          <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: entry.color }} />
+          {entry.name}: <span className="font-semibold text-dash-dark">{entry.value}</span>
+        </p>
+      ))}
+    </div>
+  );
 };
-
-// Sample data for charts
-const riskTrendData = [
-  { day: 'Mon', ad: 32, pd: 28 },
-  { day: 'Tue', ad: 35, pd: 25 },
-  { day: 'Wed', ad: 30, pd: 32 },
-  { day: 'Thu', ad: 45, pd: 35 },
-  { day: 'Fri', ad: 42, pd: 30 },
-  { day: 'Sat', ad: 38, pd: 28 },
-  { day: 'Sun', ad: 40, pd: 33 },
-];
-
-const categoryDistribution = [
-  { name: 'Cognitive', value: 35, color: '#8B5CF6' },
-  { name: 'Speech', value: 25, color: '#3B82F6' },
-  { name: 'Motor', value: 20, color: '#10B981' },
-  { name: 'Gait', value: 12, color: '#F97316' },
-  { name: 'Facial', value: 8, color: '#EC4899' },
-];
 
 export default function DashboardPage() {
   const { doctor } = useAuth();
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    loadDashboard();
+    (async () => {
+      try {
+        const res = await dashboardApi.getDashboard();
+        setData(res);
+      } catch {
+        setError(true);
+        setData(FALLBACK);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const loadDashboard = async () => {
-    try {
-      // For demo, using mock data. In production, use:
-      // const data = await dashboardApi.getDashboard();
-      setDashboardData({
-        doctor_name: `${doctor?.first_name || 'Sarah'} ${doctor?.last_name || 'Ahmed'}`,
-        specialization: 'Neurologist',
-        total_patients: 156,
-        pending_reviews: 12,
-        reports_today: 8,
-        critical_alerts: 3,
-        recent_patients: [
-          { id: 1, name: 'Ahmed Khan', age: 68, gender: 'male', risk_level: 'High', ad_risk_score: 78, pd_risk_score: 45, last_test_date: new Date().toISOString() },
-          { id: 2, name: 'Fatima Ali', age: 55, gender: 'female', risk_level: 'Moderate', ad_risk_score: 52, pd_risk_score: 38, last_test_date: new Date(Date.now() - 86400000).toISOString() },
-          { id: 3, name: 'Muhammad Usman', age: 72, gender: 'male', risk_level: 'Low', ad_risk_score: 25, pd_risk_score: 18, last_test_date: new Date(Date.now() - 172800000).toISOString() },
-          { id: 4, name: 'Ayesha Malik', age: 61, gender: 'female', risk_level: 'Moderate', ad_risk_score: 48, pd_risk_score: 55, last_test_date: new Date(Date.now() - 259200000).toISOString() },
-        ],
-        pending_diagnostics: [
-          { id: 1, patient_name: 'Bilal Hassan', test_category: 'cognitive', test_name: 'SDMT Test', completed_at: new Date().toISOString() },
-          { id: 2, patient_name: 'Sara Qureshi', test_category: 'speech', test_name: 'Story Recall', completed_at: new Date(Date.now() - 3600000).toISOString() },
-          { id: 3, patient_name: 'Imran Shah', test_category: 'motor', test_name: 'Spiral Drawing', completed_at: new Date(Date.now() - 7200000).toISOString() },
-        ],
-      });
-    } catch (error) {
-      console.error('Failed to load dashboard:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  /* ─── Derived chart data ─── */
+  const donutData = useMemo(() =>
+    (data?.tests_by_category || FALLBACK.tests_by_category).map((c: any) => ({
+      name: c.category, value: c.count, color: c.color,
+    })), [data]);
 
-  if (isLoading) {
+  const areaData = useMemo(() =>
+    (data?.monthly_patient_flow || FALLBACK.monthly_patient_flow).map((m: any) => ({
+      month: m.month, newPatients: m.new_patients, discharged: m.discharged,
+    })), [data]);
+
+  const weeklyData = useMemo(() =>
+    data?.weekly_visits || FALLBACK.weekly_visits, [data]);
+
+  const riskData = useMemo(() => {
+    const raw = data?.risk_distribution || FALLBACK.risk_distribution;
+    const colors: Record<string, string> = { Low: '#10B981', Moderate: '#F59E0B', High: '#EF4444' };
+    return raw.map((r: any) => ({ ...r, color: colors[r.level] || '#8B8FA8' }));
+  }, [data]);
+
+  const totalTests = useMemo(() => donutData.reduce((a: number, d: any) => a + d.value, 0), [donutData]);
+  const weeklyTotal = useMemo(() => weeklyData.reduce((a: number, d: any) => a + d.visits, 0), [weeklyData]);
+  const maxVisits = useMemo(() => Math.max(...weeklyData.map((d: any) => d.visits), 1), [weeklyData]);
+
+  const stats = useMemo(() => [
+    { title: 'Total Patients', value: data?.total_patients ?? 0, change: '+12.5%', up: true, icon: Users, color: '#C6E94B' },
+    { title: 'Tests Completed', value: data?.tests_completed ?? totalTests, change: '+8.2%', up: true, icon: ClipboardCheck, color: '#6366F1' },
+    { title: 'Pending Reviews', value: data?.pending_reviews ?? 0, change: '-3.1%', up: false, icon: FileText, color: '#FB923C' },
+    { title: 'Critical Alerts', value: data?.critical_alerts ?? 0, change: data?.critical_alerts > 0 ? 'Needs attention' : 'All clear', up: (data?.critical_alerts ?? 0) === 0, icon: AlertTriangle, color: '#EF4444' },
+  ], [data, totalTests]);
+
+  const patients = data?.recent_patients || [];
+  const diagnostics = data?.pending_diagnostics || [];
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-neuro-mint border-t-neuro-purple rounded-full animate-spin" />
-          <p className="text-neuro-dark/60">Loading dashboard...</p>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          <p className="text-sm text-dash-muted">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
-  const stats = [
-    {
-      title: 'Total Patients',
-      value: dashboardData?.total_patients || 0,
-      change: '+12%',
-      isPositive: true,
-      icon: Users,
-      color: 'from-neuro-purple to-neuro-blue',
-      bgColor: 'bg-neuro-lavender/50',
-    },
-    {
-      title: 'Pending Reviews',
-      value: dashboardData?.pending_reviews || 0,
-      change: '-5%',
-      isPositive: true,
-      icon: FileCheck,
-      color: 'from-neuro-orange to-neuro-yellow',
-      bgColor: 'bg-neuro-beige/50',
-    },
-    {
-      title: 'Reports Today',
-      value: dashboardData?.reports_today || 0,
-      change: '+18%',
-      isPositive: true,
-      icon: TrendingUp,
-      color: 'from-neuro-green to-neuro-mint',
-      bgColor: 'bg-neuro-mint/30',
-    },
-    {
-      title: 'Critical Alerts',
-      value: dashboardData?.critical_alerts || 0,
-      change: '+2',
-      isPositive: false,
-      icon: AlertTriangle,
-      color: 'from-neuro-red to-neuro-orange',
-      bgColor: 'bg-neuro-red/10',
-    },
-  ];
-
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-6"
-    >
-      {/* Welcome Header */}
-      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <motion.div variants={container} initial="hidden" animate="visible" className="space-y-6">
+      {/* ═══ Header ═══ */}
+      <motion.div variants={item} className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-neuro-dark">
-              Welcome back, <span className="gradient-text">Dr. {doctor?.first_name || 'Doctor'}</span>
-            </h1>
-            <motion.div
-              animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3 }}
-            >
-              <Hand className="w-8 h-8 text-neuro-orange" />
-            </motion.div>
-          </div>
-          <p className="text-neuro-dark/60 mt-1">
-            Here's what's happening with your patients today.
+          <h1 className="text-2xl font-bold text-dash-dark">
+            Welcome back, {data?.doctor_name || `Dr. ${doctor?.first_name || 'Doctor'}`}
+          </h1>
+          <p className="text-sm text-dash-muted mt-0.5">
+            Here&apos;s what&apos;s happening with your patients today
           </p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-neuro-purple to-neuro-blue 
-                     text-white font-semibold rounded-xl shadow-lg hover:shadow-neuro-glow transition-all"
-        >
-          <Sparkles className="w-5 h-5" />
-          AI Insights
-        </motion.button>
+        <div className="flex items-center gap-2">
+          <button className="btn-secondary flex items-center gap-2 py-2">
+            <Calendar className="w-4 h-4" />
+            <span className="text-sm">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          </button>
+        </div>
       </motion.div>
 
-      {/* Stats Cards */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
-            className={`relative overflow-hidden p-6 rounded-2xl ${stat.bgColor} 
-                       border border-white/50 backdrop-blur-sm transition-all duration-300`}
-          >
-            {/* Background Gradient Circle */}
-            <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full bg-gradient-to-br ${stat.color} opacity-20`} />
-            
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color}`}>
-                  <stat.icon className="w-5 h-5 text-white" />
-                </div>
-                <div className={`flex items-center gap-1 text-sm font-medium
-                  ${stat.isPositive ? 'text-neuro-green' : 'text-neuro-red'}`}
-                >
-                  {stat.isPositive ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                  {stat.change}
-                </div>
+      {error && (
+        <motion.div variants={item} className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          Unable to connect to backend — showing sample data
+        </motion.div>
+      )}
+
+      {/* ═══ Stat Cards ═══ */}
+      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat, idx) => (
+          <div key={stat.title} className="card p-5 relative overflow-hidden group hover:shadow-card-hover transition-all">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${stat.color}15` }}>
+                <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
               </div>
-              <p className="text-3xl font-bold text-neuro-dark">{stat.value}</p>
-              <p className="text-sm text-neuro-dark/60 mt-1">{stat.title}</p>
+              <button className="p-1 hover:bg-black/5 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                <MoreHorizontal className="w-4 h-4 text-dash-muted" />
+              </button>
             </div>
-          </motion.div>
+            <p className="text-3xl font-bold text-dash-dark">
+              {(stat.value ?? 0).toLocaleString()}
+            </p>
+            <p className="text-sm text-dash-muted mt-0.5">{stat.title}</p>
+            <div className="flex items-center gap-1 mt-2">
+              {stat.up ? (
+                <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
+              ) : (
+                <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
+              )}
+              <span className={`text-xs font-semibold ${stat.up ? 'text-emerald-500' : 'text-red-500'}`}>
+                {stat.change}
+              </span>
+            </div>
+            {/* Accent bar at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 rounded-b-2xl" style={{ backgroundColor: stat.color, opacity: 0.6 }} />
+          </div>
         ))}
       </motion.div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Risk Trend Chart */}
-        <motion.div
-          variants={itemVariants}
-          className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-neuro"
-        >
+      {/* ═══ Charts Row #1 — Area + Donut ═══ */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Area Chart */}
+        <motion.div variants={item} className="xl:col-span-2 card p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-neuro-dark">Risk Score Trends</h3>
-              <p className="text-sm text-neuro-dark/60">Weekly average risk scores</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-neuro-purple" />
-                <span className="text-sm text-neuro-dark/60">AD Risk</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-neuro-blue" />
-                <span className="text-sm text-neuro-dark/60">PD Risk</span>
-              </div>
+              <h3 className="font-semibold text-dash-dark">Patient Activity</h3>
+              <p className="text-xs text-dash-muted mt-0.5">Monthly patient flow trends</p>
             </div>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={riskTrendData}>
-                <defs>
-                  <linearGradient id="adGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="pdGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="day" stroke="#9CA3AF" fontSize={12} />
-                <YAxis stroke="#9CA3AF" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(255,255,255,0.9)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="ad"
-                  stroke="#8B5CF6"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#adGradient)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="pd"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#pdGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="flex items-center gap-5 mb-4">
+            <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#6366F1' }} /><span className="text-xs text-dash-muted">New Patients</span></div>
+            <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#C6E94B' }} /><span className="text-xs text-dash-muted">Tests Completed</span></div>
           </div>
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={areaData}>
+              <defs>
+                <linearGradient id="gNew" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366F1" stopOpacity={0.15} /><stop offset="100%" stopColor="#6366F1" stopOpacity={0} /></linearGradient>
+                <linearGradient id="gDischarged" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#C6E94B" stopOpacity={0.15} /><stop offset="100%" stopColor="#C6E94B" stopOpacity={0} /></linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ECEDF2" vertical={false} />
+              <XAxis dataKey="month" fontSize={11} tick={{ fill: '#8B8FA8' }} axisLine={false} tickLine={false} />
+              <YAxis fontSize={11} tick={{ fill: '#8B8FA8' }} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="monotone" dataKey="newPatients" stroke="#6366F1" strokeWidth={2} fill="url(#gNew)" name="New Patients" />
+              <Area type="monotone" dataKey="discharged" stroke="#C6E94B" strokeWidth={2} fill="url(#gDischarged)" name="Tests Completed" />
+            </AreaChart>
+          </ResponsiveContainer>
         </motion.div>
 
-        {/* Category Distribution */}
-        <motion.div
-          variants={itemVariants}
-          className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-neuro"
-        >
-          <h3 className="text-lg font-semibold text-neuro-dark mb-2">Test Categories</h3>
-          <p className="text-sm text-neuro-dark/60 mb-4">Distribution by category</p>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categoryDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={70}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {categoryDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+        {/* Donut — Tests By Category */}
+        <motion.div variants={item} className="card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-dash-dark">By Assessment</h3>
+            <span className="text-xs text-dash-muted">{totalTests} total</span>
           </div>
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            {categoryDistribution.map((cat) => (
-              <div key={cat.name} className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                <span className="text-xs text-neuro-dark/60">{cat.name}</span>
-                <span className="text-xs font-medium text-neuro-dark ml-auto">{cat.value}%</span>
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie data={donutData} cx="50%" cy="50%" innerRadius={50} outerRadius={75}
+                paddingAngle={3} dataKey="value" startAngle={90} endAngle={450}>
+                {donutData.map((entry: any, i: number) => (
+                  <Cell key={i} fill={entry.color} strokeWidth={0} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="text-center -mt-2 mb-3">
+            <p className="text-2xl font-bold text-dash-dark">{totalTests}</p>
+            <p className="text-xs text-dash-muted">Total Tests</p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            {donutData.map((d: any) => (
+              <div key={d.name} className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+                <span className="text-xs text-dash-muted truncate">{d.name}</span>
+                <span className="text-xs font-semibold text-dash-dark ml-auto">{d.value}</span>
               </div>
             ))}
           </div>
         </motion.div>
       </div>
 
-      {/* Recent Activity Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Patients */}
-        <motion.div
-          variants={itemVariants}
-          className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-neuro"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-semibold text-neuro-dark">Recent Patients</h3>
-              <p className="text-sm text-neuro-dark/60">Latest patient activity</p>
-            </div>
-            <Link href="/dashboard/patients">
-              <motion.button
-                whileHover={{ x: 4 }}
-                className="flex items-center gap-1 text-sm text-neuro-purple font-medium hover:underline"
-              >
-                View All
-                <ChevronRight className="w-4 h-4" />
-              </motion.button>
-            </Link>
+      {/* ═══ Charts Row #2 — Weekly Visits (multi-color) + Risk Distribution + Diagnostics ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Weekly Visits — multi-color bars */}
+        <motion.div variants={item} className="card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-semibold text-dash-dark">Weekly Visits</h3>
+            <span className="text-xs text-dash-muted">{weeklyTotal} total</span>
           </div>
-          
-          <div className="space-y-4">
-            {dashboardData?.recent_patients?.map((patient: any, index: number) => (
-              <motion.div
-                key={patient.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ x: 4 }}
-                className="flex items-center gap-4 p-4 bg-neuro-bg/50 rounded-xl hover:bg-neuro-lavender/30 
-                         transition-all cursor-pointer border border-transparent hover:border-neuro-purple/20"
-              >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-semibold
-                  ${patient.risk_level === 'High' ? 'bg-gradient-to-br from-neuro-red to-neuro-orange' :
-                    patient.risk_level === 'Moderate' ? 'bg-gradient-to-br from-neuro-orange to-neuro-yellow' :
-                    'bg-gradient-to-br from-neuro-green to-neuro-mint'}`}
-                >
-                  {patient.name.split(' ').map((n: string) => n[0]).join('')}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-neuro-dark truncate">{patient.name}</p>
-                  <p className="text-sm text-neuro-dark/60">
-                    {patient.age} yrs • {patient.gender}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium px-2 py-1 rounded-lg bg-neuro-purple/10 text-neuro-purple">
-                      AD: {patient.ad_risk_score}
-                    </span>
-                    <span className="text-xs font-medium px-2 py-1 rounded-lg bg-neuro-blue/10 text-neuro-blue">
-                      PD: {patient.pd_risk_score}
-                    </span>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={weeklyData} barSize={28}>
+              <XAxis dataKey="day" fontSize={11} tick={{ fill: '#8B8FA8' }} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)', radius: 8 }} />
+              <Bar dataKey="visits" name="Visits" radius={[8, 8, 2, 2]}
+                shape={(props: any) => {
+                  const idx = weeklyData.findIndex((d: any) => d.day === props.payload.day);
+                  return (
+                    <rect x={props.x} y={props.y} width={props.width} height={props.height}
+                      rx={8} ry={8} fill={BAR_COLORS[idx % BAR_COLORS.length]} />
+                  );
+                }}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </motion.div>
+
+        {/* Risk Distribution — horizontal bar */}
+        <motion.div variants={item} className="card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-semibold text-dash-dark">Risk Distribution</h3>
+            <Brain className="w-4 h-4 text-dash-muted" />
+          </div>
+          <div className="space-y-5 mt-2">
+            {riskData.map((r: any) => {
+              const total = riskData.reduce((a: number, d: any) => a + d.count, 0) || 1;
+              const pct = Math.round((r.count / total) * 100);
+              return (
+                <div key={r.level}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color }} />
+                      <span className="text-sm font-medium text-dash-dark">{r.level} Risk</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-dash-dark">{r.count}</span>
+                      <span className="text-xs text-dash-muted">({pct}%)</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-neuro-dark/50 mt-1">
-                    {formatTimeAgo(patient.last_test_date)}
-                  </p>
+                  <div className="w-full h-3 rounded-full bg-dash-bg overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.8, delay: 0.2 }}
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: r.color }}
+                    />
+                  </div>
                 </div>
-              </motion.div>
-            ))}
+              );
+            })}
+          </div>
+          <div className="mt-5 pt-4 border-t border-dash-border">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-dash-muted">Total Patients Assessed</span>
+              <span className="text-sm font-bold text-dash-dark">{riskData.reduce((a: number, d: any) => a + d.count, 0)}</span>
+            </div>
           </div>
         </motion.div>
 
         {/* Pending Diagnostics */}
-        <motion.div
-          variants={itemVariants}
-          className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-neuro"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-semibold text-neuro-dark">Pending Reviews</h3>
-              <p className="text-sm text-neuro-dark/60">Tests awaiting your review</p>
-            </div>
-            <span className="px-3 py-1 bg-neuro-orange/10 text-neuro-orange text-sm font-medium rounded-full">
-              {dashboardData?.pending_diagnostics?.length || 0} Pending
-            </span>
+        <motion.div variants={item} className="card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-dash-dark">Pending Diagnostics</h3>
+            <span className="badge-accent">{diagnostics.length}</span>
           </div>
-
-          <div className="space-y-4">
-            {dashboardData?.pending_diagnostics?.map((diag: any, index: number) => (
-              <motion.div
-                key={diag.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-                className="p-4 bg-gradient-to-r from-neuro-beige/30 to-neuro-yellow/20 rounded-xl 
-                         border border-neuro-orange/20 cursor-pointer hover:shadow-md transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-white/60">
-                      <CategoryIcon category={diag.test_category} className="w-6 h-6 text-neuro-purple" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-neuro-dark">{diag.patient_name}</p>
-                      <p className="text-sm text-neuro-dark/60">{diag.test_name}</p>
-                    </div>
+          {diagnostics.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <ClipboardCheck className="w-8 h-8 text-dash-border mb-2" />
+              <p className="text-sm text-dash-muted">No pending diagnostics</p>
+              <p className="text-xs text-dash-muted mt-0.5">All caught up!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {diagnostics.slice(0, 5).map((d: any) => (
+                <div key={d.id} className="flex items-center gap-3 p-3 rounded-xl bg-dash-bg/50 hover:bg-dash-bg transition-colors">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                    style={{ backgroundColor: BAR_COLORS[['cognitive','speech','motor','gait','facial'].indexOf(d.test_category) % BAR_COLORS.length] || '#8B8FA8' }}>
+                    {d.test_category?.[0]?.toUpperCase() || '?'}
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-neuro-dark/50">{formatTimeAgo(diag.completed_at)}</p>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="mt-2 px-3 py-1 bg-neuro-purple text-white text-xs font-medium rounded-lg"
-                    >
-                      Review
-                    </motion.button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-dash-dark truncate">{d.patient_name}</p>
+                    <p className="text-xs text-dash-muted capitalize">{d.test_category} · {d.completed_at ? new Date(d.completed_at).toLocaleDateString() : 'Pending'}</p>
                   </div>
+                  <Link href={`/dashboard/patients/${d.patient_id}`} className="text-xs text-accent-dark font-medium hover:underline flex-shrink-0">
+                    Review
+                  </Link>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mt-6 pt-6 border-t border-neuro-dark/10">
-            <p className="text-sm font-medium text-neuro-dark/60 mb-3">Quick Actions</p>
-            <div className="grid grid-cols-2 gap-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-2 p-3 bg-neuro-mint/30 rounded-xl text-neuro-dark
-                         hover:bg-neuro-mint/50 transition-colors"
-              >
-                <Brain className="w-5 h-5 text-neuro-green" />
-                <span className="text-sm font-medium">AI Analysis</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-2 p-3 bg-neuro-lavender/50 rounded-xl text-neuro-dark
-                         hover:bg-neuro-lavender transition-colors"
-              >
-                <FileCheck className="w-5 h-5 text-neuro-purple" />
-                <span className="text-sm font-medium">Export Report</span>
-              </motion.button>
+              ))}
             </div>
-          </div>
+          )}
         </motion.div>
       </div>
+
+      {/* ═══ Recent Patients Table ═══ */}
+      <motion.div variants={item} className="card overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-dash-border">
+          <div className="flex items-center gap-3">
+            <h3 className="font-semibold text-dash-dark">Recent Patients</h3>
+            <span className="text-xs text-dash-muted bg-dash-bg px-2 py-0.5 rounded-md">{patients.length}</span>
+          </div>
+          <Link href="/dashboard/patients" className="text-xs text-accent-dark font-medium hover:underline flex items-center gap-1">
+            View All <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50/50">
+                <th className="table-header table-cell text-left">Patient</th>
+                <th className="table-header table-cell text-left">Risk Level</th>
+                <th className="table-header table-cell text-left">AD Risk</th>
+                <th className="table-header table-cell text-left">PD Risk</th>
+                <th className="table-header table-cell text-left">Last Test</th>
+                <th className="table-header table-cell text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {patients.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center">
+                    <Users className="w-8 h-8 text-dash-border mx-auto mb-2" />
+                    <p className="text-sm text-dash-muted">No recent patients</p>
+                  </td>
+                </tr>
+              ) : (
+                patients.map((p: any) => {
+                  const riskLevel = p.risk_level || (Math.max(p.ad_risk_score, p.pd_risk_score) >= 70 ? 'High' : Math.max(p.ad_risk_score, p.pd_risk_score) >= 40 ? 'Moderate' : 'Low');
+                  return (
+                    <tr key={p.id} className="table-row">
+                      <td className="table-cell">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-dash-bg text-dash-dark flex items-center justify-center text-xs font-semibold">
+                            {p.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2)}
+                          </div>
+                          <div>
+                            <span className="font-medium text-dash-dark">{p.name}</span>
+                            <p className="text-2xs text-dash-muted">{p.age}y{p.gender ? ` · ${p.gender}` : ''}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <span className={`text-xs font-medium px-2.5 py-1 rounded-lg
+                          ${riskLevel === 'High' ? 'bg-red-50 text-red-600' :
+                            riskLevel === 'Moderate' ? 'bg-amber-50 text-amber-600' :
+                            'bg-emerald-50 text-emerald-600'}`}>
+                          {riskLevel}
+                        </span>
+                      </td>
+                      <td className="table-cell">
+                        <div className="flex items-center gap-2">
+                          <div className="w-14 h-1.5 rounded-full bg-dash-bg">
+                            <div className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${Math.min(p.ad_risk_score, 100)}%`,
+                                backgroundColor: p.ad_risk_score >= 70 ? '#EF4444' : p.ad_risk_score >= 40 ? '#F59E0B' : '#10B981',
+                              }} />
+                          </div>
+                          <span className="text-xs font-semibold text-dash-dark">{p.ad_risk_score}%</span>
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <div className="flex items-center gap-2">
+                          <div className="w-14 h-1.5 rounded-full bg-dash-bg">
+                            <div className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${Math.min(p.pd_risk_score, 100)}%`,
+                                backgroundColor: p.pd_risk_score >= 70 ? '#EF4444' : p.pd_risk_score >= 40 ? '#F59E0B' : '#10B981',
+                              }} />
+                          </div>
+                          <span className="text-xs font-semibold text-dash-dark">{p.pd_risk_score}%</span>
+                        </div>
+                      </td>
+                      <td className="table-cell text-dash-muted text-xs">
+                        {p.last_test_category ? (
+                          <span className="capitalize">{p.last_test_category}</span>
+                        ) : (
+                          <span className="text-dash-border">—</span>
+                        )}
+                      </td>
+                      <td className="table-cell text-right">
+                        <Link href={`/dashboard/patients/${p.id}`}
+                          className="text-dash-muted hover:text-accent-dark text-xs font-medium transition-colors">
+                          View Details
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        {patients.length > 0 && (
+          <div className="px-6 py-3 border-t border-dash-border flex items-center justify-between">
+            <p className="text-xs text-dash-muted">Showing {patients.length} recent patients</p>
+            <Link href="/dashboard/patients" className="text-xs text-accent-dark font-medium hover:underline flex items-center gap-1">
+              View All <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+        )}
+      </motion.div>
     </motion.div>
   );
 }

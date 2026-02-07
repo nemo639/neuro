@@ -30,11 +30,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear ALL auth cookies
-      Cookies.remove('doctor_token');
-      Cookies.remove('doctor_refresh_token');
-      Cookies.remove('doctor_profile');
-      window.location.href = '/login';
+      // Only clear cookies & redirect if NOT already on login page
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        Cookies.remove('doctor_token');
+        Cookies.remove('doctor_refresh_token');
+        Cookies.remove('doctor_profile');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

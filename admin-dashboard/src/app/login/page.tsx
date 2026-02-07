@@ -1,42 +1,19 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import Cookies from 'js-cookie';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Shield, AlertCircle, ArrowRight } from 'lucide-react';
 
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-dash-bg">
-        <div className="w-8 h-8 border-3 border-accent border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
-      <LoginContent />
-    </Suspense>
-  );
-}
-
-function LoginContent() {
+export default function AdminLoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { login, isLoading: authLoading, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    const from = searchParams.get('from');
-    if (from) {
-      Cookies.remove('doctor_token');
-      Cookies.remove('doctor_refresh_token');
-      Cookies.remove('doctor_profile');
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) router.replace('/dashboard');
@@ -48,9 +25,8 @@ function LoginContent() {
     setError('');
     try {
       await login(email, password);
-      router.push('/dashboard');
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Invalid credentials');
+      setError(err.response?.data?.detail || 'Invalid credentials');
     } finally {
       setIsLoading(false);
     }
@@ -91,19 +67,19 @@ function LoginContent() {
           className="relative z-10"
         >
           <h1 className="text-5xl font-extrabold text-white leading-tight mb-4">
-            Doctor<br />
+            Admin<br />
             <span className="text-accent">Dashboard</span>
           </h1>
           <p className="text-dash-muted text-lg max-w-md leading-relaxed">
-            Monitor patient health, track assessments, manage clinical notes, and generate comprehensive reports — all from one place.
+            Manage your platform, monitor analytics, verify doctors, and resolve support tickets — all from one place.
           </p>
 
           {/* Stats row */}
           <div className="flex gap-8 mt-10">
             {[
-              { value: '10K+', label: 'Assessments' },
-              { value: '500+', label: 'Doctors' },
-              { value: '95%', label: 'Accuracy' },
+              { value: '2,847', label: 'Total Users' },
+              { value: '72', label: 'Active Doctors' },
+              { value: '98.9%', label: 'Uptime' },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -152,7 +128,7 @@ function LoginContent() {
             className="bg-white rounded-2xl border border-dash-border shadow-login-card p-8 lg:p-10"
           >
             <h2 className="text-2xl font-bold text-dash-dark mb-2">Welcome back</h2>
-            <p className="text-dash-muted text-sm mb-8">Enter your credentials to access the doctor portal</p>
+            <p className="text-dash-muted text-sm mb-8">Enter your credentials to access the admin panel</p>
 
             {error && (
               <motion.div
@@ -172,7 +148,7 @@ function LoginContent() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="doctor@neuroverse.com"
+                  placeholder="admin@neuroverse.com"
                   className="input hover:border-dash-muted"
                   required
                 />

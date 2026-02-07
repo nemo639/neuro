@@ -50,3 +50,25 @@ doctor-dashboard/.next/
 doctor-dashboard/out/
 doctor-dashboard/.turbo/
 doctor-dashboard/.env*
+
+# Node/Next.js (admin-dashboard)
+admin-dashboard/node_modules/
+admin-dashboard/.next/
+admin-dashboard/out/
+admin-dashboard/.turbo/
+admin-dashboard/.env*
+
+# Python virtual environments
+neuroverse-backend/venv/
+.venv/
+venv/
+__pycache__/
+
+# Archives / large binaries
+*.zip
+*.tar.gz
+*.rar
+
+# Generic safety nets
+**/node_modules/
+**/.next/

@@ -32,6 +32,10 @@ from app.schemas.doctor_schemas import (
     DoctorDashboard,
     PatientSummary,
     PendingDiagnostic,
+    TestCategoryCount,
+    MonthlyPatientFlow,
+    WeeklyVisit,
+    RiskDistribution,
     PatientListRequest,
     PatientListResponse,
     PatientDetailResponse,
@@ -123,10 +127,10 @@ async def doctor_login(
         
         # Generate tokens
         access_token = create_access_token(
-            data={"sub": doctor.id, "type": "doctor", "email": doctor.email}
+            data={"sub": str(doctor.id), "type": "doctor", "email": doctor.email}
         )
         refresh_token = create_refresh_token(
-            data={"sub": doctor.id, "type": "doctor"}
+            data={"sub": str(doctor.id), "type": "doctor"}
         )
         
         logger.info(f"Login successful for: {credentials.email}")
@@ -287,14 +291,18 @@ async def get_doctor_dashboard(
     )
     critical_alerts = critical_result.scalar() or 0
     
-    # Recent patients
+    # Recent patients (deduplicated, ordered by latest test)
     recent_patients_result = await db.execute(
         select(User)
-        .join(TestSession, TestSession.user_id == User.id)
-        .where(TestSession.status == "completed")
-        .order_by(desc(TestSession.completed_at))
-        .limit(5)
-        .distinct()
+        .where(
+            User.id.in_(
+                select(TestSession.user_id)
+                .where(TestSession.status == "completed")
+                .group_by(TestSession.user_id)
+                .order_by(func.max(TestSession.completed_at).desc())
+                .limit(5)
+            )
+        )
     )
     recent_users = recent_patients_result.scalars().all()
     
@@ -335,23 +343,124 @@ async def get_doctor_dashboard(
             patient_id=user.id,
             patient_name=f"{user.first_name} {user.last_name}",
             test_category=session.category,
-            test_name=session.test_name or session.category,
+            test_name=session.category or "Unknown",
             completed_at=session.completed_at,
             status="awaiting_review"
         )
         for session, user in pending_rows
     ]
     
+    # ── Build analytics charts ──
+    total_tests, tests_by_category, monthly_flow, weekly, risk_dist = \
+        await _build_dashboard_analytics(db)
+
     return DoctorDashboard(
         doctor_name=f"Dr. {current_doctor.first_name} {current_doctor.last_name}",
-        specialization=current_doctor.specialization.value,
+        specialization=current_doctor.specialization.value if hasattr(current_doctor.specialization, 'value') else str(current_doctor.specialization or ''),
         total_patients=total_patients,
         pending_reviews=pending_reviews,
         reports_today=reports_today,
         critical_alerts=critical_alerts,
+        tests_completed=total_tests,
         recent_patients=recent_patients,
-        pending_diagnostics=pending_diagnostics
+        pending_diagnostics=pending_diagnostics,
+        tests_by_category=tests_by_category,
+        monthly_patient_flow=monthly_flow,
+        weekly_visits=weekly,
+        risk_distribution=risk_dist,
     )
+
+
+# ── Analytics helpers (called after the basic dashboard data) ──
+
+async def _build_dashboard_analytics(db: AsyncSession):
+    """Build chart analytics data from real DB."""
+    from calendar import month_abbr
+
+    # ── Tests by category ──
+    CATEGORY_COLORS = {
+        "cognitive": "#C6E94B",
+        "speech": "#6366F1",
+        "motor": "#A855F7",
+        "gait": "#FB923C",
+        "facial": "#EC4899",
+    }
+    cat_rows = (await db.execute(
+        select(TestSession.category, func.count(TestSession.id))
+        .where(TestSession.status == "completed")
+        .group_by(TestSession.category)
+    )).all()
+    tests_by_category = [
+        TestCategoryCount(
+            category=cat.title() if cat else "Other",
+            count=cnt,
+            color=CATEGORY_COLORS.get(cat, "#22D3EE"),
+        )
+        for cat, cnt in cat_rows
+    ]
+    total_tests = sum(c.count for c in tests_by_category)
+
+    # ── Monthly patient flow (last 8 months) ──
+    monthly_flow = []
+    now = datetime.utcnow()
+    for i in range(7, -1, -1):
+        dt = now - timedelta(days=30 * i)
+        m_start = dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if m_start.month == 12:
+            m_end = m_start.replace(year=m_start.year + 1, month=1)
+        else:
+            m_end = m_start.replace(month=m_start.month + 1)
+
+        new_q = await db.execute(
+            select(func.count(User.id)).where(
+                and_(User.created_at >= m_start, User.created_at < m_end)
+            )
+        )
+        completed_q = await db.execute(
+            select(func.count(TestSession.id)).where(
+                and_(
+                    TestSession.status == "completed",
+                    TestSession.completed_at >= m_start,
+                    TestSession.completed_at < m_end,
+                )
+            )
+        )
+        monthly_flow.append(MonthlyPatientFlow(
+            month=month_abbr[m_start.month],
+            new_patients=new_q.scalar() or 0,
+            discharged=completed_q.scalar() or 0,
+        ))
+
+    # ── Weekly visits (last 7 days) ──
+    DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    weekly = []
+    for i in range(6, -1, -1):
+        day = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day + timedelta(days=1)
+        cnt_q = await db.execute(
+            select(func.count(TestSession.id)).where(
+                and_(TestSession.completed_at >= day, TestSession.completed_at < day_end)
+            )
+        )
+        weekly.append(WeeklyVisit(
+            day=DAY_NAMES[day.weekday()],
+            visits=cnt_q.scalar() or 0,
+        ))
+
+    # ── Risk distribution ──
+    risk_dist = []
+    for label, lo, hi in [("Low", 0, 40), ("Moderate", 40, 70), ("High", 70, 101)]:
+        cnt_q = await db.execute(
+            select(func.count(User.id)).where(
+                and_(
+                    func.greatest(User.ad_risk_score, User.pd_risk_score) >= lo,
+                    func.greatest(User.ad_risk_score, User.pd_risk_score) < hi,
+                )
+            )
+        )
+        risk_dist.append(RiskDistribution(level=label, count=cnt_q.scalar() or 0))
+
+    return total_tests, tests_by_category, monthly_flow, weekly, risk_dist
 
 
 # ==================== PATIENTS ====================

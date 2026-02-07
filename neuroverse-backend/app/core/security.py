@@ -64,7 +64,7 @@ async def get_current_doctor(
         raise credentials_exception
     
     # Get doctor from database
-    result = await db.execute(select(Doctor).where(Doctor.id == user_id))
+    result = await db.execute(select(Doctor).where(Doctor.id == int(user_id)))
     doctor = result.scalar_one_or_none()
     
     if doctor is None:
@@ -269,7 +269,7 @@ async def get_current_doctor(
     except JWTError:
         raise credentials_exception
     
-    result = await db.execute(select(Doctor).where(Doctor.id == user_id))
+    result = await db.execute(select(Doctor).where(Doctor.id == int(user_id)))
     doctor = result.scalar_one_or_none()
     
     if doctor is None:
@@ -307,7 +307,7 @@ async def get_current_admin(
     except JWTError:
         raise credentials_exception
     
-    result = await db.execute(select(Admin).where(Admin.id == user_id))
+    result = await db.execute(select(Admin).where(Admin.id == int(user_id)))
     admin = result.scalar_one_or_none()
     
     if admin is None:

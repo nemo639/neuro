@@ -17,17 +17,10 @@ export default function Home() {
   }, [router]);
 
   return (
-    <main className="min-h-screen bg-neuro-bg flex items-center justify-center">
-      <div className="relative">
-        {/* Animated Background Blobs */}
-        <div className="blob blob-1" />
-        <div className="blob blob-2" />
-        
-        {/* Loading Spinner */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-neuro-mint border-t-neuro-purple rounded-full animate-spin" />
-          <p className="text-neuro-dark/60 font-medium">Loading NeuroVerse...</p>
-        </div>
+    <main className="min-h-screen bg-[#F5F6FA] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-16 h-16 border-4 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+        <p className="text-gray-500 font-medium">Loading NeuroVerse...</p>
       </div>
     </main>
   );

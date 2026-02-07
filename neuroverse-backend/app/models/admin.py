@@ -147,6 +147,27 @@ class AdminActivityLog(Base):
         return f"<AdminActivityLog {self.action} by {self.admin_id}>"
 
 
+class AdminTask(Base):
+    """Admin tasks / to-do items"""
+    __tablename__ = "admin_tasks"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    admin_id = Column(String(36), nullable=False, index=True)
+    
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    category = Column(String(50), default="general")  # evaluation, engagement, relationship, selection, general
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    is_completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<AdminTask {self.title} - {'done' if self.is_completed else 'pending'}>"
+
+
 class DataPermission(Base):
     """Data access permissions for doctors/researchers"""
     __tablename__ = "data_permissions"

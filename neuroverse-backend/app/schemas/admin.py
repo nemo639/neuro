@@ -3,8 +3,8 @@
 # ADMIN SCHEMAS - Request/Response Models
 # ============================================================
 
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field, model_validator
+from typing import Optional, List, Any
 from datetime import datetime
 from enum import Enum
 
@@ -56,6 +56,7 @@ class AdminProfile(BaseModel):
     last_name: str
     phone: Optional[str] = None
     role: AdminRole
+    profile_image_url: Optional[str] = None
     can_manage_users: bool
     can_manage_doctors: bool
     can_manage_permissions: bool
@@ -71,6 +72,20 @@ class AdminProfile(BaseModel):
 
     class Config:
         from_attributes = True
+
+    @model_validator(mode='before')
+    @classmethod
+    def compute_image_url(cls, data: Any) -> Any:
+        """Compute profile_image_url from profile_image_path (ORM field)."""
+        if hasattr(data, 'profile_image_path'):
+            path = data.profile_image_path
+            if path:
+                data.profile_image_url = f"/uploads/{path}"
+        elif isinstance(data, dict) and 'profile_image_path' in data:
+            path = data.get('profile_image_path')
+            if path:
+                data['profile_image_url'] = f"/uploads/{path}"
+        return data
 
 
 # ==================== DASHBOARD ====================
@@ -116,14 +131,14 @@ class UserListResponse(BaseModel):
 
 
 class UserSummary(BaseModel):
-    id: str
+    id: int
     email: str
     first_name: str
     last_name: str
     is_verified: bool
-    ad_risk_score: int
-    pd_risk_score: int
-    total_tests: int
+    ad_risk_score: float = 0.0
+    pd_risk_score: float = 0.0
+    total_tests: int = 0
     created_at: datetime
     last_active: Optional[datetime] = None
 
@@ -137,7 +152,7 @@ class DoctorListResponse(BaseModel):
 
 
 class DoctorSummary(BaseModel):
-    id: str
+    id: int
     email: str
     first_name: str
     last_name: str
@@ -145,12 +160,12 @@ class DoctorSummary(BaseModel):
     hospital_affiliation: Optional[str] = None
     status: str
     is_verified: bool
-    total_patients_viewed: int
+    total_patients_viewed: int = 0
     created_at: datetime
 
 
 class VerifyDoctorRequest(BaseModel):
-    doctor_id: str
+    doctor_id: int
     approve: bool
     rejection_reason: Optional[str] = None
 
@@ -243,19 +258,140 @@ class RevokePermissionRequest(BaseModel):
     reason: str
 
 
+# ==================== TASKS ====================
+
+class TaskItem(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = None
+    category: str = "general"
+    due_date: Optional[datetime] = None
+    is_completed: bool = False
+    completed_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class TaskListResponse(BaseModel):
+    success: bool = True
+    tasks: List[TaskItem]
+    total: int
+
+
+class CreateTaskRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    category: str = "general"
+    due_date: Optional[datetime] = None
+
+
+class UpdateTaskRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    due_date: Optional[datetime] = None
+    is_completed: Optional[bool] = None
+
+
 # ==================== ANALYTICS ====================
 
+class KpiData(BaseModel):
+    total_users: int = 0
+    users_change: float = 0.0
+    total_doctors: int = 0
+    doctors_change: float = 0.0
+    total_tests: int = 0
+    tests_change: float = 0.0
+    total_tickets: int = 0
+    tickets_change: float = 0.0
+
+
+class MonthlyGrowthItem(BaseModel):
+    month: str
+    users: int = 0
+    doctors: int = 0
+    tickets: int = 0
+    sessions: int = 0
+
+
+class WeeklyActivityItem(BaseModel):
+    day: str
+    signups: int = 0
+    assessments: int = 0
+    consultations: int = 0
+
+
+class DemographicItem(BaseModel):
+    name: str
+    value: int = 0
+
+
+class AssessmentItem(BaseModel):
+    name: str
+    completed: int = 0
+
+
+class TopDoctorItem(BaseModel):
+    name: str
+    specialization: str
+    patients: int = 0
+    rating: float = 0.0
+
+
 class AnalyticsSummary(BaseModel):
-    total_users: int
-    new_users_this_week: int
-    total_doctors: int
-    active_doctors: int
-    total_tests_completed: int
-    tests_this_week: int
-    avg_ad_risk: float
-    avg_pd_risk: float
-    tickets_resolved_this_week: int
-    avg_resolution_time_hours: float
+    kpis: KpiData
+    monthly_growth: List[MonthlyGrowthItem]
+    user_demographics: List[DemographicItem]
+    weekly_activity: List[WeeklyActivityItem]
+    assessment_data: List[AssessmentItem]
+    top_doctors: List[TopDoctorItem]
+    total_users: int = 0
+
+
+# ==================== SETTINGS ====================
+
+class UpdateProfileRequest(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+
+
+class UpdateProfileResponse(BaseModel):
+    success: bool = True
+    admin: AdminProfile
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=6)
+    new_password: str = Field(..., min_length=6)
+
+
+class ChangePasswordResponse(BaseModel):
+    success: bool = True
+    message: str
+
+
+class AdminSettingsProfile(BaseModel):
+    id: str
+    email: str
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    role: str
+    profile_image_url: Optional[str] = None
+    is_active: bool
+    total_actions: int = 0
+    tickets_resolved: int = 0
+    users_managed: int = 0
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AvatarUploadResponse(BaseModel):
+    success: bool = True
+    profile_image_url: str
 
 
 # Forward references
