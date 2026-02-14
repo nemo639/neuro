@@ -13,6 +13,7 @@ export interface DoctorProfile {
   last_name: string;
   specialization?: string;
   hospital_affiliation?: string;
+  profile_image_path?: string;
 }
 
 interface AuthContextType {
@@ -21,6 +22,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateDoctor: (updates: Partial<DoctorProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       last_name: response.doctor.last_name,
       specialization: response.doctor.specialization || 'neurologist',
       hospital_affiliation: response.doctor.hospital_affiliation || '',
+      profile_image_path: response.doctor.profile_image_path || '',
     };
     Cookies.set('doctor_profile', JSON.stringify(profileData), { expires: 1 });
     
@@ -88,13 +91,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.replace('/login');
   };
 
+  const updateDoctor = (updates: Partial<DoctorProfile>) => {
+    setDoctor((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      Cookies.set('doctor_profile', JSON.stringify(updated), { expires: 1 });
+      return updated;
+    });
+  };
+
   return (
     <AuthContext.Provider value={{ 
       doctor, 
       isLoading, 
       isAuthenticated: !!doctor,
       login, 
-      logout 
+      logout,
+      updateDoctor,
     }}>
       {children}
     </AuthContext.Provider>

@@ -10,8 +10,9 @@ import {
   Loader2, AlertCircle, Clock, FileText, Activity,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { authApi, profileApi } from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://10.54.16.25:8000';
 
 const container = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
@@ -53,7 +54,7 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 }
 
 export default function SettingsPage() {
-  const { doctor } = useAuth();
+  const { doctor, updateDoctor } = useAuth();
 
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const [saving, setSaving] = useState(false);
@@ -79,18 +80,43 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) return;
-    if (file.size > 10 * 1024 * 1024) return;
+    if (!validTypes.includes(file.type)) {
+      alert('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File too large. Maximum size is 10 MB.');
+      return;
+    }
+    // Show instant preview
     const reader = new FileReader();
     reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
     setAvatarUploading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setAvatarUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    try {
+      const res = await profileApi.uploadAvatar(file);
+      if (res.image_url) {
+        setAvatarPreview(`${API_BASE}${res.image_url}`);
+        updateDoctor({ profile_image_path: res.image_url });
+      }
+    } catch (err: any) {
+      console.error('Avatar upload failed', err);
+      const msg = err?.response?.data?.detail || 'Failed to upload avatar. Please try again.';
+      alert(msg);
+      setAvatarPreview(null);
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
-  const handleRemoveAvatar = () => setAvatarPreview(null);
+  const handleRemoveAvatar = async () => {
+    try {
+      await profileApi.removeAvatar();
+    } catch {}
+    setAvatarPreview(null);
+    updateDoctor({ profile_image_path: '' });
+  };
 
   /* ── Password ── */
   const [showPassword, setShowPassword] = useState(false);
@@ -113,12 +139,12 @@ export default function SettingsPage() {
     }
     try {
       setPasswordLoading(true);
-      await new Promise((r) => setTimeout(r, 1200));
+      await profileApi.changePassword(passwordForm.current_password, passwordForm.new_password);
       setPasswordSuccess(true);
       setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
       setTimeout(() => setPasswordSuccess(false), 3000);
-    } catch {
-      setPasswordError('Failed to change password');
+    } catch (err: any) {
+      setPasswordError(err?.response?.data?.detail || 'Failed to change password');
     } finally {
       setPasswordLoading(false);
     }
@@ -148,11 +174,118 @@ export default function SettingsPage() {
     setCompactMode(loadFromStorage('nv_doc_compactMode', false));
   }, []);
 
+  /* ── Apply theme to DOM ── */
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.style.setProperty('--dash-bg', '#0F1117');
+      root.style.setProperty('--dash-dark', '#F0F1F5');
+      root.style.setProperty('--dash-text', '#C4C7D7');
+      root.style.setProperty('--dash-muted', '#6B7194');
+      root.style.setProperty('--dash-border', '#2A2D3E');
+      document.body.style.background = '#0F1117';
+      document.body.style.color = '#C4C7D7';
+      document.querySelectorAll('.card, aside, header').forEach((el) => {
+        (el as HTMLElement).style.backgroundColor = '#1A1D2E';
+      });
+    } else if (theme === 'light') {
+      root.style.setProperty('--dash-bg', '#F5F6FA');
+      root.style.setProperty('--dash-dark', '#1A1D29');
+      root.style.setProperty('--dash-text', '#3D4155');
+      root.style.setProperty('--dash-muted', '#8B8FA8');
+      root.style.setProperty('--dash-border', '#ECEDF2');
+      document.body.style.background = '#F5F6FA';
+      document.body.style.color = '#3D4155';
+      document.querySelectorAll('.card, aside, header').forEach((el) => {
+        (el as HTMLElement).style.backgroundColor = '';
+      });
+    } else {
+      // system — follow prefers-color-scheme
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.style.setProperty('--dash-bg', isDark ? '#0F1117' : '#F5F6FA');
+      root.style.setProperty('--dash-dark', isDark ? '#F0F1F5' : '#1A1D29');
+      root.style.setProperty('--dash-text', isDark ? '#C4C7D7' : '#3D4155');
+      root.style.setProperty('--dash-muted', isDark ? '#6B7194' : '#8B8FA8');
+      root.style.setProperty('--dash-border', isDark ? '#2A2D3E' : '#ECEDF2');
+      document.body.style.background = isDark ? '#0F1117' : '#F5F6FA';
+      document.body.style.color = isDark ? '#C4C7D7' : '#3D4155';
+    }
+  }, [theme]);
+
+  /* ── Apply accent color to DOM ── */
+  useEffect(() => {
+    const root = document.documentElement;
+    const accents: Record<AccentColor, { hover: string; light: string; dark: string }> = {
+      '#C6E94B': { hover: '#B8DC3D', light: '#F0F9D6', dark: '#7A9A1E' },
+      '#6366F1': { hover: '#5558E6', light: '#E0E0FF', dark: '#4338CA' },
+      '#A855F7': { hover: '#9333EA', light: '#F0E0FF', dark: '#7E22CE' },
+      '#EC4899': { hover: '#DB2777', light: '#FCE0F0', dark: '#BE185D' },
+      '#22D3EE': { hover: '#06B6D4', light: '#D4F5FB', dark: '#0E7490' },
+      '#FB923C': { hover: '#F97316', light: '#FFF0E0', dark: '#C2410C' },
+    };
+    const a = accents[accentColor] || accents['#C6E94B'];
+    root.style.setProperty('--accent', accentColor);
+    root.style.setProperty('--accent-hover', a.hover);
+    root.style.setProperty('--accent-light', a.light);
+    root.style.setProperty('--accent-dark', a.dark);
+  }, [accentColor]);
+
+  /* ── Apply font size to DOM ── */
+  useEffect(() => {
+    const sizes: Record<string, string> = { small: '14px', medium: '16px', large: '18px' };
+    document.documentElement.style.fontSize = sizes[fontSize] || '16px';
+  }, [fontSize]);
+
+  /* ── Apply compact mode ── */
+  useEffect(() => {
+    document.documentElement.classList.toggle('compact-mode', compactMode);
+  }, [compactMode]);
+
+  /* ── Profile stats from API ── */
+  const [profileStats, setProfileStats] = useState({ patients: 0, notes: 0, reports: 0 });
+
+  /* ── Load profile from API ── */
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await authApi.getProfile();
+        setProfileForm({
+          first_name: profile.first_name || '',
+          last_name: profile.last_name || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          specialization: profile.specialization || '',
+          hospital_affiliation: profile.hospital_affiliation || '',
+          bio: profile.bio || '',
+        });
+        setProfileStats({
+          patients: profile.total_patients_viewed || 0,
+          notes: profile.total_notes_created || 0,
+          reports: profile.total_reports_exported || 0,
+        });
+        if (profile.profile_image_path) {
+          const imgPath = profile.profile_image_path.startsWith('/') ? profile.profile_image_path : `/uploads/${profile.profile_image_path}`;
+          setAvatarPreview(`${API_BASE}${imgPath}`);
+        }
+      } catch (err) {
+        console.error('Failed to load profile', err);
+      }
+    };
+    loadProfile();
+  }, []);
+
   /* ── Save ── */
   const handleSave = async () => {
     setSaving(true);
+    try {
     if (activeTab === 'profile') {
-      await new Promise((r) => setTimeout(r, 1200));
+      await authApi.updateProfile({
+        first_name: profileForm.first_name,
+        last_name: profileForm.last_name,
+        phone: profileForm.phone,
+        hospital_affiliation: profileForm.hospital_affiliation,
+        bio: profileForm.bio,
+      });
     } else if (activeTab === 'notifications') {
       localStorage.setItem('nv_doc_notifications', JSON.stringify(notifications));
     } else if (activeTab === 'clinical') {
@@ -163,6 +296,14 @@ export default function SettingsPage() {
       localStorage.setItem('nv_doc_fontSize', JSON.stringify(fontSize));
       localStorage.setItem('nv_doc_sidebarWidth', JSON.stringify(sidebarWidth));
       localStorage.setItem('nv_doc_compactMode', JSON.stringify(compactMode));
+      // Notify global AppearanceProvider to re-apply immediately
+      window.dispatchEvent(new Event('nv-appearance-changed'));
+    }
+    } catch (err: any) {
+      console.error('Save failed', err);
+      alert(err?.response?.data?.detail || 'Failed to save settings');
+      setSaving(false);
+      return;
     }
     setSaving(false);
     setSaveSuccess(true);
@@ -326,9 +467,9 @@ export default function SettingsPage() {
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: 'Total Patients', value: '142', icon: User },
-                  { label: 'Assessments', value: '384', icon: FileText },
-                  { label: 'Reports Generated', value: '67', icon: Activity },
+                  { label: 'Total Patients', value: profileStats.patients, icon: User },
+                  { label: 'Notes Created', value: profileStats.notes, icon: FileText },
+                  { label: 'Reports Generated', value: profileStats.reports, icon: Activity },
                 ].map((s) => (
                   <div key={s.label} className="card p-4 text-center">
                     <s.icon className="w-5 h-5 text-accent mx-auto mb-2" />
@@ -663,7 +804,7 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium text-dash-dark">Clear Patient Cache</p>
                       <p className="text-xs text-dash-muted mt-0.5">Clear locally cached patient data</p>
                     </div>
-                    <button className="px-4 py-2 text-xs font-medium rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-all">
+                    <button onClick={() => { localStorage.removeItem('nv_doc_patients_cache'); alert('Patient cache cleared'); }} className="px-4 py-2 text-xs font-medium rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-all">
                       Clear Cache
                     </button>
                   </div>
@@ -672,7 +813,7 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium text-dash-dark">Reset Preferences</p>
                       <p className="text-xs text-dash-muted mt-0.5">Reset all clinical preferences to default</p>
                     </div>
-                    <button className="px-4 py-2 text-xs font-medium rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-all">
+                    <button onClick={() => { setClinical(DEFAULT_CLINICAL); localStorage.setItem('nv_doc_clinical', JSON.stringify(DEFAULT_CLINICAL)); alert('Clinical preferences reset to defaults'); }} className="px-4 py-2 text-xs font-medium rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-all">
                       Reset
                     </button>
                   </div>
@@ -681,7 +822,18 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium text-dash-dark">Export All Data</p>
                       <p className="text-xs text-dash-muted mt-0.5">Download all your clinical data</p>
                     </div>
-                    <button className="btn-secondary text-xs py-2">
+                    <button onClick={() => {
+                      const data = {
+                        clinical: clinical,
+                        notifications: notifications,
+                        appearance: { theme, accentColor, fontSize, sidebarWidth, compactMode },
+                      };
+                      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url; a.download = 'neuroverse-settings.json'; a.click();
+                      URL.revokeObjectURL(url);
+                    }} className="btn-secondary text-xs py-2">
                       Export
                     </button>
                   </div>

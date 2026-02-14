@@ -3,12 +3,15 @@
 # DOCTOR API ENDPOINTS
 # ============================================================
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
 from typing import Optional, List
 from datetime import datetime, timedelta
+import os, uuid, json as _json
 from app.services.email_service import EmailService
+from app.core.config import settings
 
 from app.db.database import get_db
 from app.core.security import (
@@ -24,6 +27,7 @@ from app.models.doctor_model import Doctor, ClinicalNote, PatientAccess, Dataset
 from app.models.user import User
 from app.models.test_session import TestSession
 from app.models.test_result import TestResult
+from app.models.report import Report
 from app.schemas.doctor_schemas import (
     DoctorLogin,
     DoctorLoginResponse,
@@ -563,6 +567,18 @@ async def list_patients(
             last_test_category=None
         ))
     
+    # Compute global risk counts (unfiltered)
+    high_q = select(func.count(User.id)).where(or_(User.ad_risk_score >= 70, User.pd_risk_score >= 70))
+    mod_q = select(func.count(User.id)).where(
+        and_(User.ad_risk_score.between(40, 69), User.pd_risk_score.between(40, 69))
+    )
+    low_q = select(func.count(User.id)).where(
+        and_(User.ad_risk_score < 40, User.pd_risk_score < 40)
+    )
+    high_risk_count = (await db.execute(high_q)).scalar() or 0
+    moderate_risk_count = (await db.execute(mod_q)).scalar() or 0
+    low_risk_count = (await db.execute(low_q)).scalar() or 0
+
     # Log access
     current_doctor.total_patients_viewed += len(patients)
     await db.commit()
@@ -572,13 +588,16 @@ async def list_patients(
         total=total,
         page=page,
         limit=limit,
-        total_pages=(total + limit - 1) // limit
+        total_pages=(total + limit - 1) // limit,
+        high_risk_count=high_risk_count,
+        moderate_risk_count=moderate_risk_count,
+        low_risk_count=low_risk_count
     )
 
 
 @router.get("/patients/{patient_id}", response_model=PatientDetailResponse)
 async def get_patient_detail(
-    patient_id: str,
+    patient_id: int,
     current_doctor: Doctor = Depends(get_current_doctor),
     db: AsyncSession = Depends(get_db)
 ):
@@ -600,27 +619,31 @@ async def get_patient_detail(
             detail="Patient not found"
         )
     
-    # Get test sessions
+    # Get test sessions with their results
     sessions_result = await db.execute(
-        select(TestSession)
+        select(TestSession, TestResult)
+        .outerjoin(TestResult, TestResult.session_id == TestSession.id)
         .where(TestSession.user_id == patient_id)
         .order_by(desc(TestSession.created_at))
     )
-    sessions = sessions_result.scalars().all()
+    session_rows = sessions_result.all()
     
-    test_sessions = [
-        TestSessionSummary(
-            id=s.id,
-            category=s.category,
-            status=s.status,
-            started_at=s.started_at,
-            completed_at=s.completed_at,
-            ad_risk_contribution=None,
-            pd_risk_contribution=None,
-            category_score=None
+    test_sessions = []
+    sessions_only = []
+    for s, r in session_rows:
+        sessions_only.append(s)
+        test_sessions.append(
+            TestSessionSummary(
+                id=s.id,
+                category=s.category,
+                status=s.status,
+                started_at=s.started_at,
+                completed_at=s.completed_at,
+                ad_risk_contribution=r.ad_risk_score if r else None,
+                pd_risk_contribution=r.pd_risk_score if r else None,
+                category_score=r.category_score if r else None,
+            )
         )
-        for s in sessions
-    ]
     
     # Get clinical notes for this patient
     notes_result = await db.execute(
@@ -637,6 +660,7 @@ async def get_patient_detail(
             doctor_id=note.doctor_id,
             doctor_name=f"Dr. {doctor.first_name} {doctor.last_name}",
             patient_id=note.patient_id,
+            patient_name=f"{patient.first_name} {patient.last_name}",
             title=note.title,
             content=note.content,
             note_type=note.note_type,
@@ -675,7 +699,7 @@ async def get_patient_detail(
         facial_score=patient.facial_score,
         ad_stage=patient.ad_stage,
         pd_stage=patient.pd_stage,
-        total_tests_completed=len([s for s in sessions if s.status == "completed"]),
+        total_tests_completed=len([s for s in sessions_only if s.status == "completed"]),
         test_sessions=test_sessions,
         clinical_notes=clinical_notes,
         member_since=patient.created_at,
@@ -733,6 +757,7 @@ async def create_clinical_note(
             doctor_id=note.doctor_id,
             doctor_name=f"Dr. {current_doctor.first_name} {current_doctor.last_name}",
             patient_id=note.patient_id,
+            patient_name=f"{patient.first_name} {patient.last_name}",
             title=note.title,
             content=note.content,
             note_type=note.note_type,
@@ -746,7 +771,7 @@ async def create_clinical_note(
 
 @router.get("/notes", response_model=ClinicalNotesListResponse)
 async def list_clinical_notes(
-    patient_id: Optional[str] = None,
+    patient_id: Optional[int] = None,
     note_type: Optional[str] = None,
     flagged_only: bool = False,
     page: int = Query(1, ge=1),
@@ -756,7 +781,11 @@ async def list_clinical_notes(
 ):
     """List clinical notes with filtering."""
     
-    query = select(ClinicalNote, Doctor).join(Doctor, Doctor.id == ClinicalNote.doctor_id)
+    query = (
+        select(ClinicalNote, Doctor, User)
+        .join(Doctor, Doctor.id == ClinicalNote.doctor_id)
+        .join(User, User.id == ClinicalNote.patient_id)
+    )
     
     # Only show own private notes, all public notes
     query = query.where(
@@ -803,6 +832,7 @@ async def list_clinical_notes(
             doctor_id=note.doctor_id,
             doctor_name=f"Dr. {doctor.first_name} {doctor.last_name}",
             patient_id=note.patient_id,
+            patient_name=f"{patient.first_name} {patient.last_name}",
             title=note.title,
             content=note.content,
             note_type=note.note_type,
@@ -811,7 +841,7 @@ async def list_clinical_notes(
             created_at=note.created_at,
             updated_at=note.updated_at
         )
-        for note, doctor in notes_rows
+        for note, doctor, patient in notes_rows
     ]
     
     return ClinicalNotesListResponse(
@@ -824,7 +854,7 @@ async def list_clinical_notes(
 
 @router.patch("/notes/{note_id}", response_model=ClinicalNoteResponse)
 async def update_clinical_note(
-    note_id: str,
+    note_id: int,
     updates: ClinicalNoteUpdate,
     current_doctor: Doctor = Depends(get_current_doctor),
     db: AsyncSession = Depends(get_db)
@@ -858,12 +888,18 @@ async def update_clinical_note(
     await db.commit()
     await db.refresh(note)
     
+    # Get patient name
+    patient_result = await db.execute(select(User).where(User.id == note.patient_id))
+    patient_user = patient_result.scalar_one_or_none()
+    patient_name = f"{patient_user.first_name} {patient_user.last_name}" if patient_user else None
+    
     return ClinicalNoteResponse(
         note=ClinicalNoteSummary(
             id=note.id,
             doctor_id=note.doctor_id,
             doctor_name=f"Dr. {current_doctor.first_name} {current_doctor.last_name}",
             patient_id=note.patient_id,
+            patient_name=patient_name,
             title=note.title,
             content=note.content,
             note_type=note.note_type,
@@ -877,7 +913,7 @@ async def update_clinical_note(
 
 @router.delete("/notes/{note_id}")
 async def delete_clinical_note(
-    note_id: str,
+    note_id: int,
     current_doctor: Doctor = Depends(get_current_doctor),
     db: AsyncSession = Depends(get_db)
 ):
@@ -1060,6 +1096,422 @@ async def list_dataset_requests(
         ],
         total=len(requests)
     )
+
+
+# ==================== REPORTS ====================
+
+@router.get("/reports/exports")
+async def list_reports(
+    current_doctor: Doctor = Depends(get_current_doctor),
+    db: AsyncSession = Depends(get_db),
+    patient_id: Optional[int] = Query(None),
+    report_type: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    """List all reports (from Report table) visible to the doctor."""
+    query = select(Report, User).join(User, Report.user_id == User.id)
+
+    if patient_id:
+        query = query.where(Report.user_id == patient_id)
+    if report_type:
+        query = query.where(Report.report_type == report_type)
+
+    count_q = select(func.count()).select_from(Report)
+    total = (await db.execute(count_q)).scalar() or 0
+
+    query = query.order_by(desc(Report.created_at)).offset((page - 1) * limit).limit(limit)
+    rows = (await db.execute(query)).all()
+
+    reports = []
+    for report, user in rows:
+        reports.append({
+            "id": str(report.id),
+            "patient_name": f"{user.first_name or ''} {user.last_name or ''}".strip() or user.email,
+            "patient_id": user.id,
+            "report_type": report.report_type or "comprehensive",
+            "title": report.title or "Assessment Report",
+            "ad_risk": round(report.ad_risk_score or 0),
+            "pd_risk": round(report.pd_risk_score or 0),
+            "cognitive_score": report.cognitive_score,
+            "speech_score": report.speech_score,
+            "motor_score": report.motor_score,
+            "gait_score": report.gait_score,
+            "facial_score": report.facial_score,
+            "ad_stage": report.ad_stage,
+            "pd_stage": report.pd_stage,
+            "tests_count": report.tests_count or 0,
+            "generated_at": report.created_at.isoformat() if report.created_at else None,
+            "status": "ready" if report.is_ready else "processing",
+            "has_pdf": bool(report.pdf_path),
+        })
+
+    return {"reports": reports, "total": total, "page": page, "limit": limit}
+
+
+@router.post("/reports/generate")
+async def generate_report_pdf(
+    body: ExportReportRequest,
+    current_doctor: Doctor = Depends(get_current_doctor),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate a formatted PDF report for a patient and return report_id + download URL."""
+    # Get the patient
+    patient = await db.get(User, body.patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Gather sessions
+    sess_q = (
+        select(TestSession)
+        .where(TestSession.user_id == body.patient_id, TestSession.status == "completed")
+        .order_by(desc(TestSession.completed_at))
+    )
+    sessions = (await db.execute(sess_q)).scalars().all()
+
+    # Gather scores from TestResults (join through TestSession to get per-category scores)
+    results_q = (
+        select(TestResult, TestSession.category)
+        .join(TestSession, TestResult.session_id == TestSession.id)
+        .where(TestSession.user_id == body.patient_id)
+        .order_by(desc(TestResult.created_at))
+    )
+    result_rows = (await db.execute(results_q)).all()
+
+    # Build per-category score map from the latest result for each category
+    category_scores: dict = {}
+    ad_risk = 0.0
+    pd_risk = 0.0
+    for result, category in result_rows:
+        if category not in category_scores:
+            category_scores[category] = round(result.category_score or 0, 1)
+        if result.ad_risk_score and result.ad_risk_score > ad_risk:
+            ad_risk = round(result.ad_risk_score, 1)
+        if result.pd_risk_score and result.pd_risk_score > pd_risk:
+            pd_risk = round(result.pd_risk_score, 1)
+
+    cognitive = category_scores.get("cognitive")
+    speech = category_scores.get("speech")
+    motor = category_scores.get("motor")
+    gait = category_scores.get("gait")
+    facial = category_scores.get("facial")
+
+    # Determine stage
+    def _stage(score):
+        if score >= 75: return "Severe"
+        if score >= 50: return "Moderate"
+        if score >= 25: return "Mild"
+        return "Normal"
+
+    ad_stage = _stage(ad_risk)
+    pd_stage = _stage(pd_risk)
+
+    patient_name = f"{patient.first_name or ''} {patient.last_name or ''}".strip() or patient.email
+
+    # ---- Build PDF with fpdf2 ----
+    from fpdf import FPDF
+
+    class NVReport(FPDF):
+        def header(self):
+            self.set_fill_color(30, 30, 30)
+            self.rect(0, 0, 210, 36, "F")
+            self.set_text_color(198, 233, 75)
+            self.set_font("Helvetica", "B", 18)
+            self.set_xy(10, 8)
+            self.cell(0, 10, "NeuroVerse", align="L")
+            self.set_text_color(255, 255, 255)
+            self.set_font("Helvetica", "", 9)
+            self.set_xy(10, 20)
+            self.cell(0, 8, "Neurodegenerative Disease Assessment Report", align="L")
+            self.set_xy(140, 20)
+            self.cell(60, 8, f"Generated: {datetime.utcnow().strftime('%B %d, %Y')}", align="R")
+            self.ln(30)
+
+        def footer(self):
+            self.set_y(-15)
+            self.set_font("Helvetica", "I", 7)
+            self.set_text_color(150, 150, 150)
+            self.cell(0, 10, f"NeuroVerse Confidential  |  Page {self.page_no()}/{{nb}}", align="C")
+
+    pdf = NVReport()
+    pdf.alias_nb_pages()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
+
+    # Patient Info box
+    pdf.set_fill_color(245, 246, 250)
+    pdf.rect(10, pdf.get_y(), 190, 28, "F")
+    y0 = pdf.get_y() + 4
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_text_color(30, 30, 30)
+    pdf.set_xy(14, y0)
+    pdf.cell(90, 7, f"Patient: {patient_name}")
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_xy(14, y0 + 8)
+    pdf.cell(90, 6, f"ID: {patient.id}  |  Email: {patient.email}")
+    pdf.set_xy(14, y0 + 15)
+    dob_str = str(patient.date_of_birth) if patient.date_of_birth else "N/A"
+    pdf.cell(90, 6, f"DOB: {dob_str}  |  Gender: {patient.gender or 'N/A'}")
+    pdf.set_xy(120, y0)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(80, 7, f"Report Type: {body.report_type.replace('_', ' ').title()}")
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_xy(120, y0 + 8)
+    pdf.cell(80, 6, f"Tests Completed: {len(sessions)}")
+    pdf.set_xy(120, y0 + 15)
+    pdf.cell(80, 6, f"Assessed by: Dr. {current_doctor.first_name} {current_doctor.last_name}")
+    pdf.ln(32)
+
+    # Section helper
+    def section_title(title):
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.set_text_color(30, 30, 30)
+        pdf.cell(0, 10, title, ln=True)
+        pdf.set_draw_color(198, 233, 75)
+        pdf.set_line_width(0.8)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(3)
+
+    def score_bar(label, value, max_val=100, width=120):
+        if value is None:
+            return
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(60, 60, 60)
+        pdf.cell(50, 7, label)
+        x_start = pdf.get_x()
+        y_bar = pdf.get_y() + 1.5
+        # bg bar
+        pdf.set_fill_color(230, 230, 230)
+        pdf.rect(x_start, y_bar, width, 4, "F")
+        # value bar
+        pct = min(value / max_val, 1.0)
+        if pct >= 0.7:
+            pdf.set_fill_color(239, 68, 68)
+        elif pct >= 0.4:
+            pdf.set_fill_color(245, 158, 11)
+        else:
+            pdf.set_fill_color(16, 185, 129)
+        pdf.rect(x_start, y_bar, width * pct, 4, "F")
+        pdf.set_xy(x_start + width + 3, y_bar - 1)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(20, 6, f"{value}%")
+        pdf.ln(8)
+
+    # 1. Risk Summary
+    section_title("1. Overall Risk Assessment")
+    score_bar("Alzheimer's Disease Risk", round(ad_risk))
+    score_bar("Parkinson's Disease Risk", round(pd_risk))
+    pdf.ln(2)
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(80, 80, 80)
+    pdf.cell(0, 6, f"AD Stage: {ad_stage}  |  PD Stage: {pd_stage}", ln=True)
+    pdf.ln(6)
+
+    # 2. Category Scores
+    section_title("2. Category-Wise Scores")
+    for label, val in [("Cognitive", cognitive), ("Speech", speech), ("Motor", motor), ("Gait", gait), ("Facial", facial)]:
+        score_bar(label, round(val) if val is not None else None)
+    pdf.ln(4)
+
+    # 3. Test Sessions Summary
+    section_title("3. Test Sessions Summary")
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_fill_color(240, 240, 240)
+    headers = ["#", "Category", "Status", "Date", "Score"]
+    widths = [10, 50, 30, 50, 40]
+    for i, h in enumerate(headers):
+        pdf.cell(widths[i], 7, h, border=1, fill=True)
+    pdf.ln()
+    pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(50, 50, 50)
+    for idx, s in enumerate(sessions[:15], 1):
+        pdf.cell(widths[0], 6, str(idx), border=1)
+        pdf.cell(widths[1], 6, (s.test_category or "N/A")[:25], border=1)
+        pdf.cell(widths[2], 6, s.status or "completed", border=1)
+        dt_str = s.completed_at.strftime("%Y-%m-%d") if s.completed_at else "N/A"
+        pdf.cell(widths[3], 6, dt_str, border=1)
+        score_val = ""
+        if hasattr(s, "category_score") and s.category_score is not None:
+            score_val = f"{s.category_score:.1f}%"
+        pdf.cell(widths[4], 6, score_val, border=1)
+        pdf.ln()
+    if not sessions:
+        pdf.set_font("Helvetica", "I", 9)
+        pdf.cell(0, 8, "No completed test sessions found.", ln=True)
+    pdf.ln(6)
+
+    # 4. Recommendations
+    section_title("4. Clinical Recommendations")
+    recommendations = []
+    if ad_risk >= 70:
+        recommendations.append("Immediate referral to neurology specialist for AD evaluation recommended.")
+        recommendations.append("Consider advanced neuroimaging (MRI/PET) for further assessment.")
+    elif ad_risk >= 40:
+        recommendations.append("Schedule follow-up cognitive assessments within 3 months.")
+    if pd_risk >= 70:
+        recommendations.append("Urgent motor function evaluation and dopamine transporter scan recommended.")
+    elif pd_risk >= 40:
+        recommendations.append("Monitor motor symptoms; repeat gait and motor assessments in 6 weeks.")
+    if not recommendations:
+        recommendations.append("Continue routine monitoring. Current scores are within normal range.")
+    recommendations.append("Regular wellness tracking and lifestyle modifications are advised.")
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(60, 60, 60)
+    for i, rec in enumerate(recommendations, 1):
+        pdf.multi_cell(0, 6, f"  {i}. {rec}")
+        pdf.ln(1)
+    pdf.ln(4)
+
+    # Disclaimer
+    pdf.set_font("Helvetica", "I", 7)
+    pdf.set_text_color(130, 130, 130)
+    pdf.multi_cell(0, 4, "Disclaimer: This report is generated by AI-assisted analysis and should be reviewed by a qualified healthcare professional. It is not intended as a definitive diagnosis.")
+
+    # Save PDF
+    os.makedirs(os.path.join(settings.UPLOAD_DIR, "reports"), exist_ok=True)
+    filename = f"report_{patient.id}_{uuid.uuid4().hex[:8]}.pdf"
+    filepath = os.path.join(settings.UPLOAD_DIR, "reports", filename)
+    pdf.output(filepath)
+
+    # Create Report record
+    new_report = Report(
+        user_id=patient.id,
+        title=f"{body.report_type.replace('_', ' ').title()} Report",
+        report_type=body.report_type,
+        sessions_included=[s.id for s in sessions[:15]],
+        tests_count=len(sessions),
+        ad_risk_score=ad_risk,
+        pd_risk_score=pd_risk,
+        cognitive_score=cognitive,
+        speech_score=speech,
+        motor_score=motor,
+        gait_score=gait,
+        facial_score=facial,
+        ad_stage=ad_stage,
+        pd_stage=pd_stage,
+        pdf_path=f"reports/{filename}",
+        is_ready=True,
+    )
+    db.add(new_report)
+    current_doctor.total_reports_exported = (current_doctor.total_reports_exported or 0) + 1
+    await db.commit()
+    await db.refresh(new_report)
+
+    return {
+        "success": True,
+        "report_id": new_report.id,
+        "download_url": f"/uploads/reports/{filename}",
+        "patient_name": patient_name,
+    }
+
+
+@router.get("/reports/{report_id}/download")
+async def download_report(
+    report_id: int,
+    token: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Download a generated PDF report. Accepts token query param for direct links."""
+    from jose import jwt as _jwt, JWTError as _JWTError
+    # Resolve doctor from query-param token
+    if not token:
+        raise HTTPException(status_code=401, detail="Token required")
+    try:
+        payload = _jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        doctor_id = payload.get("sub")
+        if not doctor_id or payload.get("type") != "doctor":
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except _JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    doctor = await db.get(Doctor, int(doctor_id))
+    if not doctor:
+        raise HTTPException(status_code=401, detail="Doctor not found")
+
+    report = await db.get(Report, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if not report.pdf_path:
+        raise HTTPException(status_code=404, detail="PDF not yet generated")
+    filepath = os.path.join(settings.UPLOAD_DIR, report.pdf_path)
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="PDF file missing")
+    return FileResponse(filepath, media_type="application/pdf", filename=os.path.basename(filepath))
+
+
+# ==================== AVATAR UPLOAD ====================
+
+@router.post("/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_doctor: Doctor = Depends(get_current_doctor),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload doctor profile avatar image."""
+    allowed = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
+    if file.content_type not in allowed:
+        raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are allowed")
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 10 MB)")
+
+    os.makedirs(os.path.join(settings.UPLOAD_DIR, "avatars"), exist_ok=True)
+    ext = file.filename.rsplit(".", 1)[-1] if "." in (file.filename or "") else "png"
+    filename = f"doc_{current_doctor.id}_{uuid.uuid4().hex[:8]}.{ext}"
+    filepath = os.path.join(settings.UPLOAD_DIR, "avatars", filename)
+
+    # Delete old avatar if exists
+    if current_doctor.profile_image_path:
+        old_path = os.path.join(settings.UPLOAD_DIR, current_doctor.profile_image_path)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    current_doctor.profile_image_path = f"avatars/{filename}"
+    current_doctor.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return {"success": True, "image_url": f"/uploads/avatars/{filename}"}
+
+
+@router.delete("/me/avatar")
+async def remove_avatar(
+    current_doctor: Doctor = Depends(get_current_doctor),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove doctor profile avatar."""
+    if current_doctor.profile_image_path:
+        old_path = os.path.join(settings.UPLOAD_DIR, current_doctor.profile_image_path)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+        current_doctor.profile_image_path = None
+        current_doctor.updated_at = datetime.utcnow()
+        await db.commit()
+    return {"success": True}
+
+
+# ==================== PASSWORD CHANGE ====================
+
+@router.post("/me/change-password")
+async def change_password(
+    body: dict,
+    current_doctor: Doctor = Depends(get_current_doctor),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change doctor's password."""
+    current_pw = body.get("current_password", "")
+    new_pw = body.get("new_password", "")
+    if not current_pw or not new_pw:
+        raise HTTPException(status_code=400, detail="Both current and new password are required")
+    if len(new_pw) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    if not verify_password(current_pw, current_doctor.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    current_doctor.password_hash = get_password_hash(new_pw)
+    current_doctor.updated_at = datetime.utcnow()
+    await db.commit()
+    return {"success": True, "message": "Password changed successfully"}
 
 
 # ==================== HELPERS ====================

@@ -107,7 +107,7 @@ export default function DashboardPage() {
 
   const riskData = useMemo(() => {
     const raw = data?.risk_distribution || FALLBACK.risk_distribution;
-    const colors: Record<string, string> = { Low: '#10B981', Moderate: '#F59E0B', High: '#EF4444' };
+    const colors: Record<string, string> = { Low: '#2AC9A0', Moderate: '#F5A623', High: '#E8637A' };
     return raw.map((r: any) => ({ ...r, color: colors[r.level] || '#8B8FA8' }));
   }, [data]);
 
@@ -119,7 +119,7 @@ export default function DashboardPage() {
     { title: 'Total Patients', value: data?.total_patients ?? 0, change: '+12.5%', up: true, icon: Users, color: '#C6E94B' },
     { title: 'Tests Completed', value: data?.tests_completed ?? totalTests, change: '+8.2%', up: true, icon: ClipboardCheck, color: '#6366F1' },
     { title: 'Pending Reviews', value: data?.pending_reviews ?? 0, change: '-3.1%', up: false, icon: FileText, color: '#FB923C' },
-    { title: 'Critical Alerts', value: data?.critical_alerts ?? 0, change: data?.critical_alerts > 0 ? 'Needs attention' : 'All clear', up: (data?.critical_alerts ?? 0) === 0, icon: AlertTriangle, color: '#EF4444' },
+    { title: 'Critical Alerts', value: data?.critical_alerts ?? 0, change: data?.critical_alerts > 0 ? 'Needs attention' : 'All clear', up: (data?.critical_alerts ?? 0) === 0, icon: AlertTriangle, color: '#E8637A' },
   ], [data, totalTests]);
 
   const patients = data?.recent_patients || [];
@@ -410,9 +410,9 @@ export default function DashboardPage() {
                       </td>
                       <td className="table-cell">
                         <span className={`text-xs font-medium px-2.5 py-1 rounded-lg
-                          ${riskLevel === 'High' ? 'bg-red-50 text-red-600' :
-                            riskLevel === 'Moderate' ? 'bg-amber-50 text-amber-600' :
-                            'bg-emerald-50 text-emerald-600'}`}>
+                          ${riskLevel === 'High' ? 'bg-[#E8637A]/12 text-[#E8637A]' :
+                            riskLevel === 'Moderate' ? 'bg-[#F5A623]/12 text-[#F5A623]' :
+                            'bg-[#2AC9A0]/12 text-[#2AC9A0]'}`}>
                           {riskLevel}
                         </span>
                       </td>
@@ -422,7 +422,7 @@ export default function DashboardPage() {
                             <div className="h-full rounded-full transition-all"
                               style={{
                                 width: `${Math.min(p.ad_risk_score, 100)}%`,
-                                backgroundColor: p.ad_risk_score >= 70 ? '#EF4444' : p.ad_risk_score >= 40 ? '#F59E0B' : '#10B981',
+                                backgroundColor: p.ad_risk_score >= 70 ? '#E8637A' : p.ad_risk_score >= 40 ? '#F5A623' : '#2AC9A0',
                               }} />
                           </div>
                           <span className="text-xs font-semibold text-dash-dark">{p.ad_risk_score}%</span>
@@ -434,7 +434,7 @@ export default function DashboardPage() {
                             <div className="h-full rounded-full transition-all"
                               style={{
                                 width: `${Math.min(p.pd_risk_score, 100)}%`,
-                                backgroundColor: p.pd_risk_score >= 70 ? '#EF4444' : p.pd_risk_score >= 40 ? '#F59E0B' : '#10B981',
+                                backgroundColor: p.pd_risk_score >= 70 ? '#E8637A' : p.pd_risk_score >= 40 ? '#F5A623' : '#2AC9A0',
                               }} />
                           </div>
                           <span className="text-xs font-semibold text-dash-dark">{p.pd_risk_score}%</span>

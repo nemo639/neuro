@@ -48,13 +48,16 @@ body {
   @apply bg-accent text-dash-dark font-semibold text-xs px-3 py-1 rounded-lg;
 }
 .badge-success {
-  @apply bg-emerald-50 text-emerald-600 font-medium text-xs px-2.5 py-1 rounded-lg;
+  color: var(--risk-low); background: var(--risk-low-bg);
+  @apply font-medium text-xs px-2.5 py-1 rounded-lg;
 }
 .badge-warning {
-  @apply bg-amber-50 text-amber-600 font-medium text-xs px-2.5 py-1 rounded-lg;
+  color: var(--risk-mod); background: var(--risk-mod-bg);
+  @apply font-medium text-xs px-2.5 py-1 rounded-lg;
 }
 .badge-error {
-  @apply bg-red-50 text-red-600 font-medium text-xs px-2.5 py-1 rounded-lg;
+  color: var(--risk-high); background: var(--risk-high-bg); 
+  @apply font-medium text-xs px-2.5 py-1 rounded-lg;
 }
 .badge-info {
   @apply bg-blue-50 text-blue-600 font-medium text-xs px-2.5 py-1 rounded-lg;
@@ -112,12 +115,32 @@ body {
 }
 
 /* ─── Risk Colors ─── */
-.risk-low { color: #10B981; background: rgba(16, 185, 129, 0.1); }
-.risk-moderate { color: #F97316; background: rgba(249, 115, 22, 0.1); }
-.risk-high { color: #EF4444; background: rgba(239, 68, 68, 0.1); }
+.risk-low { color: #2AC9A0; background: rgba(42, 201, 160, 0.12); }
+.risk-moderate { color: #F5A623; background: rgba(245, 166, 35, 0.12); }
+.risk-high { color: #E8637A; background: rgba(232, 99, 122, 0.12); }
+
+/* ─── Semantic risk CSS vars ─── */
+:root {
+  --risk-low: #2AC9A0;
+  --risk-low-bg: rgba(42, 201, 160, 0.12);
+  --risk-mod: #F5A623;
+  --risk-mod-bg: rgba(245, 166, 35, 0.12);
+  --risk-high: #E8637A;
+  --risk-high-bg: rgba(232, 99, 122, 0.12);
+}
 
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #D4D6E0; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #B4B7C7; }
+
+/* ─── Dark mode overrides (applied via JS CSS vars) ─── */
+/* Cards & panels inherit background from CSS variables */
+
+/* ─── Compact Mode ─── */
+.compact-mode .card { @apply p-3; }
+.compact-mode .nav-item { @apply py-1.5 px-3 text-xs; }
+.compact-mode main > div { @apply p-4 lg:p-5; }
+.compact-mode h1 { @apply text-xl; }
+.compact-mode .table-cell { @apply px-3 py-2; }

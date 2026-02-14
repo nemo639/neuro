@@ -5,9 +5,9 @@ interface RiskBadgeProps {
 }
 
 const getRiskConfig = (score: number) => {
-  if (score >= 70) return { level: 'High', color: 'text-neuro-red', bg: 'bg-neuro-red/10', border: 'border-neuro-red/20' };
-  if (score >= 40) return { level: 'Moderate', color: 'text-neuro-orange', bg: 'bg-neuro-orange/10', border: 'border-neuro-orange/20' };
-  return { level: 'Low', color: 'text-neuro-green', bg: 'bg-neuro-green/10', border: 'border-neuro-green/20' };
+  if (score >= 70) return { level: 'High', color: 'text-[#E8637A]', bg: 'bg-[#E8637A]/12', border: 'border-[#E8637A]/20' };
+  if (score >= 40) return { level: 'Moderate', color: 'text-[#F5A623]', bg: 'bg-[#F5A623]/12', border: 'border-[#F5A623]/20' };
+  return { level: 'Low', color: 'text-[#2AC9A0]', bg: 'bg-[#2AC9A0]/12', border: 'border-[#2AC9A0]/20' };
 };
 
 const sizeStyles = {
@@ -40,9 +40,9 @@ export function RiskProgress({ score, label, showScore = true }: RiskProgressPro
   const config = getRiskConfig(score);
   
   const getGradient = () => {
-    if (score >= 70) return 'from-neuro-orange to-neuro-red';
-    if (score >= 40) return 'from-neuro-green to-neuro-orange';
-    return 'from-neuro-green to-neuro-green';
+    if (score >= 70) return 'from-[#F5A623] to-[#E8637A]';
+    if (score >= 40) return 'from-[#2AC9A0] to-[#F5A623]';
+    return 'from-[#2AC9A0] to-[#2AC9A0]';
   };
 
   return (

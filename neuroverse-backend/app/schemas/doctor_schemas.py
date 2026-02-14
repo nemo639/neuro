@@ -188,6 +188,9 @@ class PatientListResponse(BaseModel):
     page: int
     limit: int
     total_pages: int
+    high_risk_count: int = 0
+    moderate_risk_count: int = 0
+    low_risk_count: int = 0
 
 
 class PatientDetailResponse(BaseModel):
@@ -200,13 +203,13 @@ class PatientDetailResponse(BaseModel):
     gender: Optional[str] = None
     
     # Risk Scores
-    ad_risk_score: int
-    pd_risk_score: int
-    cognitive_score: Optional[int] = None
-    speech_score: Optional[int] = None
-    motor_score: Optional[int] = None
-    gait_score: Optional[int] = None
-    facial_score: Optional[int] = None
+    ad_risk_score: float = 0.0
+    pd_risk_score: float = 0.0
+    cognitive_score: Optional[float] = None
+    speech_score: Optional[float] = None
+    motor_score: Optional[float] = None
+    gait_score: Optional[float] = None
+    facial_score: Optional[float] = None
     
     # Stages
     ad_stage: Optional[str] = None
@@ -228,9 +231,9 @@ class TestSessionSummary(BaseModel):
     status: str
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
-    ad_risk_contribution: Optional[int] = None
-    pd_risk_contribution: Optional[int] = None
-    category_score: Optional[int] = None
+    ad_risk_contribution: Optional[float] = None
+    pd_risk_contribution: Optional[float] = None
+    category_score: Optional[float] = None
 
 
 # ==================== CLINICAL NOTES SCHEMAS ====================
@@ -259,6 +262,7 @@ class ClinicalNoteSummary(BaseModel):
     doctor_id: int  # ← FIXED: Changed from str to int
     doctor_name: str
     patient_id: int  # ← FIXED: Changed from str to int
+    patient_name: Optional[str] = None
     title: str
     content: str
     note_type: str

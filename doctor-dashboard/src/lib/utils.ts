@@ -14,14 +14,30 @@ export function getRiskLevel(score: number): 'Low' | 'Moderate' | 'High' {
 export function getRiskColor(level: string): string {
   switch (level.toLowerCase()) {
     case 'low':
-      return 'text-emerald-600 bg-emerald-100';
+      return 'text-[#2AC9A0] bg-[#2AC9A0]/12';
     case 'moderate':
-      return 'text-amber-600 bg-amber-100';
+      return 'text-[#F5A623] bg-[#F5A623]/12';
     case 'high':
-      return 'text-red-600 bg-red-100';
+      return 'text-[#E8637A] bg-[#E8637A]/12';
     default:
       return 'text-gray-600 bg-gray-100';
   }
+}
+
+/* Hex risk colors used by inline styles */
+export const RISK_COLORS = {
+  low: '#2AC9A0',
+  mod: '#F5A623',
+  high: '#E8637A',
+  lowBg: 'rgba(42,201,160,0.12)',
+  modBg: 'rgba(245,166,35,0.12)',
+  highBg: 'rgba(232,99,122,0.12)',
+} as const;
+
+export function riskHex(score: number): string {
+  if (score >= 70) return RISK_COLORS.high;
+  if (score >= 40) return RISK_COLORS.mod;
+  return RISK_COLORS.low;
 }
 
 export function formatDate(date: string | Date): string {

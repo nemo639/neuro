@@ -165,12 +165,45 @@ export const reportsApi = {
     include_xai?: boolean;
     format?: string;
   }) => {
-    const response = await api.post('/doctors/reports/export', data);
+    const response = await api.post('/doctors/reports/generate', data);
     return response.data;
   },
 
-  getExportHistory: async () => {
-    const response = await api.get('/doctors/reports/exports');
+  getExportHistory: async (params?: { patient_id?: number; report_type?: string; page?: number; limit?: number }) => {
+    const response = await api.get('/doctors/reports/exports', { params });
+    return response.data;
+  },
+
+  downloadReport: (reportId: number) => {
+    const token = Cookies.get('doctor_token');
+    return `${API_BASE_URL}${API_VERSION}/doctors/reports/${reportId}/download?token=${token}`;
+  },
+
+  getDownloadUrl: (path: string) => `${API_BASE_URL}${path}`,
+};
+
+// ==================== PROFILE API ====================
+
+export const profileApi = {
+  uploadAvatar: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/doctors/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  removeAvatar: async () => {
+    const response = await api.delete('/doctors/me/avatar');
+    return response.data;
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const response = await api.post('/doctors/me/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
     return response.data;
   },
 };

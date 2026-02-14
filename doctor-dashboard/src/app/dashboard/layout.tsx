@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
@@ -20,6 +21,8 @@ import {
   BarChart3,
 } from 'lucide-react';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://10.54.16.25:8000';
+
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/patients', label: 'Patients', icon: Users },
@@ -35,6 +38,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { doctor, isLoading, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarW, setSidebarW] = useState(240);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('nv_doc_sidebarWidth');
+      if (stored) {
+        const val = JSON.parse(stored);
+        setSidebarW(val === 'compact' ? 200 : val === 'wide' ? 280 : 240);
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !doctor) router.replace('/login');
@@ -60,11 +74,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const initials = `${doctor.first_name?.[0] || ''}${doctor.last_name?.[0] || ''}`;
   const fullName = `Dr. ${doctor.first_name || ''} ${doctor.last_name || ''}`.trim();
+  // profile_image_path from DB is like "avatars/file.jpg", from upload response it's "/uploads/avatars/file.jpg"
+  const avatarUrl = doctor.profile_image_path
+    ? `${API_BASE}${doctor.profile_image_path.startsWith('/') ? '' : '/uploads/'}${doctor.profile_image_path}`
+    : null;
 
   return (
     <div className="min-h-screen bg-dash-bg flex">
       {/* ═══ Sidebar — Desktop ═══ */}
-      <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-[240px] bg-white border-r border-dash-border z-50">
+      <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white border-r border-dash-border z-50" style={{ width: sidebarW }}>
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-dash-border">
           <Link href="/dashboard" className="flex items-center gap-2.5">
@@ -93,9 +111,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* User */}
         <div className="p-4 border-t border-dash-border">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-dash-dark text-white flex items-center justify-center text-xs font-bold">
-              {initials}
-            </div>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={fullName} className="w-9 h-9 rounded-xl object-cover" />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-dash-dark text-white flex items-center justify-center text-xs font-bold">
+                {initials}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-dash-dark truncate">{fullName}</p>
               <p className="text-2xs text-dash-muted truncate capitalize">{doctor.specialization?.replace('_', ' ') || 'Doctor'}</p>
@@ -163,7 +185,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </AnimatePresence>
 
       {/* ═══ Main ═══ */}
-      <main className="flex-1 lg:ml-[240px]">
+      <main className="flex-1" style={{ marginLeft: undefined }} >
+        {/* Use dynamic sidebar width */}
+        <style>{`@media (min-width: 1024px) { main { margin-left: ${sidebarW}px !important; } }`}</style>
         {/* Top bar */}
         <header className="h-16 bg-white border-b border-dash-border sticky top-0 z-40 px-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -201,9 +225,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="hidden md:flex items-center gap-3 pl-3 border-l border-dash-border">
               <div className="flex items-center gap-3 cursor-pointer">
-                <div className="w-9 h-9 rounded-xl bg-dash-dark text-white flex items-center justify-center text-xs font-bold">
-                  {initials}
-                </div>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={fullName} className="w-9 h-9 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-9 h-9 rounded-xl bg-dash-dark text-white flex items-center justify-center text-xs font-bold">
+                    {initials}
+                  </div>
+                )}
                 <div className="text-right">
                   <p className="text-sm font-semibold text-dash-dark">{fullName}</p>
                   <p className="text-2xs text-dash-muted capitalize">{doctor.specialization?.replace('_', ' ') || 'Doctor'}</p>
