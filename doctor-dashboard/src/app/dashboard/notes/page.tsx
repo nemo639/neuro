@@ -172,7 +172,7 @@ export default function NotesPage() {
           {/* Stat Cards */}
           <motion.div variants={iv} className="grid grid-cols-4 gap-3">
             {[
-              { label: 'Total Notes', value: total, bg: 'bg-accent/10', color: '#C6E94B', icon: FileText },
+              { label: 'Total Notes', value: total, bg: 'bg-[#F4F7D8]', color: '#C6E94B', icon: FileText },
               { label: 'Flagged', value: flaggedCount, bg: 'bg-[#B54E4E]/10', color: '#B54E4E', icon: Flag },
               { label: 'This Page', value: notes.length, bg: 'bg-blue-50', color: '#3B82F6', icon: Eye },
               { label: 'Types', value: Object.keys(typeBreakdown).length, bg: 'bg-purple-50', color: '#A855F7', icon: Tag },

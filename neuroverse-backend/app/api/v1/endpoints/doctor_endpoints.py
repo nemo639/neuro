@@ -1326,7 +1326,7 @@ async def generate_report_pdf(
     pdf.set_text_color(50, 50, 50)
     for idx, s in enumerate(sessions[:15], 1):
         pdf.cell(widths[0], 6, str(idx), border=1)
-        pdf.cell(widths[1], 6, (s.test_category or "N/A")[:25], border=1)
+        pdf.cell(widths[1], 6, (s.category or "N/A")[:25], border=1)
         pdf.cell(widths[2], 6, s.status or "completed", border=1)
         dt_str = s.completed_at.strftime("%Y-%m-%d") if s.completed_at else "N/A"
         pdf.cell(widths[3], 6, dt_str, border=1)

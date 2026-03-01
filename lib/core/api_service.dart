@@ -8,7 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiService {
 
   static String get baseUrl {
-  const backendIP = '10.100.25.204:8000';   // <---- YOUR WORKING IP
+  const backendIP = '10.100.6.229:8000';   // <---- YOUR WORKING IP
 
   if (kIsWeb) {
     // Flutter Web uses browser → needs direct IP

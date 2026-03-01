@@ -147,6 +147,7 @@ export default function AdminDashboardPage() {
   const { admin } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState('');
 
   // Dashboard stats
   const [dashData, setDashData] = useState<any>(null);
@@ -363,10 +364,21 @@ export default function AdminDashboardPage() {
           <h1 className="text-2xl font-bold text-dash-dark">Dashboard</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn-secondary flex items-center gap-2 py-2">
+          <label className="relative inline-flex items-center gap-2 btn-secondary py-2 cursor-pointer">
             <Calendar className="w-4 h-4" />
-            <span className="text-sm">Today</span>
-          </button>
+            <span className="text-sm">
+              {selectedDate
+                ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'Today'}
+            </span>
+            <input
+              type="date"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              value={selectedDate}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          </label>
         </div>
       </motion.div>
 

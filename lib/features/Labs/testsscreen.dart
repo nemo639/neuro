@@ -553,7 +553,25 @@ Map<String, int> _categoryCompletedTests = {};
 
     if (categoryName.isNotEmpty) {
       // Create test session first
-    final result = await ApiService.createTestSession(category: categoryName);
+      var result = await ApiService.createTestSession(category: categoryName);
+      
+      // If blocked by an incomplete session, cancel it and retry
+      if (!result['success'] && (result['error'] ?? '').toString().contains('incomplete')) {
+        final listResult = await ApiService.listTestSessions(status: 'created');
+        if (listResult['success'] && listResult['data']?['sessions'] != null) {
+          for (var s in listResult['data']['sessions']) {
+            await ApiService.cancelTestSession(sessionId: s['id']);
+          }
+        }
+        final listResult2 = await ApiService.listTestSessions(status: 'in_progress');
+        if (listResult2['success'] && listResult2['data']?['sessions'] != null) {
+          for (var s in listResult2['data']['sessions']) {
+            await ApiService.cancelTestSession(sessionId: s['id']);
+          }
+        }
+        // Retry creating session
+        result = await ApiService.createTestSession(category: categoryName);
+      }
       
       if (result['success']) {
         final sessionId = result['data']['id'];

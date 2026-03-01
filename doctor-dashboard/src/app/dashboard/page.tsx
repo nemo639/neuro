@@ -76,6 +76,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -149,10 +150,21 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn-secondary flex items-center gap-2 py-2">
+          <label className="relative inline-flex items-center gap-2 btn-secondary py-2 cursor-pointer">
             <Calendar className="w-4 h-4" />
-            <span className="text-sm">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-          </button>
+            <span className="text-sm">
+              {selectedDate
+                ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'Today'}
+            </span>
+            <input
+              type="date"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              value={selectedDate}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          </label>
         </div>
       </motion.div>
 

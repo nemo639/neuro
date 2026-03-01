@@ -109,7 +109,7 @@ export default function PatientsPage() {
           {/* Stat Cards */}
           <motion.div variants={iv} className="grid grid-cols-4 gap-3">
             {[
-              { label: 'Total', value: total, icon: Users, bg: 'bg-accent/10', color: '#C6E94B' },
+              { label: 'Total', value: total, icon: Users, bg: 'bg-[#F4F7D8]', color: '#C6E94B' },
               { label: 'High Risk', value: highCount, icon: AlertTriangle, bg: 'bg-[#FDEEF0]', color: '#E8637A' },
               { label: 'Moderate', value: modCount, icon: Activity, bg: 'bg-[#FEF3E0]', color: '#F5A623' },
               { label: 'Low Risk', value: lowCount, icon: UserCheck, bg: 'bg-[#E6F9F4]', color: '#2AC9A0' },

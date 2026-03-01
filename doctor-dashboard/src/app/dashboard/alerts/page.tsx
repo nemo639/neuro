@@ -133,7 +133,7 @@ export default function AlertsPage() {
           {/* Stat Cards */}
           <motion.div variants={iv} className="grid grid-cols-4 gap-3">
             {[
-              { label: 'Total', value: alerts.length, bg: 'bg-accent/10', color: '#C6E94B', icon: Bell },
+              { label: 'Total', value: alerts.length, bg: 'bg-[#F4F7D8]', color: '#C6E94B', icon: Bell },
               { label: 'Unread', value: unreadCount, bg: 'bg-blue-50', color: '#3B82F6', icon: Eye },
               { label: 'Critical', value: criticalCount, bg: 'bg-[#FDEEF0]', color: '#E8637A', icon: AlertTriangle },
               { label: 'Warnings', value: warningCount, bg: 'bg-[#FEF3E0]', color: '#F5A623', icon: AlertCircle },

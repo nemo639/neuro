@@ -63,6 +63,7 @@ export default function ReportsPage() {
 
   /* ── Preview Modal ── */
   const [previewReport, setPreviewReport] = useState<Report | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const LIMIT = 15;
   const totalPages = Math.ceil(total / LIMIT);
@@ -114,13 +115,27 @@ export default function ReportsPage() {
   };
 
   /* ── Download ── */
-  const handleDownload = (report: Report) => {
-    if (report.has_pdf) {
-      const url = reportsApi.downloadReport(Number(report.id));
-      const a = document.createElement('a');
-      a.href = url;
-      a.target = '_blank';
-      a.click();
+  const handleDownload = async (report: Report) => {
+    setDownloading(report.id);
+    try {
+      if (report.has_pdf) {
+        const url = reportsApi.downloadReport(Number(report.id));
+        window.open(url, '_blank');
+      } else {
+        // Generate PDF on the fly then download
+        const res = await reportsApi.exportReport({
+          patient_id: report.patient_id,
+          report_type: report.report_type,
+        });
+        if (res.download_url) {
+          window.open(`${API_BASE}${res.download_url}`, '_blank');
+          fetchReports(); // refresh to update has_pdf
+        }
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Failed to download report');
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -132,8 +147,15 @@ export default function ReportsPage() {
   const riskColor = (v: number) => v >= 70 ? 'text-[#E8637A]' : v >= 40 ? 'text-[#F5A623]' : 'text-[#2AC9A0]';
 
   const filtered = reports.filter((r) => {
-    if (search && !r.patient_name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (typeFilter !== 'all' && r.report_type !== typeFilter) return false;
+    const matchesType = typeFilter === 'all' || r.report_type === typeFilter;
+    if (!matchesType) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const matchesName = r.patient_name.toLowerCase().includes(q);
+      const matchesType2 = r.report_type.replace('_', ' ').toLowerCase().includes(q);
+      const matchesTitle = r.title?.toLowerCase().includes(q);
+      if (!matchesName && !matchesType2 && !matchesTitle) return false;
+    }
     return true;
   });
 
@@ -178,7 +200,7 @@ export default function ReportsPage() {
           {/* Stats */}
           <motion.div variants={iv} className="grid grid-cols-4 gap-3">
             {[
-              { label: 'Total Reports', value: total, bg: 'bg-accent/10', color: '#C6E94B', icon: FileText },
+              { label: 'Total Reports', value: total, bg: 'bg-[#EEF0FF]', color: '#6366F1', icon: FileText },
               { label: 'Ready', value: totalReady, bg: 'bg-[#E6F9F4]', color: '#2AC9A0', icon: CheckCircle },
               { label: 'Avg AD Risk', value: `${avgAD}%`, bg: 'bg-[#FDEEF0]', color: '#E8637A', icon: Brain },
               { label: 'Avg PD Risk', value: `${avgPD}%`, bg: 'bg-[#FEF3E0]', color: '#F5A623', icon: Activity },
@@ -199,7 +221,15 @@ export default function ReportsPage() {
           <motion.div variants={iv} className="flex flex-col sm:flex-row gap-3">
             <div className="flex flex-wrap gap-2">
               {allTypes.map((t) => {
-                const count = t === 'all' ? reports.length : reports.filter(r => r.report_type === t).length;
+                const typeReports = t === 'all' ? reports : reports.filter(r => r.report_type === t);
+                const count = search
+                  ? typeReports.filter(r => {
+                      const q = search.toLowerCase();
+                      return r.patient_name.toLowerCase().includes(q) ||
+                        r.report_type.replace('_', ' ').toLowerCase().includes(q) ||
+                        r.title?.toLowerCase().includes(q);
+                    }).length
+                  : typeReports.length;
                 return (
                   <button
                     key={t}
@@ -216,7 +246,7 @@ export default function ReportsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 className="input pl-10"
-                placeholder="Search by patient name..."
+                placeholder={typeFilter === 'all' ? 'Search across all reports...' : `Search in ${typeFilter.replace('_', ' ')}...`}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -275,11 +305,9 @@ export default function ReportsPage() {
                             <button onClick={() => setPreviewReport(r)} className="p-1.5 hover:bg-gray-100 rounded-lg" title="View Details">
                               <Eye className="w-3.5 h-3.5 text-gray-400" />
                             </button>
-                            {r.has_pdf && (
-                              <button onClick={() => handleDownload(r)} className="p-1.5 hover:bg-accent/20 rounded-lg" title="Download PDF">
-                                <Download className="w-3.5 h-3.5 text-accent-dark" />
-                              </button>
-                            )}
+                            <button onClick={() => handleDownload(r)} disabled={downloading === r.id} className="p-1.5 hover:bg-accent/20 rounded-lg" title={r.has_pdf ? 'Download PDF' : 'Generate & Download PDF'}>
+                              {downloading === r.id ? <Loader2 className="w-3.5 h-3.5 text-accent-dark animate-spin" /> : <Download className="w-3.5 h-3.5 text-accent-dark" />}
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -539,12 +567,11 @@ export default function ReportsPage() {
               </div>
 
               {/* Download */}
-              {previewReport.has_pdf && (
-                <button onClick={() => handleDownload(previewReport)}
-                  className="btn-primary w-full flex items-center justify-center gap-2">
-                  <Download className="w-4 h-4" /> Download PDF Report
-                </button>
-              )}
+              <button onClick={() => handleDownload(previewReport)} disabled={downloading === previewReport.id}
+                className="btn-primary w-full flex items-center justify-center gap-2">
+                {downloading === previewReport.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {downloading === previewReport.id ? 'Preparing PDF...' : previewReport.has_pdf ? 'Download PDF Report' : 'Generate & Download PDF'}
+              </button>
             </div>
           </motion.div>
         </div>
