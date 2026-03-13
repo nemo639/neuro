@@ -8,7 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiService {
 
   static String get baseUrl {
-  const backendIP = '10.100.6.229:8000';   // <---- YOUR WORKING IP
+  const backendIP = '10.151.51.143:8000';   // <---- YOUR WORKING IP
 
   if (kIsWeb) {
     // Flutter Web uses browser → needs direct IP
@@ -456,6 +456,50 @@ static const _storage = FlutterSecureStorage();
       return _handleResponse(response);
     } catch (e) {
       return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
+  /// Upload audio recording for a speech test item.
+  /// Returns {'success': true, 'data': {'server_audio_path': '...', ...}}
+  static Future<Map<String, dynamic>> uploadTestAudio({
+    required int sessionId,
+    required String itemName,
+    required String filePath,
+  }) async {
+    try {
+      final uri = Uri.parse(
+          '$baseUrl$apiVersion/tests/$sessionId/audio?item_name=$itemName');
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $_accessToken';
+
+      // Read the file from device storage
+      final file = File(filePath);
+      if (!await file.exists()) {
+        return {'success': false, 'error': 'Audio file not found: $filePath'};
+      }
+
+      final bytes = await file.readAsBytes();
+      final fileName = filePath.split('/').last;
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: fileName,
+      ));
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      final data = jsonDecode(responseBody);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': data};
+      } else {
+        return {
+          'success': false,
+          'error': data['detail'] ?? 'Audio upload failed'
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Audio upload error: $e'};
     }
   }
 

@@ -51,6 +51,20 @@ class _CognitiveMemoryTestScreenState extends State<CognitiveMemoryTestScreen> w
       isCompleted: false,
       icon: Icons.format_list_bulleted_rounded,
     ),
+    TestComponent(
+      name: 'Clock Drawing',
+      description: 'Visuospatial and executive function',
+      duration: '3 min',
+      isCompleted: false,
+      icon: Icons.access_time_rounded,
+    ),
+    TestComponent(
+      name: 'Trail Making',
+      description: 'Processing speed and mental flexibility',
+      duration: '5 min',
+      isCompleted: false,
+      icon: Icons.route_rounded,
+    ),
   ];
 
   int get completedCount => testComponents.where((t) => t.isCompleted).length;
@@ -301,7 +315,7 @@ void _showCompleteDialog() {
                     Icon(Icons.schedule_rounded, size: 14, color: Colors.black54),
                     SizedBox(width: 4),
                     Text(
-                      '12-15 minutes',
+                      '18-22 minutes',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black54),
                     ),
                   ],
@@ -736,6 +750,10 @@ void _showCompleteDialog() {
       routeName = '/test/nback-test';
     } else if (test.name == 'Word List Recall') {
       routeName = '/test/word-recall-test';
+    } else if (test.name == 'Clock Drawing') {
+      routeName = '/test/clock-drawing-test';
+    } else if (test.name == 'Trail Making') {
+      routeName = '/test/trail-making-test';
     }
 
     if (routeName.isNotEmpty) {

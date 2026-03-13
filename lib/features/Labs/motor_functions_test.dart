@@ -42,11 +42,11 @@ Map<String, Map<String, dynamic>> _testResults = {};
       icon: Icons.gesture_rounded,
     ),
     TestComponent(
-      name: 'Gait Analysis',
-      description: 'Evaluate walking patterns via sensors',
-      duration: '5 min',
+      name: 'Meander Drawing',
+      description: 'Assess tremor and motor smoothness',
+      duration: '3 min',
       isCompleted: false,
-      icon: Icons.directions_walk_rounded,
+      icon: Icons.show_chart_rounded,
     ),
   ];
 
@@ -256,7 +256,7 @@ void _showCompleteDialog() {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '10-12 minutes',
+                      '8-10 minutes',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -338,7 +338,7 @@ void _showCompleteDialog() {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Movement and coordination assessment to detect motor symptoms including tremor, bradykinesia, and gait abnormalities associated with neurological conditions.',
+                      'Movement and coordination assessment to detect motor symptoms including tremor, bradykinesia, and fine motor control difficulties associated with neurological conditions.',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -448,9 +448,9 @@ void _showCompleteDialog() {
   Widget _buildBeforeYouStartCard() {
     final tips = [
       'Place your device on a stable, flat surface',
-      'Ensure good lighting for camera-based tests',
+      'Use your finger to draw on the screen',
       'Remove rings or accessories from hands',
-      'Wear comfortable shoes for gait analysis',
+      'Draw at a comfortable, natural pace',
     ];
 
     return _buildAnimatedWidget(
@@ -692,8 +692,8 @@ void _showCompleteDialog() {
       routeName = '/test/finger-tapping-test';
     } else if (test.name == 'Spiral Drawing') {
       routeName = '/test/spiral-drawing-test';
-    } else if (test.name == 'Gait Analysis') {
-      routeName = '/test/gait-analysis';
+    } else if (test.name == 'Meander Drawing') {
+      routeName = '/test/meander-drawing-test';
     }
 
     if (routeName.isNotEmpty) {

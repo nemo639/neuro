@@ -1,13 +1,18 @@
 """
 Test Endpoints
-GET /dashboard, POST /, GET /, GET /{id}, POST /{id}/start, POST /{id}/items, POST /{id}/items/batch, POST /{id}/complete, DELETE /{id}
+GET /dashboard, POST /, GET /, GET /{id}, POST /{id}/start, POST /{id}/items,
+POST /{id}/items/batch, POST /{id}/complete, POST /{id}/audio, DELETE /{id}
 """
 
-from fastapi import APIRouter, Depends, Query
+import os
+import uuid
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.db.database import get_db
+from app.core.config import settings
 from app.core.security import get_current_user_id
 from app.services.test_service import TestService
 from app.schemas.test_session import (
@@ -138,6 +143,55 @@ async def complete_test_session(
     """
     service = TestService(db)
     return await service.complete_session(user_id, session_id)
+
+
+@router.post("/{session_id}/audio")
+async def upload_audio(
+    session_id: int,
+    file: UploadFile = File(...),
+    item_name: str = Query(..., description="Test item name: story_recall, sustained_vowel, picture_description"),
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Upload an audio recording for a speech test item.
+
+    The returned ``audio_url`` should be stored in the test item's
+    ``raw_data.server_audio_path`` so the speech extractor can find it
+    during feature extraction.
+    """
+    # Validate content type
+    if file.content_type not in settings.ALLOWED_AUDIO_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported audio type: {file.content_type}. "
+                   f"Allowed: {settings.ALLOWED_AUDIO_TYPES}",
+        )
+
+    content = await file.read()
+    if len(content) > settings.MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large (max 10 MB)")
+
+    # Determine extension
+    ext = (file.filename or "audio.wav").rsplit(".", 1)[-1] if file.filename else "wav"
+    filename = f"speech_{user_id}_{session_id}_{item_name}_{uuid.uuid4().hex[:8]}.{ext}"
+
+    audio_dir = os.path.join(settings.UPLOAD_DIR, "audio")
+    os.makedirs(audio_dir, exist_ok=True)
+
+    filepath = os.path.join(audio_dir, filename)
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    relative_path = f"audio/{filename}"
+
+    return {
+        "success": True,
+        "audio_url": f"/uploads/{relative_path}",
+        "server_audio_path": relative_path,
+        "filename": filename,
+        "size_bytes": len(content),
+    }
 
 
 @router.delete("/{session_id}", response_model=MessageResponse)

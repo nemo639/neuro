@@ -503,16 +503,21 @@ class FusionService:
         self.validity_detector = ValidityDetector()
     
     async def calculate_risk_scores(
-        self, 
-        category: str, 
-        features: Dict[str, Any]
+        self,
+        category: str,
+        features: Dict[str, Any],
+        predictions: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Calculate clinical risk scores with validity checking.
+
+        When *predictions* are provided (from ML model inference), they are
+        blended with the clinical-heuristic scores.  Model predictions are
+        weighted by their reported confidence; clinical scores fill the gap.
         """
         # STEP 1: Check validity first
         validity = self.validity_detector.assess_validity(features)
-        
+
         # STEP 2: Calculate clinical scores
         if category == "cognitive":
             results = await self._assess_cognitive(features)
@@ -526,7 +531,11 @@ class FusionService:
             results = await self._assess_facial(features)
         else:
             results = self._default_assessment()
-        
+
+        # STEP 2b: Blend model predictions with clinical scores
+        if predictions:
+            results = self._blend_predictions(results, predictions)
+
         # STEP 3: Add validity information
         results["validity"] = {
             "status": validity.validity_status.value,
@@ -534,18 +543,50 @@ class FusionService:
             "concerns": validity.validity_concerns,
             "is_valid": validity.validity_status == ValidityStatus.VALID,
         }
-        
+
         # STEP 4: Adjust risk if validity is questionable
         if validity.validity_status != ValidityStatus.VALID:
-            results["clinical_notes"].insert(0, 
+            results["clinical_notes"].insert(0,
                 f"⚠️ VALIDITY CONCERN: {validity.validity_status.value}"
             )
             results["interpretation_caveat"] = (
                 "Results should be interpreted with caution due to validity concerns. "
                 "Consider re-testing under standardized conditions."
             )
-        
+
         return results
+
+    @staticmethod
+    def _blend_predictions(
+        clinical: Dict[str, Any],
+        model: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Weighted blend of clinical-heuristic and ML model risk scores.
+
+        If the model has high confidence (loaded .pt weights), it dominates.
+        If it fell back to heuristics (confidence < 0.5), the clinical
+        assessment dominates instead.
+        """
+        confidence = model.get("confidence", 0.0)
+        # Model weight increases with confidence: 0 at conf=0, 0.7 at conf=0.85
+        model_weight = min(confidence * 0.82, 0.70)
+        clinical_weight = 1.0 - model_weight
+
+        for key in ("ad_risk", "pd_risk"):
+            m_val = model.get(key, 0.0)
+            c_val = clinical.get(key, 0.0)
+            clinical[key] = round(clinical_weight * c_val + model_weight * m_val, 2)
+
+        # Preserve model metadata
+        clinical["model_confidence"] = round(confidence, 3)
+        clinical["model_source"] = model.get("source", "model")
+        if "attention_weights" in model:
+            clinical["attention_weights"] = model["attention_weights"]
+        if "class_probabilities" in model:
+            clinical["class_probabilities"] = model["class_probabilities"]
+
+        return clinical
     
     async def _assess_cognitive(self, features: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -1114,15 +1155,26 @@ class CompositeFusionService:
     """
     Multi-category fusion for overall AD/PD risk.
     
-    Weights based on clinical evidence for early detection:
-    - Cognitive: Primary AD marker, secondary PD marker
-    - Motor: Primary PD marker (cardinal signs)
-    - Gait: Important for both (falls in AD, freezing in PD)
-    - Speech: Moderate both (semantic issues AD, dysarthria PD)
-    - Facial: Hypomimia primarily PD
+    TWO FUSION LAYERS:
+    ==================
+    Layer 1 — Clinical norms-based (per-category scores from app tests)
+        Weights based on clinical evidence for early detection:
+        - Cognitive: Primary AD marker, secondary PD marker
+        - Motor: Primary PD marker (cardinal signs)
+        - Gait: Important for both (falls in AD, freezing in PD)
+        - Speech: Moderate both (semantic issues AD, dysarthria PD)
+        - Facial: Hypomimia primarily PD
+
+    Layer 2 — ML model fusion (from trained specialist models)
+        Uses NeuroVerseFusionEngine (Tier 1 rule-based / Tier 2 meta-learner)
+        for combining outputs from 5 trained specialist models:
+        Spiral, Meander, CDT, TMT, Speech
+    
+    When both layers produce scores, the final result blends them:
+        final_risk = 0.6 * ml_fusion + 0.4 * clinical_norms
     """
     
-    # Evidence-based category weights
+    # Evidence-based category weights (clinical norms layer)
     WEIGHTS_AD = {
         "cognitive": 0.45,   # Primary: Memory, executive
         "speech": 0.20,      # Language, semantic fluency
@@ -1139,9 +1191,33 @@ class CompositeFusionService:
         "facial": 0.10,      # Hypomimia
     }
     
-    def calculate_composite(self, category_results: Dict[str, Dict]) -> Dict[str, Any]:
-        """Calculate weighted composite risk scores."""
+    def __init__(self):
+        self._ml_engine = None
+        try:
+            from app.ml.fusion.multimodel_fusion import get_fusion_engine
+            self._ml_engine = get_fusion_engine()
+        except Exception:
+            pass  # ML fusion not available — use clinical norms only
+    
+    def calculate_composite(
+        self,
+        category_results: Dict[str, Dict],
+        ml_model_scores: Optional[Dict[str, float]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Calculate weighted composite risk scores.
         
+        Parameters
+        ----------
+        category_results : dict
+            Per-category clinical results from FusionService.
+        ml_model_scores : dict, optional
+            ML specialist model outputs, e.g.:
+            {"spiral_pd": 0.8, "cdt_ad": 0.6, "speech_ad": 0.5, ...}
+            If provided, blends ML fusion with clinical norms.
+        """
+        
+        # ── Layer 1: Clinical norms composite ──
         ad_weighted = 0
         pd_weighted = 0
         total_ad_weight = 0
@@ -1149,12 +1225,10 @@ class CompositeFusionService:
         validity_concerns = []
         
         for category, results in category_results.items():
-            # Check validity
             validity = results.get("validity", {})
             if not validity.get("is_valid", True):
                 validity_concerns.append(f"{category}: {validity.get('status', 'Unknown')}")
             
-            # Weighted scores
             ad_weight = self.WEIGHTS_AD.get(category, 0.1)
             pd_weight = self.WEIGHTS_PD.get(category, 0.1)
             
@@ -1164,9 +1238,29 @@ class CompositeFusionService:
             total_ad_weight += ad_weight
             total_pd_weight += pd_weight
         
-        # Normalize
-        composite_ad = ad_weighted / total_ad_weight if total_ad_weight > 0 else 0
-        composite_pd = pd_weighted / total_pd_weight if total_pd_weight > 0 else 0
+        clinical_ad = ad_weighted / total_ad_weight if total_ad_weight > 0 else 0
+        clinical_pd = pd_weighted / total_pd_weight if total_pd_weight > 0 else 0
+        
+        # ── Layer 2: ML model fusion (if available) ──
+        ml_fusion_result = None
+        if ml_model_scores and self._ml_engine and len(ml_model_scores) >= 2:
+            try:
+                ml_fusion_result = self._ml_engine.fuse(ml_model_scores)
+            except Exception:
+                pass  # Fall through to clinical-only
+        
+        # ── Blend layers ──
+        if ml_fusion_result is not None:
+            # ML models output 0→1, clinical norms output 0→100 scale
+            ml_ad = ml_fusion_result.ad_risk * 100  # normalize to 0-100
+            ml_pd = ml_fusion_result.pd_risk * 100
+            composite_ad = 0.6 * ml_ad + 0.4 * clinical_ad
+            composite_pd = 0.6 * ml_pd + 0.4 * clinical_pd
+            fusion_source = f"blended (ML {ml_fusion_result.tier_used} + clinical norms)"
+        else:
+            composite_ad = clinical_ad
+            composite_pd = clinical_pd
+            fusion_source = "clinical_norms_only"
         
         # Determine primary concern
         if composite_ad > composite_pd + 10:
@@ -1176,12 +1270,13 @@ class CompositeFusionService:
         else:
             primary = "Mixed/Undetermined"
         
-        return {
+        result = {
             "composite_ad_risk": round(composite_ad, 2),
             "composite_pd_risk": round(composite_pd, 2),
             "primary_concern": primary,
             "overall_risk": round(max(composite_ad, composite_pd), 2),
             "categories_assessed": list(category_results.keys()),
+            "fusion_source": fusion_source,
             "validity_summary": {
                 "all_valid": len(validity_concerns) == 0,
                 "concerns": validity_concerns,
@@ -1192,6 +1287,21 @@ class CompositeFusionService:
                 "Please consult a qualified healthcare professional for proper evaluation and diagnosis."
             ),
         }
+        
+        # Add ML fusion details if available
+        if ml_fusion_result is not None:
+            result["ml_fusion"] = {
+                "ad_risk": ml_fusion_result.ad_risk,
+                "pd_risk": ml_fusion_result.pd_risk,
+                "classification": ml_fusion_result.classification,
+                "confidence": ml_fusion_result.confidence,
+                "tier_used": ml_fusion_result.tier_used,
+                "models_used": ml_fusion_result.models_used,
+                "ad_contributions": ml_fusion_result.ad_contributions,
+                "pd_contributions": ml_fusion_result.pd_contributions,
+            }
+        
+        return result
     
     def _get_recommendation(self, ad: float, pd: float, validity_concerns: List) -> str:
         if validity_concerns:

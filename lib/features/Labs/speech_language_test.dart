@@ -98,9 +98,14 @@ class _SpeechLanguageTestScreenState extends State<SpeechLanguageTestScreen> wit
   Future<void> _submitTestItem(String testName, Map<String, dynamic> rawData) async {
   if (_sessionId == null) return;
 
+  final itemName = testName.toLowerCase().replaceAll(' ', '_');
+
+  // Upload audio files to server before submitting test data
+  await _uploadAudioFiles(itemName, rawData);
+
   final result = await ApiService.addTestItem(
     sessionId: _sessionId!,
-    itemName: testName.toLowerCase().replaceAll(' ', '_'),
+    itemName: itemName,
     itemType: 'speech',
     rawData: rawData,
   );
@@ -108,6 +113,52 @@ class _SpeechLanguageTestScreenState extends State<SpeechLanguageTestScreen> wit
   if (result['success']) {
     _testResults[testName] = rawData;
   }
+}
+
+/// Upload any audio files found in rawData to the server.
+/// Updates rawData in-place with server_audio_path for the extractor.
+Future<void> _uploadAudioFiles(String itemName, Map<String, dynamic> rawData) async {
+  if (_sessionId == null) return;
+
+  // Upload top-level audio_path
+  if (rawData.containsKey('audio_path') && rawData['audio_path'] is String) {
+    final serverPath = await _uploadSingleAudio(itemName, rawData['audio_path']);
+    if (serverPath != null) {
+      rawData['server_audio_path'] = serverPath;
+    }
+  }
+
+  // Upload audio from trials array
+  if (rawData.containsKey('trials') && rawData['trials'] is List) {
+    for (int i = 0; i < (rawData['trials'] as List).length; i++) {
+      final trial = rawData['trials'][i];
+      if (trial is Map && trial.containsKey('audio_path') && trial['audio_path'] is String) {
+        final trialItemName = '${itemName}_trial_$i';
+        final serverPath = await _uploadSingleAudio(trialItemName, trial['audio_path']);
+        if (serverPath != null) {
+          trial['server_audio_path'] = serverPath;
+          // Set the first successful upload as the main audio path
+          rawData['server_audio_path'] ??= serverPath;
+        }
+      }
+    }
+  }
+}
+
+Future<String?> _uploadSingleAudio(String itemName, String localPath) async {
+  try {
+    final result = await ApiService.uploadTestAudio(
+      sessionId: _sessionId!,
+      itemName: itemName,
+      filePath: localPath,
+    );
+    if (result['success'] && result['data'] != null) {
+      return result['data']['server_audio_path'] as String?;
+    }
+  } catch (e) {
+    debugPrint('Audio upload failed for $itemName: $e');
+  }
+  return null;
 }
 
 Future<void> _completeSession() async {

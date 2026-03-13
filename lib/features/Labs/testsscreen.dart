@@ -19,8 +19,6 @@ class _TestsScreenState extends State<TestsScreen> with SingleTickerProviderStat
     0: true,  // Speech & Language expanded by default
     1: false,
     2: false,
-    3: false,
-    4: false,
   };
 
 // Add these new variables:
@@ -68,6 +66,8 @@ Map<String, int> _categoryCompletedTests = {};
         TestItem(name: 'Stroop Test', duration: '3 min'),
         TestItem(name: 'N-Back Memory', duration: '4 min'),
         TestItem(name: 'Word List Recall', duration: '6 min'),
+        TestItem(name: 'Clock Drawing', duration: '3 min'),
+        TestItem(name: 'Trail Making', duration: '5 min'),
       ],
     ),
     TestCategory(
@@ -80,33 +80,7 @@ Map<String, int> _categoryCompletedTests = {};
       tests: [
         TestItem(name: 'Finger Tapping', duration: '2 min'),
         TestItem(name: 'Spiral Drawing', duration: '3 min'),
-        TestItem(name: 'Gait Analysis', duration: '5 min'),
-      ],
-    ),
-    TestCategory(
-      title: 'Facial & Eye Analysis',
-      description: 'Expression and blink rate monitoring',
-      icon: Icons.face_rounded,
-      color: Color(0xFFEC4899),
-      bgColor: Color(0xFFFCE7F3),
-      route: '/test/facial-eye',
-      tests: [
-        TestItem(name: 'Blink Rate Test', duration: '2 min'),
-        TestItem(name: 'Smile Velocity', duration: '2 min'),
-        TestItem(name: 'Hypomimia Detection', duration: '3 min'),
-      ],
-    ),
-    TestCategory(
-      title: 'Gait & Movement',
-      description: 'Walking pattern and balance',
-      icon: Icons.directions_walk_rounded,
-      color: Color(0xFF14B8A6),
-      bgColor: Color(0xFFCCFBF1),
-      route: '/test/gait-movement',
-      tests: [
-        TestItem(name: 'Walking Test', duration: '5 min'),
-        TestItem(name: 'Turn-in-Place', duration: '2 min'),
-        TestItem(name: 'Balance Assessment', duration: '3 min'),
+        TestItem(name: 'Meander Drawing', duration: '3 min'),
       ],
     ),
   ];

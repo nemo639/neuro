@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find d:/neuroverse -maxdepth 3 -type f -name *.py -o -name *.dart -o -name *.ipynb -o -name *.yaml -o -name *.json -o -name *.toml)",
+      "Bash(find /d/neuroverse/neuroverse-backend -type f \\\\\\(-name *.pth -o -name *.pt -o -name *.h5 -o -name *.tflite -o -name *.pkl \\\\\\))",
+      "Bash(xargs wc:*)",
+      "Bash(python3:*)",
+      "Bash(xargs grep:*)",
+      "Bash(find D:/neuroverse/neuroverse-backend/app/ml -type f \\\\\\(-name *.pt -o -name *.pkl -o -name *.joblib -o -name *.json \\\\\\))",
+      "Bash(venv/Scripts/python.exe -c \":*)",
+      "Bash(venv/Scripts/pip.exe list:*)",
+      "Bash(venv/Scripts/pip.exe install:*)",
+      "Bash(ls -la /d/neuroverse/notebooks/*.ipynb)",
+      "Bash(venv/Scripts/python.exe test_pipeline.py)",
+      "Bash(wc -l /d/neuroverse/neuroverse-backend/app/api/v1/endpoints/*.py)",
+      "Bash(ls -lh /d/neuroverse/neuroverse-backend/app/ml/models/*.pt)",
+      "Bash(grep -l \"def \\\\|class \" /d/neuroverse/neuroverse-backend/app/ml/predictors/*.py)",
+      "Bash(grep -A 5 \"class ClinicalNote\" /d/neuroverse/neuroverse-backend/app/models/*.py)",
+      "Bash(find d:/neuroverse/lib -name *painter* -o -name *custom_paint*)",
+      "Bash(ls -la d:/neuroverse/neuroverse-backend/app/ml/models/*.pt)",
+      "Bash(python -c \"import torch; print\\(''PyTorch:'', torch.__version__\\); print\\(''CUDA:'', torch.cuda.is_available\\(\\)\\)\")",
+      "Bash(pip install:*)",
+      "Bash(python -c \"import timm; print\\(''timm:'', timm.__version__\\)\")",
+      "Bash(python -c \"import torch; print\\(''PyTorch:'', torch.__version__\\)\")",
+      "Bash(python verify_system.py)",
+      "Bash(python -c \":*)",
+      "Bash(grep -n \"item_name\" \"d:/neuroverse/neuroverse-backend/app/ml/extractors/\"*.py)"
+    ]
+  }
+}

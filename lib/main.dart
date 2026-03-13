@@ -29,6 +29,9 @@ import 'package:neuroverse/features/labs/tests/nback_test.dart';
 import 'package:neuroverse/features/labs/tests/word_recall_test.dart';
 import 'package:neuroverse/features/labs/tests/finger_tapping_test.dart';
 import 'package:neuroverse/features/labs/tests/spiral_drawing_test.dart';
+import 'package:neuroverse/features/labs/tests/meander_drawing_test.dart';
+import 'package:neuroverse/features/labs/tests/clock_drawing_test.dart';
+import 'package:neuroverse/features/labs/tests/trail_making_test.dart';
 import 'package:neuroverse/features/labs/tests/gait_assessment_test.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +97,9 @@ class MyApp extends StatelessWidget {
         '/test/finger-tapping-test': (context) => const FingerTappingTestScreen(),
         '/test/spiral-drawing-test': (context) => const SpiralDrawingTestScreen(),
         '/test/gait_assessment_test': (context) => const GaitAssessmentTestScreen(),
+        '/test/clock-drawing-test': (context) => const ClockDrawingTestScreen(),
+        '/test/trail-making-test': (context) => const TrailMakingTestScreen(),
+        '/test/meander-drawing-test': (context) => const MeanderDrawingTestScreen(),
         '/admin-login': (context) => const AdminLoginScreen(),
         '/admin-home': (context) => const AdminHomeScreen(),
         '/reports': (context) => const ReportsScreen(),

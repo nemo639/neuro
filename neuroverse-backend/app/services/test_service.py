@@ -30,8 +30,8 @@ CATEGORY_CONFIG = {
     "cognitive": {
         "display_name": "Cognitive & Memory",
         "description": "Tests for memory, attention, and executive function",
-        "mini_tests": ["stroop", "nback", "word_recall"],
-        "estimated_duration": "10-15 min"
+        "mini_tests": ["stroop", "nback", "word_recall", "clock_drawing", "trail_making"],
+        "estimated_duration": "18-22 min"
     },
     "speech": {
         "display_name": "Speech & Language",
@@ -42,20 +42,8 @@ CATEGORY_CONFIG = {
     "motor": {
         "display_name": "Motor Functions",
         "description": "Tests for fine motor control and coordination",
-        "mini_tests": ["finger_tapping", "spiral_drawing"],
-        "estimated_duration": "5-8 min"
-    },
-    "gait": {
-        "display_name": "Gait & Movement",
-        "description": "Tests for walking, balance, and movement patterns",
-        "mini_tests": ["walking_test", "turn_in_place", "balance_test"],
+        "mini_tests": ["finger_tapping", "spiral_drawing", "meander_drawing"],
         "estimated_duration": "8-10 min"
-    },
-    "facial": {
-        "display_name": "Facial Analysis",
-        "description": "Tests for facial expressions and micro-movements",
-        "mini_tests": ["blink_analysis", "smile_analysis", "expression_tracking"],
-        "estimated_duration": "3-5 min"
     }
 }
 
@@ -82,7 +70,7 @@ class TestService:
                 )
             )
         )
-        if existing.scalar_one_or_none():
+        if existing.scalars().first():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You have an incomplete test session. Please complete or cancel it first."
@@ -142,21 +130,29 @@ class TestService:
             category=session.category,
             test_items=session.test_items
         )
-        
-        # 2. Calculate risk scores using fusion
-        risk_scores = await self.fusion_service.calculate_risk_scores(
+
+        # 2. Run model inference to get risk predictions
+        predictions = await self.ml_service.predict(
             category=session.category,
             features=extracted_features
         )
-        
-        # 3. Generate XAI explanations
+
+        # 3. Calculate clinical risk scores using fusion service
+        risk_scores = await self.fusion_service.calculate_risk_scores(
+            category=session.category,
+            features=extracted_features,
+            predictions=predictions
+        )
+
+        # 4. Generate XAI explanations
         xai_explanation = await self.xai_service.generate_explanation(
             category=session.category,
             features=extracted_features,
-            risk_scores=risk_scores
+            risk_scores=risk_scores,
+            predictions=predictions
         )
-        
-        # 4. Create test result
+
+        # 5. Create test result
         test_result = TestResult(
             session_id=session.id,
             ad_risk_score=risk_scores["ad_risk"],
@@ -439,8 +435,6 @@ class TestService:
             user.cognitive_score or 0,
             user.speech_score or 0,
             user.motor_score or 0,
-            user.gait_score or 0,
-            user.facial_score or 0,
         ]
         
         # Only average non-zero scores
@@ -481,9 +475,9 @@ class TestService:
                     TestSession.user_id == user_id,
                     TestSession.status.in_(["created", "in_progress"])
                 )
-            )
+            ).limit(1)
         )
-        return result.scalar_one_or_none()
+        return result.scalars().first()
     
     async def _get_last_category_session(self, user_id: int, category: str) -> Optional[datetime]:
         """Get last completed session date for category."""
