@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 // Test phases
@@ -27,6 +31,9 @@ class _SpiralDrawingTestScreenState extends State<SpiralDrawingTestScreen>
   bool _isDrawing = false;
   DateTime? _drawingStartTime;
   DateTime? _drawingEndTime;
+
+  // Canvas key for image capture
+  final GlobalKey _canvasKey = GlobalKey();
 
   // Results
   Map<String, dynamic> _leftHandResults = {};
@@ -119,9 +126,30 @@ class _SpiralDrawingTestScreenState extends State<SpiralDrawingTestScreen>
     });
   }
 
-  void _finishDrawing() {
+  Future<String?> _captureCanvasImage() async {
+    try {
+      final boundary = _canvasKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+      final image = await boundary.toImage(pixelRatio: 1.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return null;
+      final bytes = byteData.buffer.asUint8List();
+      return base64Encode(bytes);
+    } catch (e) {
+      debugPrint('Canvas capture failed: $e');
+      return null;
+    }
+  }
+
+  Future<void> _finishDrawing() async {
     _drawingEndTime = DateTime.now();
     final results = _calculateResults();
+
+    // Capture drawing as base64 image for the ML model
+    final imageBase64 = await _captureCanvasImage();
+    if (imageBase64 != null) {
+      results['image_base64'] = imageBase64;
+    }
 
     if (_currentPhase == SpiralPhase.leftHand) {
       _leftHandResults = results;
@@ -562,14 +590,17 @@ class _SpiralDrawingTestScreenState extends State<SpiralDrawingTestScreen>
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: CustomPaint(
-                  painter: SpiralCanvasPainter(
-                    templateColor: Colors.grey[300]!,
-                    strokeColor: color,
-                    allStrokes: _allStrokes,
-                    currentStroke: _currentStroke,
+                child: RepaintBoundary(
+                  key: _canvasKey,
+                  child: CustomPaint(
+                    painter: SpiralCanvasPainter(
+                      templateColor: Colors.grey[300]!,
+                      strokeColor: color,
+                      allStrokes: _allStrokes,
+                      currentStroke: _currentStroke,
+                    ),
+                    size: Size.infinite,
                   ),
-                  size: Size.infinite,
                 ),
               ),
             ),

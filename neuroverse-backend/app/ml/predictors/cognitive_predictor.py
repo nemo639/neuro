@@ -279,6 +279,21 @@ class CognitivePredictor(BasePredictor):
         results.setdefault("pd_risk", round(min(results.get("ad_risk", 0) * 0.1, 15.0), 2))
         results.setdefault("confidence", 0.45)
         results.setdefault("stage", "Normal")
+
+        # Attach model + tensor for XAI (prefer CDT image model for GradCAM)
+        if self._cdt_loaded and self._cdt_model is not None and features.get("_has_cdt_image"):
+            b64 = features.get("clock_image_base64")
+            if b64:
+                img = CognitiveExtractor.decode_cdt_image(b64)
+                if img is not None:
+                    preprocessed = CognitiveExtractor.preprocess_cdt_image(img)
+                    results["_xai_model"] = self._cdt_model
+                    results["_xai_tensor"] = self._to_tensor(preprocessed)
+        elif self._tmt_loaded and self._tmt_model is not None and features.get("_has_tmt_data"):
+            vec = CognitiveExtractor.build_tmt_feature_vector(features)
+            results["_xai_model"] = self._tmt_model
+            results["_xai_tensor"] = self._to_tensor(vec)
+
         return results
 
     # ------------------------------------------------------------------ #

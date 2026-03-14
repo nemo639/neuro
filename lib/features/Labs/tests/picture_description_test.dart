@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:neuroverse/core/audio_recorder_service.dart';
 
 // Test phases - must be outside class
 enum PictureDescPhase { instructions, viewing, recording, completed }
@@ -29,28 +30,35 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
   bool _isRecording = false;
   Timer? _recordingTimer;
   Timer? _viewingTimer;
+
+  // Audio recorder
+  final AudioRecorderService _audioRecorder = AudioRecorderService();
   
-  // Images to describe (using placeholder descriptions - actual images would be assets)
+  // Clinical scene images for picture description (DementiaBank / BDAE protocol)
+  // Place actual images in assets/images/speech/
   final List<Map<String, dynamic>> _images = [
     {
-      'id': 'park_scene',
-      'title': 'Park Scene',
-      'description': 'A busy park with people, trees, and activities',
-      'icon': Icons.park_rounded,
-      'color': Color(0xFF10B981),
-    },
-    {
-      'id': 'kitchen_scene', 
-      'title': 'Kitchen Scene',
-      'description': 'A kitchen with cooking activities and items',
+      'id': 'cookie_theft',
+      'title': 'Cookie Theft',
+      'description': 'A kitchen scene with a mother, children, and overflowing sink',
+      'asset': 'assets/images/speech/cookie_theft.png',
       'icon': Icons.kitchen_rounded,
       'color': Color(0xFFF97316),
     },
     {
-      'id': 'street_scene',
-      'title': 'Street Scene', 
-      'description': 'A street with buildings, vehicles, and people',
-      'icon': Icons.location_city_rounded,
+      'id': 'picnic_scene',
+      'title': 'Picnic Scene',
+      'description': 'A park scene with people having a picnic and various activities',
+      'asset': 'assets/images/speech/picnic_scene.png',
+      'icon': Icons.park_rounded,
+      'color': Color(0xFF10B981),
+    },
+    {
+      'id': 'market_scene',
+      'title': 'Market Scene',
+      'description': 'A busy market scene with vendors, shoppers, and various items',
+      'asset': 'assets/images/speech/market_scene.png',
+      'icon': Icons.storefront_rounded,
       'color': Color(0xFF8B5CF6),
     },
   ];
@@ -112,6 +120,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
 
   @override
   void dispose() {
+    _audioRecorder.dispose();
     _pageController.dispose();
     _pulseController.dispose();
     _waveController.dispose();
@@ -147,7 +156,23 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
     _startRecording();
   }
 
-  void _startRecording() {
+  Future<void> _startRecording() async {
+    final imageId = _currentImage['id'];
+    final fileName = 'picture_desc_${imageId}_${DateTime.now().millisecondsSinceEpoch}';
+    final started = await _audioRecorder.startRecording(fileName);
+
+    if (!started && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Microphone permission required for recording'),
+          backgroundColor: redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _currentPhase = PictureDescPhase.recording;
       _isRecording = true;
@@ -158,7 +183,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         _recordingSeconds++;
-        
+
         if (_recordingSeconds >= _maxRecordingSeconds) {
           _stopRecording();
         }
@@ -166,23 +191,24 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
     });
   }
 
-  void _stopRecording() {
+  Future<void> _stopRecording() async {
     _recordingTimer?.cancel();
-    
+
     final duration = DateTime.now().difference(_recordingStartTime!).inMilliseconds;
-    
+    final audioPath = await _audioRecorder.stopRecording();
+
     // Save trial result
     _trialResults.add({
       'image_id': _currentImage['id'],
       'image_title': _currentImage['title'],
       'viewing_duration_s': _viewingSeconds,
       'recording_duration_ms': duration,
-      'audio_path': 'recordings/picture_desc_${_currentImage['id']}_${DateTime.now().millisecondsSinceEpoch}.wav',
+      'audio_path': audioPath ?? '',
     });
 
     setState(() {
       _isRecording = false;
-      
+
       if (_currentTrial < _totalTrials - 1) {
         // Move to next image
         _currentTrial++;
@@ -194,6 +220,22 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
         _testData['completed'] = true;
         _currentPhase = PictureDescPhase.completed;
       }
+    });
+  }
+
+  Future<void> _retakeRecording() async {
+    HapticFeedback.mediumImpact();
+    await _audioRecorder.cancelRecording();
+    setState(() {
+      _trialResults.clear();
+      _testData['completed'] = false;
+      _testData['trials'] = [];
+      _testData['total_duration_ms'] = 0;
+      _currentTrial = 0;
+      _viewingSeconds = 0;
+      _recordingSeconds = 0;
+      _viewingProgress = 0.0;
+      _currentPhase = PictureDescPhase.instructions;
     });
   }
 
@@ -420,18 +462,26 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 10),
-          // Image icon
+          // Image preview thumbnail
           Container(
-            width: 80,
-            height: 80,
+            width: 100,
+            height: 100,
             decoration: BoxDecoration(
               color: imageColor.withOpacity(0.1),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: imageColor.withOpacity(0.3)),
             ),
-            child: Icon(
-              _currentImage['icon'] as IconData,
-              color: imageColor,
-              size: 40,
+            clipBehavior: Clip.antiAlias,
+            child: Image.asset(
+              _currentImage['asset'] as String,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  _currentImage['icon'] as IconData,
+                  color: imageColor,
+                  size: 40,
+                );
+              },
             ),
           ),
           const SizedBox(height: 20),
@@ -599,41 +649,46 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
             ),
           ),
           const SizedBox(height: 16),
-          // Image placeholder (would be actual image in production)
+          // Clinical scene image
           Container(
-            height: 180,
+            height: 220,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: imageColor.withOpacity(0.1),
+              color: imageColor.withOpacity(0.05),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: imageColor.withOpacity(0.3), width: 2),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _currentImage['icon'] as IconData,
-                  color: imageColor,
-                  size: 60,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _currentImage['title'],
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: imageColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '(Image would appear here)',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
+            clipBehavior: Clip.antiAlias,
+            child: Image.asset(
+              _currentImage['asset'] as String,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback if image asset not found
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _currentImage['icon'] as IconData,
+                      color: imageColor,
+                      size: 60,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _currentImage['title'] as String,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: imageColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Add image to ${_currentImage['asset']}',
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: 16),
@@ -989,6 +1044,33 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _retakeRecording,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.black.withOpacity(0.1)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.refresh_rounded, color: Colors.grey[700], size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Retake Recording',
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],

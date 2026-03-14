@@ -152,6 +152,8 @@ class SpeechPredictor(BasePredictor):
             "pd_risk": round(pd_ * 100, 2),
             "confidence": confidence,
             "attention_weights": dict(zip(SPEECH_FEATURE_COLS, attn)) if len(attn) == 35 else {},
+            "_xai_model": self._model if self.is_loaded else None,
+            "_xai_tensor": tensor if self.is_loaded else None,
         }
 
     @staticmethod

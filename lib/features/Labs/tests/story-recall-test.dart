@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:neuroverse/core/audio_recorder_service.dart';
 
 class StoryRecallTestScreen extends StatefulWidget {
   const StoryRecallTestScreen({super.key});
@@ -9,12 +11,11 @@ class StoryRecallTestScreen extends StatefulWidget {
   @override
   State<StoryRecallTestScreen> createState() => _StoryRecallTestScreenState();
 }
+
 enum TestPhase { instructions, listening, recording, completed }
+
 class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
     with TickerProviderStateMixin {
-  
-  // Test phases
-  
   TestPhase _currentPhase = TestPhase.instructions;
 
   // Animation controllers
@@ -22,9 +23,16 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
   late AnimationController _pulseController;
   late AnimationController _waveController;
 
+  // TTS
+  final FlutterTts _tts = FlutterTts();
+  bool _ttsReady = false;
+
+  // Audio recorder
+  final AudioRecorderService _audioRecorder = AudioRecorderService();
+
   // Test state
   int _currentTrial = 0;
-  final int _totalTrials = 1; // Story recall is typically 1 story
+  final int _totalTrials = 1;
   bool _isPlaying = false;
   bool _isRecording = false;
   double _playbackProgress = 0.0;
@@ -33,24 +41,81 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
   Timer? _recordingTimer;
 
   // Timing
-  final int _storyDurationSeconds = 45; // Story audio length
-  final int _maxRecordingSeconds = 120; // Max recording time
+  int _storyDurationSeconds = 45;
+  final int _maxRecordingSeconds = 120;
   int _recordingSeconds = 0;
+  int _playbackSeconds = 0;
   DateTime? _listeningStartTime;
   DateTime? _recordingStartTime;
 
-  // Collected data
-  final Map<String, dynamic> _testData = {
-    'story_id': 'story_01',
-    'story_duration_ms': 0,
-    'recording_duration_ms': 0,
-    'listening_start': null,
-    'recording_start': null,
-    'audio_path': null,
-    'completed': false,
-  };
+  // Currently selected story
+  late Map<String, String> _selectedStory;
 
-  // Design colors (matching NeuroVerse palette)
+  // Collected data
+  late Map<String, dynamic> _testData;
+
+  // ── Clinical stories (DementiaBank / EWA-DB complexity level) ──
+  // Each story has ~60-80 words, 8-12 semantic units for scoring
+  static final List<Map<String, String>> _stories = [
+    {
+      'id': 'story_grandmother',
+      'title': 'The Visit',
+      'text':
+          'Sarah woke up early on Saturday morning. She had planned to visit her grandmother '
+          'who lived in a small village near the mountains. She packed a basket with fresh fruits, '
+          'homemade cookies, and a warm sweater as a gift. The bus journey took about two hours. '
+          'When Sarah arrived, her grandmother was waiting at the door with a big smile. They spent '
+          'the afternoon in the garden, talking about old memories and watching the birds. Before leaving, '
+          'Sarah promised to visit again next month. Her grandmother gave her a jar of honey from the local bees.',
+    },
+    {
+      'id': 'story_fire',
+      'title': 'The Fire',
+      'text':
+          'A woman was washing dishes in her kitchen when she noticed smoke coming from the living room. '
+          'She ran in and found that a candle had fallen on the carpet. The flames were spreading quickly. '
+          'She grabbed a blanket and tried to smother the fire, but it was too large. She called the fire '
+          'department and took her two children outside to safety. The firemen arrived in eight minutes and '
+          'put out the fire. The living room was badly damaged, but no one was hurt. The family stayed with '
+          'neighbours that night. The insurance company paid for the repairs the following week.',
+    },
+    {
+      'id': 'story_market',
+      'title': 'The Market',
+      'text':
+          'Every Sunday, Mr. Ahmed goes to the local market to buy vegetables and fruits for the week. '
+          'Last Sunday he arrived at seven in the morning while it was still cool. He bought tomatoes, '
+          'onions, and a large watermelon from his favourite stall. While walking through the market he '
+          'met his old friend Khalid, who was selling handmade baskets. They sat together and drank tea. '
+          'On his way home, Mr. Ahmed noticed a young boy who had lost his mother. He helped the boy find '
+          'her near the fish stall. The mother thanked him and offered him a bag of fresh dates.',
+    },
+    {
+      'id': 'story_hospital',
+      'title': 'The Hospital',
+      'text':
+          'Last Tuesday, a young man named Ali was riding his bicycle to work when a car turned without '
+          'signalling. Ali swerved to avoid it and fell on the road. A shopkeeper nearby called an ambulance '
+          'which arrived in ten minutes. At the hospital the doctor found that Ali had broken his left arm '
+          'and had several cuts on his knees. They put a plaster cast on his arm and cleaned the wounds. '
+          'Ali\'s boss came to visit him that evening and told him to rest for two weeks. His colleagues '
+          'collected money to help with the medical bills. Ali went home the next morning.',
+    },
+    {
+      'id': 'story_school',
+      'title': 'The School Trip',
+      'text':
+          'The children from the primary school went on a trip to the science museum last Wednesday. '
+          'They travelled by bus and their teacher Mrs. Fatima sat at the front. At the museum they saw '
+          'dinosaur bones, a model of the solar system, and a live chemistry show. During lunch one boy '
+          'named Hassan accidentally spilled his juice on the exhibit sign. The museum guard was upset but '
+          'Mrs. Fatima apologised and cleaned it up. After lunch they watched a film about volcanoes in the '
+          'theatre. On the way home the children sang songs on the bus. They arrived back at school at four '
+          'o\'clock and their parents were waiting outside.',
+    },
+  ];
+
+  // Design colors
   static const Color bgColor = Color(0xFFF7F7F7);
   static const Color mintGreen = Color(0xFFB8E8D1);
   static const Color softLavender = Color(0xFFE8DFF0);
@@ -62,18 +127,23 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
   static const Color orangeAccent = Color(0xFFF97316);
   static const Color redAccent = Color(0xFFEF4444);
 
-  // Sample story text (for display during listening)
-  final String _storyText = '''
-Sarah woke up early on Saturday morning. She had planned to visit her grandmother who lived in a small village near the mountains. She packed a basket with fresh fruits, homemade cookies, and a warm sweater as a gift.
-
-The bus journey took about two hours. When Sarah arrived, her grandmother was waiting at the door with a big smile. They spent the afternoon in the garden, talking about old memories and watching the birds.
-
-Before leaving, Sarah promised to visit again next month. Her grandmother gave her a jar of honey from the local bees. On the way home, Sarah felt happy and grateful for the wonderful day.
-''';
-
   @override
   void initState() {
     super.initState();
+
+    // Pick a random story
+    _selectedStory = _stories[math.Random().nextInt(_stories.length)];
+
+    _testData = {
+      'story_id': _selectedStory['id'],
+      'story_title': _selectedStory['title'],
+      'story_duration_ms': 0,
+      'recording_duration_ms': 0,
+      'listening_start': null,
+      'recording_start': null,
+      'audio_path': null,
+      'completed': false,
+    };
 
     _pageController = AnimationController(
       vsync: this,
@@ -90,6 +160,8 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
       duration: const Duration(milliseconds: 2000),
     )..repeat();
 
+    _initTts();
+
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -98,8 +170,36 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
     );
   }
 
+  Future<void> _initTts() async {
+    await _tts.setLanguage('en-US');
+    await _tts.setSpeechRate(0.45); // Slow, clear speech for clinical test
+    await _tts.setPitch(1.0);
+    await _tts.setVolume(1.0);
+
+    _tts.setCompletionHandler(() {
+      // TTS finished reading the story
+      if (mounted && _currentPhase == TestPhase.listening) {
+        _progressTimer?.cancel();
+        setState(() {
+          _isPlaying = false;
+          _playbackProgress = 1.0;
+          _testData['story_duration_ms'] =
+              DateTime.now().difference(_listeningStartTime!).inMilliseconds;
+        });
+        // Auto-transition to recording after a short pause
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) _startRecording();
+        });
+      }
+    });
+
+    setState(() => _ttsReady = true);
+  }
+
   @override
   void dispose() {
+    _tts.stop();
+    _audioRecorder.dispose();
     _pageController.dispose();
     _pulseController.dispose();
     _waveController.dispose();
@@ -113,30 +213,44 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
       _currentPhase = TestPhase.listening;
       _isPlaying = true;
       _playbackProgress = 0.0;
+      _playbackSeconds = 0;
       _listeningStartTime = DateTime.now();
     });
 
-    // Simulate audio playback progress
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    // Start TTS
+    _tts.speak(_selectedStory['text']!);
+
+    // Progress timer (visual only — actual end is driven by TTS completion)
+    _progressTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       setState(() {
-        _playbackProgress += 0.1 / _storyDurationSeconds;
-        if (_playbackProgress >= 1.0) {
-          _playbackProgress = 1.0;
-          _isPlaying = false;
-          timer.cancel();
-          _testData['story_duration_ms'] = 
-              DateTime.now().difference(_listeningStartTime!).inMilliseconds;
-          
-          // Auto-transition to recording after a short delay
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) _startRecording();
-          });
-        }
+        _playbackSeconds++;
+        // Estimate progress based on ~45s average read time
+        _playbackProgress =
+            (_playbackSeconds / _storyDurationSeconds).clamp(0.0, 0.95);
       });
     });
   }
 
-  void _startRecording() {
+  Future<void> _startRecording() async {
+    final fileName = 'story_recall_${DateTime.now().millisecondsSinceEpoch}';
+    final started = await _audioRecorder.startRecording(fileName);
+
+    if (!started && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Microphone permission required for recording'),
+          backgroundColor: redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _currentPhase = TestPhase.recording;
       _isRecording = true;
@@ -145,12 +259,11 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
       _recordingStartTime = DateTime.now();
     });
 
-    // Recording timer
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         _recordingSeconds++;
         _recordingProgress = _recordingSeconds / _maxRecordingSeconds;
-        
+
         if (_recordingSeconds >= _maxRecordingSeconds) {
           _stopRecording();
         }
@@ -158,33 +271,48 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
     });
   }
 
-  void _stopRecording() {
+  Future<void> _stopRecording() async {
     _recordingTimer?.cancel();
-    
+
+    final audioPath = await _audioRecorder.stopRecording();
+
     setState(() {
       _isRecording = false;
-      _testData['recording_duration_ms'] = 
+      _testData['recording_duration_ms'] =
           DateTime.now().difference(_recordingStartTime!).inMilliseconds;
-      _testData['audio_path'] = 'recordings/story_recall_${DateTime.now().millisecondsSinceEpoch}.wav';
+      _testData['audio_path'] = audioPath ?? '';
       _testData['completed'] = true;
       _currentPhase = TestPhase.completed;
     });
   }
 
+  Future<void> _retakeRecording() async {
+    HapticFeedback.mediumImpact();
+    await _audioRecorder.cancelRecording();
+    setState(() {
+      _testData['completed'] = false;
+      _testData.remove('recording_duration_ms');
+      _testData.remove('audio_path');
+      _recordingSeconds = 0;
+      _recordingProgress = 0.0;
+    });
+    _startRecording();
+  }
+
   void _completeTest() {
     HapticFeedback.mediumImpact();
-    
-    // Return collected data to previous screen
     Navigator.pop(context, _testData);
   }
 
   void _exitTest() {
+    _tts.stop();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Exit Test?'),
-        content: const Text('Your progress will be lost. Are you sure you want to exit?'),
+        content: const Text(
+            'Your progress will be lost. Are you sure you want to exit?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -192,8 +320,8 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Exit test
+              Navigator.pop(context);
+              Navigator.pop(context);
             },
             child: const Text('Exit', style: TextStyle(color: redAccent)),
           ),
@@ -214,7 +342,7 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             Expanded(
               child: _buildTestArea(),
             ),
-            if (_currentPhase != TestPhase.instructions && 
+            if (_currentPhase != TestPhase.instructions &&
                 _currentPhase != TestPhase.completed)
               _buildMobileMetrics(),
           ],
@@ -228,7 +356,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          // Back button
           GestureDetector(
             onTap: _exitTest,
             child: Container(
@@ -247,7 +374,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
           ),
           const SizedBox(width: 16),
-          // Title
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,11 +397,10 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
               ],
             ),
           ),
-          // Status badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _currentPhase == TestPhase.completed 
+              color: _currentPhase == TestPhase.completed
                   ? greenAccent.withOpacity(0.1)
                   : blueAccent.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
@@ -284,11 +409,11 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  _currentPhase == TestPhase.completed 
-                      ? Icons.check_circle_rounded 
+                  _currentPhase == TestPhase.completed
+                      ? Icons.check_circle_rounded
                       : Icons.access_time_rounded,
-                  color: _currentPhase == TestPhase.completed 
-                      ? greenAccent 
+                  color: _currentPhase == TestPhase.completed
+                      ? greenAccent
                       : blueAccent,
                   size: 16,
                 ),
@@ -296,8 +421,8 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
                 Text(
                   _currentPhase == TestPhase.completed ? 'Done' : '5 min',
                   style: TextStyle(
-                    color: _currentPhase == TestPhase.completed 
-                        ? greenAccent 
+                    color: _currentPhase == TestPhase.completed
+                        ? greenAccent
                         : blueAccent,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -340,7 +465,7 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
         widthFactor: progress,
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               colors: [blueAccent, greenAccent],
             ),
             borderRadius: BorderRadius.circular(3),
@@ -362,10 +487,12 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildMiniMetric(
-            _isPlaying ? 'PLAYING' : (_isRecording ? 'RECORDING' : 'READY'),
-            _isRecording 
+            _isPlaying
+                ? 'SPEAKING'
+                : (_isRecording ? 'RECORDING' : 'READY'),
+            _isRecording
                 ? _formatTime(_recordingSeconds)
-                : '${(_playbackProgress * _storyDurationSeconds).toInt()}s',
+                : '${_playbackSeconds}s',
             _isRecording ? redAccent : blueAccent,
           ),
           Container(
@@ -421,125 +548,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: darkCard,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Test icon
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: blueAccent.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.record_voice_over_rounded,
-              color: blueAccent,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Title and progress
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Story Recall',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _getPhaseText(),
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Progress indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _currentPhase == TestPhase.completed 
-                      ? Icons.check_circle_rounded 
-                      : Icons.access_time_rounded,
-                  color: _currentPhase == TestPhase.completed 
-                      ? greenAccent 
-                      : Colors.white.withOpacity(0.8),
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _currentPhase == TestPhase.completed 
-                      ? 'Completed' 
-                      : 'Trial ${_currentTrial + 1}/$_totalTrials',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Exit button
-          GestureDetector(
-            onTap: _exitTest,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.2)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.close_rounded,
-                    color: Colors.white.withOpacity(0.8),
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Exit',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _getPhaseText() {
     switch (_currentPhase) {
       case TestPhase.instructions:
@@ -591,7 +599,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 10),
-          // Icon
           Container(
             width: 80,
             height: 80,
@@ -606,7 +613,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
           ),
           const SizedBox(height: 20),
-          // Title
           const Text(
             'Story Recall Test',
             style: TextStyle(
@@ -615,8 +621,24 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
               color: Colors.black87,
             ),
           ),
+          const SizedBox(height: 8),
+          // Story title badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: purpleAccent.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '"${_selectedStory['title']}"',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: purpleAccent,
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
-          // Instructions
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -625,58 +647,63 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
             child: Column(
               children: [
-                _buildInstructionItem(1, 'Listen carefully to the short story'),
+                _buildInstructionItem(
+                    1, 'The phone will read a short story aloud'),
                 const SizedBox(height: 10),
-                _buildInstructionItem(2, 'Try to remember as many details as possible'),
+                _buildInstructionItem(
+                    2, 'Listen carefully — remember as many details as possible'),
                 const SizedBox(height: 10),
-                _buildInstructionItem(3, 'After the story ends, repeat it in your own words'),
+                _buildInstructionItem(
+                    3, 'After the story ends, repeat it in your own words'),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          // Duration info
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.access_time_rounded, color: Colors.grey[600], size: 18),
+              Icon(Icons.volume_up_rounded, color: Colors.grey[600], size: 18),
               const SizedBox(width: 6),
               Text(
-                'Estimated time: 5 minutes',
+                'Make sure your volume is turned up',
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          // Start button
           GestureDetector(
-            onTap: () {
-              HapticFeedback.mediumImpact();
-              _startListening();
-            },
+            onTap: _ttsReady
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    _startListening();
+                  }
+                : null,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
               decoration: BoxDecoration(
-                color: blueAccent,
+                color: _ttsReady ? blueAccent : Colors.grey,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: blueAccent.withOpacity(0.4),
+                    color: blueAccent.withOpacity(_ttsReady ? 0.4 : 0),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                  const Icon(Icons.play_arrow_rounded,
+                      color: Colors.white, size: 22),
+                  const SizedBox(width: 8),
                   Text(
-                    'Start Listening',
-                    style: TextStyle(
+                    _ttsReady ? 'Start Listening' : 'Preparing...',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -698,7 +725,7 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
         Container(
           width: 28,
           height: 28,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: blueAccent,
             shape: BoxShape.circle,
           ),
@@ -733,7 +760,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 10),
-          // Animated speaker icon
           AnimatedBuilder(
             animation: _pulseController,
             builder: (context, child) {
@@ -741,7 +767,8 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
                 width: 90 + (_pulseController.value * 15),
                 height: 90 + (_pulseController.value * 15),
                 decoration: BoxDecoration(
-                  color: blueAccent.withOpacity(0.1 + _pulseController.value * 0.1),
+                  color: blueAccent
+                      .withOpacity(0.1 + _pulseController.value * 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -753,9 +780,8 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             },
           ),
           const SizedBox(height: 20),
-          // Status text
           const Text(
-            'Playing Story...',
+            'Reading Story Aloud...',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -794,9 +820,8 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
           ),
           const SizedBox(height: 10),
-          // Time
           Text(
-            '${(_playbackProgress * _storyDurationSeconds).toInt()}s / ${_storyDurationSeconds}s',
+            '${_playbackSeconds}s',
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey[600],
@@ -813,7 +838,7 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.tips_and_updates_rounded,
                   color: purpleAccent,
                   size: 20,
@@ -844,7 +869,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 20),
-          // Recording indicator
           AnimatedBuilder(
             animation: _pulseController,
             builder: (context, child) {
@@ -852,7 +876,8 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
                 width: 100 + (_pulseController.value * 20),
                 height: 100 + (_pulseController.value * 20),
                 decoration: BoxDecoration(
-                  color: redAccent.withOpacity(0.1 + _pulseController.value * 0.15),
+                  color: redAccent
+                      .withOpacity(0.1 + _pulseController.value * 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Container(
@@ -878,14 +903,13 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             },
           ),
           const SizedBox(height: 24),
-          // Recording text
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 width: 10,
                 height: 10,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: redAccent,
                   shape: BoxShape.circle,
                 ),
@@ -910,7 +934,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
           ),
           const SizedBox(height: 20),
-          // Recording time
           Text(
             _formatTime(_recordingSeconds),
             style: const TextStyle(
@@ -921,7 +944,7 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
           ),
           const SizedBox(height: 20),
-          // Audio waveform visualization
+          // Waveform
           Container(
             height: 60,
             margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -939,7 +962,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
           ),
           const SizedBox(height: 24),
-          // Stop button
           GestureDetector(
             onTap: () {
               HapticFeedback.heavyImpact();
@@ -980,13 +1002,13 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
       ),
     );
   }
+
   Widget _buildCompletedPhase() {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 10),
-          // Success icon
           Container(
             width: 90,
             height: 90,
@@ -1018,7 +1040,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
           ),
           const SizedBox(height: 24),
-          // Summary
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -1027,14 +1048,18 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
             ),
             child: Column(
               children: [
-                _buildSummaryRow('Story Duration', '${(_testData['story_duration_ms'] / 1000).toStringAsFixed(1)}s'),
+                _buildSummaryRow('Story',
+                    '"${_selectedStory['title']}"'),
                 const SizedBox(height: 10),
-                _buildSummaryRow('Recording Duration', '${(_testData['recording_duration_ms'] / 1000).toStringAsFixed(1)}s'),
+                _buildSummaryRow('Story Duration',
+                    '${(_testData['story_duration_ms'] / 1000).toStringAsFixed(1)}s'),
+                const SizedBox(height: 10),
+                _buildSummaryRow('Recording Duration',
+                    '${(_testData['recording_duration_ms'] / 1000).toStringAsFixed(1)}s'),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          // Continue button
           GestureDetector(
             onTap: _completeTest,
             child: Container(
@@ -1053,7 +1078,8 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
+                  Icon(Icons.arrow_forward_rounded,
+                      color: Colors.white, size: 22),
                   SizedBox(width: 8),
                   Text(
                     'Continue',
@@ -1061,6 +1087,34 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _retakeRecording,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.black.withOpacity(0.1)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.refresh_rounded,
+                      color: Colors.grey[700], size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Retake Recording',
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -1096,189 +1150,6 @@ Before leaving, Sarah promised to visit again next month. Her grandmother gave h
     );
   }
 
-  Widget _buildResultsPanel() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(0, 20, 20, 20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: darkCard,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Icon(
-                Icons.analytics_rounded,
-                color: Colors.white.withOpacity(0.9),
-                size: 22,
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'Real-time Results',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Objective performance metrics',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Metrics grid
-          Expanded(
-            child: Column(
-              children: [
-                // Row 1
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildMetricCard(
-                        'LISTENING TIME',
-                        '${(_playbackProgress * _storyDurationSeconds).toInt()}s',
-                        mintGreen,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildMetricCard(
-                        'RECORDING TIME',
-                        '${_recordingSeconds}s',
-                        softLavender,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Row 2
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildMetricCard(
-                        'PHASE',
-                        _currentPhase.name.toUpperCase(),
-                        creamBeige,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildMetricCard(
-                        'STATUS',
-                        _isRecording ? 'REC' : (_isPlaying ? 'PLAY' : 'READY'),
-                        _isRecording ? const Color(0xFFFFCDD2) : mintGreen,
-                      ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                // Phase progress
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'TEST PROGRESS',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildProgressStep('Instructions', _currentPhase.index >= 0),
-                      _buildProgressStep('Listening', _currentPhase.index >= 1),
-                      _buildProgressStep('Recording', _currentPhase.index >= 2),
-                      _buildProgressStep('Completed', _currentPhase.index >= 3),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(String label, String value, Color bgColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressStep(String label, bool completed) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: completed ? greenAccent : Colors.white.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: completed
-                ? const Icon(Icons.check, color: Colors.white, size: 14)
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: TextStyle(
-              color: completed ? Colors.white : Colors.white.withOpacity(0.4),
-              fontSize: 13,
-              fontWeight: completed ? FontWeight.w600 : FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _formatTime(int seconds) {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
@@ -1306,12 +1177,14 @@ class WaveformPainter extends CustomPainter {
     for (int i = 0; i < barCount; i++) {
       final x = i * barWidth + barWidth / 2;
       final normalizedPosition = i / barCount;
-      
-      // Create wave effect
-      final waveOffset = math.sin((normalizedPosition + animation) * math.pi * 4);
-      final randomHeight = (0.3 + 0.7 * ((math.sin(i * 0.5 + animation * 10) + 1) / 2));
-      final height = size.height * 0.4 * randomHeight * (0.5 + waveOffset * 0.5);
-      
+
+      final waveOffset =
+          math.sin((normalizedPosition + animation) * math.pi * 4);
+      final randomHeight =
+          (0.3 + 0.7 * ((math.sin(i * 0.5 + animation * 10) + 1) / 2));
+      final height =
+          size.height * 0.4 * randomHeight * (0.5 + waveOffset * 0.5);
+
       canvas.drawLine(
         Offset(x, size.height / 2 - height),
         Offset(x, size.height / 2 + height),

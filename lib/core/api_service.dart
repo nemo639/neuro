@@ -2,27 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiService {
 
   static String get baseUrl {
-  const backendIP = '10.151.51.143:8000';   // <---- YOUR WORKING IP
-
-  if (kIsWeb) {
-    // Flutter Web uses browser → needs direct IP
-    return 'http://$backendIP';
-  } else if (Platform.isAndroid) {
-    // Physical Android device → also uses direct IP
-    return 'http://$backendIP';
-  } else if (Platform.isIOS) {
-    // Physical iPhone → same LAN IP
-    return 'http://$backendIP';
-  }
-
-  // Default (Windows/Linux desktop)
-  return 'http://$backendIP';
+  // ngrok public tunnel → forwards to localhost:8000
+  // Change this URL each time you restart ngrok (free plan gives new URL)
+  const ngrokUrl = 'https://phenological-briana-frondescent.ngrok-free.dev';
+  return ngrokUrl;
 }
 
   static const String apiVersion = '/api/v1';
@@ -352,6 +341,19 @@ static const _storage = FlutterSecureStorage();
     }
   }
 
+  /// Get latest test results with full XAI explanations (per category)
+  static Future<Map<String, dynamic>> getLatestTestResults() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl$apiVersion/tests/latest-results'),
+        headers: _headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
   /// List test sessions
   static Future<Map<String, dynamic>> listTestSessions({
     String? category,
@@ -484,6 +486,7 @@ static const _storage = FlutterSecureStorage();
         'file',
         bytes,
         filename: fileName,
+        contentType: MediaType('audio', 'wav'),
       ));
 
       final response = await request.send();

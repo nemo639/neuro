@@ -125,8 +125,14 @@ class LIMEExplainer:
             feature_names = list(numeric.keys())
             feature_values = np.array([list(numeric.values())], dtype=np.float64)
 
+            # LIME needs >1 training samples for perturbation statistics
+            # Generate synthetic training data around the instance
+            rng = np.random.RandomState(42)
+            noise = rng.normal(0, 0.1, size=(50, len(feature_names)))
+            training_data = feature_values + noise * np.clip(np.abs(feature_values), 0.01, None)
+
             explainer = LimeTabularExplainer(
-                training_data=feature_values,
+                training_data=training_data,
                 feature_names=feature_names,
                 mode="regression",
                 discretize_continuous=False,

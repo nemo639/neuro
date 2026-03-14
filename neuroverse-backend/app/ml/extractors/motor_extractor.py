@@ -29,6 +29,7 @@ class MotorExtractor(BaseExtractor):
     async def _extract_item(self, item_name: str, raw: Dict[str, Any]) -> Dict[str, Any]:
         dispatch = {
             "finger_tapping": self._finger_tapping,
+            "resting_tremor": self._resting_tremor,
             "spiral_drawing": self._spiral_drawing,
             "meander_drawing": self._meander_drawing,
             "wave_drawing": self._meander_drawing,
@@ -42,42 +43,136 @@ class MotorExtractor(BaseExtractor):
     # Finger Tapping                                                      #
     # ------------------------------------------------------------------ #
     def _finger_tapping(self, raw: dict) -> dict:
-        total_taps = self.safe_get(raw, "total_taps")
-        duration = self.safe_get(raw, "duration_seconds", 10)
+        # Flutter sends nested: left_hand={tap_count, taps_per_second, intervals, ...}
+        #                        right_hand={...}, asymmetry_index, test_duration_seconds
+        left = raw.get("left_hand", {})
+        right = raw.get("right_hand", {})
 
+        # Combine both hands' tap counts
+        left_taps = left.get("tap_count", 0) if isinstance(left, dict) else 0
+        right_taps = right.get("tap_count", 0) if isinstance(right, dict) else 0
+        total_taps = self.safe_get(raw, "total_taps", left_taps + right_taps)
+
+        duration = self.safe_get(raw, "duration_seconds",
+                                  self.safe_get(raw, "test_duration_seconds", 10))
+
+        # Tapping rate: use dominant hand or average
+        left_rate = left.get("taps_per_second", 0) if isinstance(left, dict) else 0
+        right_rate = right.get("taps_per_second", 0) if isinstance(right, dict) else 0
         tapping_rate = self.safe_get(raw, "tapping_rate")
+        if tapping_rate == 0:
+            tapping_rate = max(left_rate, right_rate)  # use better hand
         if tapping_rate == 0 and total_taps > 0 and duration > 0:
             tapping_rate = total_taps / duration
 
+        # Intervals: try flat key, then nested
         intervals = raw.get("tap_intervals_ms", [])
+        if not intervals and isinstance(right, dict):
+            intervals = right.get("intervals", [])
+        if not intervals and isinstance(left, dict):
+            intervals = left.get("intervals", [])
+
+        # Regularity from intervals or pre-computed
         regularity = self.safe_get(raw, "regularity_score", 0.5)
+        left_var = left.get("interval_variability", 0) if isinstance(left, dict) else 0
+        right_var = right.get("interval_variability", 0) if isinstance(right, dict) else 0
+        if regularity == 0.5 and (left_var or right_var):
+            # interval_variability is std/mean; regularity = 1 - variability
+            avg_var = (left_var + right_var) / max(sum(1 for v in [left_var, right_var] if v), 1)
+            regularity = max(0.0, 1.0 - avg_var)
+
         fatigue = self.safe_get(raw, "fatigue_index")
 
         if isinstance(intervals, list) and len(intervals) >= 4:
             arr = np.asarray(intervals, dtype=np.float32)
-            regularity = 1.0 - min(float(arr.std() / max(arr.mean(), 1)), 1.0)
+            regularity = float(1.0 - min(float(arr.std() / max(arr.mean(), 1)), 1.0))
             mid = len(arr) // 2
-            first_rate = 1000.0 / max(arr[:mid].mean(), 1)
-            second_rate = 1000.0 / max(arr[mid:].mean(), 1)
-            fatigue = max(0.0, (first_rate - second_rate) / max(first_rate, 1))
+            first_rate = float(1000.0 / max(arr[:mid].mean(), 1))
+            second_rate = float(1000.0 / max(arr[mid:].mean(), 1))
+            fatigue = float(max(0.0, (first_rate - second_rate) / max(first_rate, 1)))
+
+        # Asymmetry index
+        asymmetry = self.safe_get(raw, "asymmetry_index")
 
         return {
-            "tapping_rate": tapping_rate,
-            "tapping_regularity": regularity,
-            "tapping_fatigue": fatigue,
-            "tapping_total": total_taps,
-            "tapping_duration": duration,
+            "tapping_rate": float(tapping_rate) if tapping_rate else 0.0,
+            "tapping_regularity": float(regularity) if regularity else 0.5,
+            "tapping_fatigue": float(fatigue) if fatigue else 0.0,
+            "tapping_total": int(total_taps),
+            "tapping_duration": float(duration),
+            "tapping_asymmetry": float(asymmetry) if asymmetry else 0.0,
+        }
+
+    # ------------------------------------------------------------------ #
+    # Resting Tremor (accelerometer/gyroscope)                            #
+    # ------------------------------------------------------------------ #
+    def _resting_tremor(self, raw: dict) -> dict:
+        left = raw.get("left_hand", {})
+        right = raw.get("right_hand", {})
+        if not isinstance(left, dict):
+            left = {}
+        if not isinstance(right, dict):
+            right = {}
+
+        # Extract per-hand metrics
+        left_amp = float(left.get("tremor_amplitude", 0))
+        right_amp = float(right.get("tremor_amplitude", 0))
+        left_freq = float(left.get("tremor_frequency", 0))
+        right_freq = float(right.get("tremor_frequency", 0))
+        left_rms = float(left.get("rms_acceleration", 0))
+        right_rms = float(right.get("rms_acceleration", 0))
+        left_jerk = float(left.get("jerk_mean", 0))
+        right_jerk = float(right.get("jerk_mean", 0))
+        left_gyro = float(left.get("gyro_rms", 0))
+        right_gyro = float(right.get("gyro_rms", 0))
+
+        # Use dominant (worse) hand for primary features
+        tremor_amplitude = max(left_amp, right_amp)
+        tremor_frequency = left_freq if left_amp >= right_amp else right_freq
+        rms_accel = max(left_rms, right_rms)
+        jerk = max(left_jerk, right_jerk)
+        gyro_rms = max(left_gyro, right_gyro)
+
+        # Asymmetry
+        asymmetry = float(raw.get("asymmetry_index", 0))
+
+        # PD characteristic: resting tremor 4-6 Hz
+        pd_freq_match = 1.0 if 4.0 <= tremor_frequency <= 7.0 else 0.0
+
+        return {
+            "tremor_amplitude": tremor_amplitude,
+            "tremor_frequency": tremor_frequency,
+            "tremor_rms": rms_accel,
+            "tremor_jerk": jerk,
+            "tremor_gyro_rms": gyro_rms,
+            "tremor_asymmetry": asymmetry,
+            "tremor_pd_freq_match": pd_freq_match,
+            "tremor_left_amplitude": left_amp,
+            "tremor_right_amplitude": right_amp,
         }
 
     # ------------------------------------------------------------------ #
     # Spiral Drawing                                                      #
     # ------------------------------------------------------------------ #
     def _spiral_drawing(self, raw: dict) -> dict:
+        # Flutter sends nested: left_hand={drawing_duration_ms, tremor_score, accuracy_score, avg_deviation}
+        #                        right_hand={...}
+        # Use dominant (right) hand first, fall back to left, then flat keys
+        hand = raw.get("right_hand", raw.get("left_hand", {}))
+        if not isinstance(hand, dict):
+            hand = {}
+
+        duration_ms = self.safe_get(raw, "duration_ms",
+                                     hand.get("drawing_duration_ms", 0))
+        tremor = hand.get("tremor_score", 0.0)
+        deviation = hand.get("avg_deviation", self.safe_get(raw, "deviation_score"))
+        accuracy = hand.get("accuracy_score", self.safe_get(raw, "spiral_tightness", 0.5))
+
         features: dict = {
-            "spiral_duration": self.safe_get(raw, "duration_ms") / 1000.0,
-            "spiral_tremor": 1.0 if raw.get("tremor_detected", False) else 0.0,
-            "spiral_deviation": self.safe_get(raw, "deviation_score"),
-            "spiral_tightness": self.safe_get(raw, "spiral_tightness", 0.5),
+            "spiral_duration": duration_ms / 1000.0,
+            "spiral_tremor": float(tremor) if tremor else (1.0 if raw.get("tremor_detected", False) else 0.0),
+            "spiral_deviation": float(deviation),
+            "spiral_tightness": float(accuracy),
         }
 
         # Base64 image for MotorNet
@@ -96,11 +191,22 @@ class MotorExtractor(BaseExtractor):
     # Meander (Wave) Drawing                                              #
     # ------------------------------------------------------------------ #
     def _meander_drawing(self, raw: dict) -> dict:
+        # Flutter sends nested: left_hand={drawing_duration_ms, tremor_score, smoothness_score, avg_deviation, mean_speed}
+        hand = raw.get("right_hand", raw.get("left_hand", {}))
+        if not isinstance(hand, dict):
+            hand = {}
+
+        duration_ms = self.safe_get(raw, "duration_ms",
+                                     hand.get("drawing_duration_ms", 0))
+        tremor = hand.get("tremor_score", 0.0)
+        deviation = hand.get("avg_deviation", self.safe_get(raw, "deviation_score"))
+        smoothness = hand.get("smoothness_score", self.safe_get(raw, "smoothness_score", 0.5))
+
         features: dict = {
-            "meander_duration": self.safe_get(raw, "duration_ms") / 1000.0,
-            "meander_tremor": 1.0 if raw.get("tremor_detected", False) else 0.0,
-            "meander_deviation": self.safe_get(raw, "deviation_score"),
-            "meander_smoothness": self.safe_get(raw, "smoothness_score", 0.5),
+            "meander_duration": duration_ms / 1000.0,
+            "meander_tremor": float(tremor) if tremor else (1.0 if raw.get("tremor_detected", False) else 0.0),
+            "meander_deviation": float(deviation),
+            "meander_smoothness": float(smoothness),
         }
 
         # Base64 image for MotorNet (meander)
@@ -200,6 +306,10 @@ class MotorExtractor(BaseExtractor):
         scores: List[float] = []
         if features.get("tapping_regularity", 0) > 0:
             scores.append(features["tapping_regularity"])
+        if features.get("tremor_amplitude") is not None:
+            # Lower tremor = healthier → invert for composite (1 - normalized amplitude)
+            tremor_score = max(0.0, 1.0 - min(features["tremor_amplitude"] / 2.0, 1.0))
+            scores.append(tremor_score)
         if features.get("spiral_tightness", 0) > 0:
             scores.append(features["spiral_tightness"])
         if features.get("meander_smoothness", 0) > 0:

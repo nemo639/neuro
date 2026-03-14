@@ -204,13 +204,25 @@ class MotorPredictor(BasePredictor):
         logger.info("Motor %s model not loaded; no image prediction available.", source_tag)
         return None
 
-    @staticmethod
-    def _merge_motor_results(results: list) -> Dict[str, Any]:
+    def _merge_motor_results(self, results: list) -> Dict[str, Any]:
         """Merge predictions from spiral and meander models."""
+        # Pick best model+tensor for XAI (highest confidence)
+        best = max(results, key=lambda r: r.get("confidence", 0))
+        xai_model = best.pop("input_tensor", None)
+        xai_ref = best.get("model_ref")
+        # Resolve model object for XAI
+        xai_model_obj = None
+        if xai_ref == "spiral" and self._spiral_loaded:
+            xai_model_obj = self._spiral_model
+        elif xai_ref == "meander" and self._meander_loaded:
+            xai_model_obj = self._meander_model
+
         if len(results) == 1:
             r = results[0]
             r.pop("input_tensor", None)
             r.pop("model_ref", None)
+            r["_xai_model"] = xai_model_obj
+            r["_xai_tensor"] = xai_model
             return r
 
         # Average risks weighted by confidence
@@ -225,6 +237,11 @@ class MotorPredictor(BasePredictor):
         classification = "PD" if merged_pd > 50 else "Healthy"
         sources = [r.get("source", "unknown") for r in results]
 
+        # Clean sub-results
+        for r in results:
+            r.pop("input_tensor", None)
+            r.pop("model_ref", None)
+
         return {
             "ad_risk": round(merged_ad, 2),
             "pd_risk": round(merged_pd, 2),
@@ -232,11 +249,13 @@ class MotorPredictor(BasePredictor):
             "classification": classification,
             "source": "+".join(sources),
             "individual_results": {
-                r.get("model_ref", f"model_{i}"): {
+                r.get("source", f"model_{i}"): {
                     "pd_risk": r["pd_risk"], "confidence": r["confidence"]
                 }
                 for i, r in enumerate(results)
             },
+            "_xai_model": xai_model_obj,
+            "_xai_tensor": xai_model,
         }
 
     @staticmethod

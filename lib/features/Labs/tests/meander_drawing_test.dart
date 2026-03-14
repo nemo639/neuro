@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 enum MeanderPhase { instructions, leftHand, rightHand, completed }
@@ -115,9 +118,30 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
     });
   }
 
+  Future<String?> _captureCanvasImage() async {
+    try {
+      final boundary = _canvasKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+      final image = await boundary.toImage(pixelRatio: 1.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return null;
+      final bytes = byteData.buffer.asUint8List();
+      return base64Encode(bytes);
+    } catch (e) {
+      debugPrint('Canvas capture failed: $e');
+      return null;
+    }
+  }
+
   Future<void> _finishDrawing() async {
     _drawingEndTime = DateTime.now();
     final results = _calculateResults();
+
+    // Capture drawing as base64 image for the ML model
+    final imageBase64 = await _captureCanvasImage();
+    if (imageBase64 != null) {
+      results['image_base64'] = imageBase64;
+    }
 
     if (_currentPhase == MeanderPhase.leftHand) {
       _leftHandResults = results;

@@ -89,7 +89,8 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _loadLatestResult() async {
-    final result = await ApiService.getUserDashboard();
+    // Fetch latest results per category with full XAI explanations
+    final result = await ApiService.getLatestTestResults();
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -104,8 +105,26 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   void _initializeModulesFromData() {
     if (_resultData == null) return;
 
-    // Try to parse XAI data from result
-    final xai = _resultData!['xai_explanation'] as Map<String, dynamic>?;
+    // Support two data shapes:
+    // 1. Post-test: {xai_explanation: {cognitive: {...}, speech: {...}}}
+    // 2. Latest-results endpoint: {cognitive: {xai_explanation: {...}}, speech: {...}}
+    Map<String, dynamic>? xai;
+
+    if (_resultData!.containsKey('xai_explanation')) {
+      // Shape 1: single result with nested per-category XAI
+      xai = _resultData!['xai_explanation'] as Map<String, dynamic>?;
+    } else {
+      // Shape 2: per-category results, each with its own xai_explanation
+      xai = {};
+      for (final cat in ['cognitive', 'speech', 'motor']) {
+        final catData = _resultData![cat] as Map<String, dynamic>?;
+        if (catData != null && catData['xai_explanation'] != null) {
+          xai[cat] = catData['xai_explanation'] as Map<String, dynamic>;
+        }
+      }
+      if (xai.isEmpty) xai = null;
+    }
+
     if (xai == null) return;
 
     // Parse per-category XAI data
@@ -885,8 +904,6 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 20),
                     // Dynamic content based on selected XAI method
                     _buildSelectedMethodContent(),
-                    const SizedBox(height: 20),
-                    _buildExportButton(),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -937,24 +954,6 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                Navigator.pop(context);
-              },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black.withOpacity(0.08)),
-                ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
-                    size: 18, color: Colors.black87),
-              ),
-            ),
-            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2552,53 +2551,6 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
             },
           );
         }),
-      ),
-    );
-  }
-
-  // ------------------------------------------------------------------ //
-  // Export & Navigation                                                  //
-  // ------------------------------------------------------------------ //
-  Widget _buildExportButton() {
-    return _buildAnimatedWidget(
-      delay: 0.35,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: GestureDetector(
-          onTap: () => HapticFeedback.mediumImpact(),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    selectedModule.color,
-                    selectedModule.color.withOpacity(0.8)
-                  ]),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                    color: selectedModule.color.withOpacity(0.4),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6))
-              ],
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.download_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 10),
-                Text('Export Explainability Report',
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white)),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

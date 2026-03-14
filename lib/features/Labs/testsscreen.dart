@@ -58,13 +58,12 @@ Map<String, int> _categoryCompletedTests = {};
     TestCategory(
       title: 'Cognitive & Memory',
       description: 'Mental agility and memory assessment',
-      icon: Icons.psychology_rounded,
+      icon: Icons.hub_rounded,
       color: Color(0xFF8B5CF6),
       bgColor: Color(0xFFF3E8FF),
       route: '/test/cognitive-memory',
       tests: [
         TestItem(name: 'Stroop Test', duration: '3 min'),
-        TestItem(name: 'N-Back Memory', duration: '4 min'),
         TestItem(name: 'Word List Recall', duration: '6 min'),
         TestItem(name: 'Clock Drawing', duration: '3 min'),
         TestItem(name: 'Trail Making', duration: '5 min'),
@@ -78,7 +77,7 @@ Map<String, int> _categoryCompletedTests = {};
       bgColor: Color(0xFFFFF7ED),
       route: '/test/motor-functions',
       tests: [
-        TestItem(name: 'Finger Tapping', duration: '2 min'),
+        TestItem(name: 'Resting Tremor', duration: '2 min'),
         TestItem(name: 'Spiral Drawing', duration: '3 min'),
         TestItem(name: 'Meander Drawing', duration: '3 min'),
       ],
@@ -112,15 +111,29 @@ Map<String, int> _categoryCompletedTests = {};
   if (mounted) {
     setState(() {
       _isLoading = false;
+      // Reset counters before parsing to avoid double-counting on reload
+      _completedTestsCount = 0;
+      _categoryCompletedTests = {};
       if (result['success']) {
         _testDashboard = result['data'];
-        
-        // Parse completed tests per category
+
+        // Map backend category keys to local testCategories indices
+        const categoryIndexMap = {'speech': 0, 'cognitive': 1, 'motor': 2};
+
+        // Parse completed sessions per category
         final categories = _testDashboard?['categories'] as List? ?? [];
         for (var cat in categories) {
-          final catName = cat['category'] ?? '';
-          _categoryCompletedTests[catName] = cat['completed_tests'] ?? 0;
-          _completedTestsCount += (cat['completed_tests'] ?? 0) as int;
+          final catName = (cat['category'] ?? '') as String;
+          final completedSessions = (cat['total_completed'] ?? 0) as int;
+          _categoryCompletedTests[catName] = completedSessions;
+
+          // Each completed session = all mini-tests in that category done
+          if (completedSessions > 0) {
+            final idx = categoryIndexMap[catName];
+            if (idx != null && idx < testCategories.length) {
+              _completedTestsCount += testCategories[idx].tests.length;
+            }
+          }
         }
       }
     });
@@ -135,6 +148,7 @@ Map<String, int> _categoryCompletedTests = {};
         break;
       case 1:
         setState(() => _selectedNavIndex = index);
+        _loadData(); // Refresh progress when Tests tab re-selected
         break;
       case 2:
         Navigator.pushNamed(context, '/reports');
@@ -381,14 +395,19 @@ Map<String, int> _categoryCompletedTests = {};
 
   Widget _buildTestCategoryCard(int index, TestCategory category) {
     bool isExpanded = expandedCategories[index] ?? false;
-    
+
+    // Map index to backend category key for completion lookup
+    const indexToCategoryKey = {0: 'speech', 1: 'cognitive', 2: 'motor'};
+    final catKey = indexToCategoryKey[index] ?? '';
+    final isCompleted = (_categoryCompletedTests[catKey] ?? 0) > 0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.black.withOpacity(0.06)),
+          border: Border.all(color: isCompleted ? mintGreen.withOpacity(0.5) : Colors.black.withOpacity(0.06)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -415,12 +434,12 @@ Map<String, int> _categoryCompletedTests = {};
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: category.bgColor,
+                        color: isCompleted ? mintGreen.withOpacity(0.3) : category.bgColor,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Icon(
-                        category.icon,
-                        color: category.color,
+                        isCompleted ? Icons.check_circle_rounded : category.icon,
+                        color: isCompleted ? const Color(0xFF10B981) : category.color,
                         size: 26,
                       ),
                     ),
@@ -439,11 +458,11 @@ Map<String, int> _categoryCompletedTests = {};
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            category.description,
+                            isCompleted ? 'Completed' : category.description,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black.withOpacity(0.5),
+                              color: isCompleted ? const Color(0xFF10B981) : Colors.black.withOpacity(0.5),
                             ),
                           ),
                         ],
@@ -452,15 +471,15 @@ Map<String, int> _categoryCompletedTests = {};
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: category.bgColor,
+                        color: isCompleted ? mintGreen.withOpacity(0.3) : category.bgColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        '${category.tests.length} tests',
+                        isCompleted ? 'Done' : '${category.tests.length} tests',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: category.color,
+                          color: isCompleted ? const Color(0xFF10B981) : category.color,
                         ),
                       ),
                     ),
@@ -549,11 +568,13 @@ Map<String, int> _categoryCompletedTests = {};
       
       if (result['success']) {
         final sessionId = result['data']['id'];
-        Navigator.pushNamed(
-          context, 
+        await Navigator.pushNamed(
+          context,
           category.route,
           arguments: {'sessionId': sessionId, 'category': categoryName},
         );
+        // Refresh progress when user returns from test
+        if (mounted) _loadData();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

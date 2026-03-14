@@ -23,6 +23,24 @@ from app.schemas.test_result import TestResultDetailResponse
 from app.services.ml_service import MLService
 from app.services.fusion_service import FusionService
 from app.services.xai_service import XAIService
+import numpy as np
+
+
+def _sanitize_for_json(obj):
+    """Recursively convert numpy types to native Python types for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_json(v) for v in obj]
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    return obj
 
 
 # Category configuration
@@ -42,7 +60,7 @@ CATEGORY_CONFIG = {
     "motor": {
         "display_name": "Motor Functions",
         "description": "Tests for fine motor control and coordination",
-        "mini_tests": ["finger_tapping", "spiral_drawing", "meander_drawing"],
+        "mini_tests": ["resting_tremor", "spiral_drawing", "meander_drawing"],
         "estimated_duration": "8-10 min"
     }
 }
@@ -152,16 +170,16 @@ class TestService:
             predictions=predictions
         )
 
-        # 5. Create test result
+        # 5. Create test result (sanitize numpy types for JSON serialization)
         test_result = TestResult(
             session_id=session.id,
-            ad_risk_score=risk_scores["ad_risk"],
-            pd_risk_score=risk_scores["pd_risk"],
-            category_score=risk_scores["category_score"],
+            ad_risk_score=float(risk_scores["ad_risk"]),
+            pd_risk_score=float(risk_scores["pd_risk"]),
+            category_score=float(risk_scores["category_score"]),
             stage=risk_scores.get("stage"),
             severity=risk_scores.get("severity"),
-            extracted_features=extracted_features,
-            xai_explanation=xai_explanation,
+            extracted_features=_sanitize_for_json(extracted_features),
+            xai_explanation=_sanitize_for_json(xai_explanation),
         )
         
         self.db.add(test_result)
@@ -245,6 +263,44 @@ class TestService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
     
+    async def get_latest_results_with_xai(self, user_id: int) -> dict:
+        """Get latest completed test result per category with full XAI explanations."""
+        categories = ["cognitive", "speech", "motor"]
+        results = {}
+
+        for cat in categories:
+            query = (
+                select(TestResult)
+                .join(TestSession, TestResult.session_id == TestSession.id)
+                .where(
+                    and_(
+                        TestSession.user_id == user_id,
+                        TestSession.category == cat,
+                        TestSession.status == SessionStatus.COMPLETED.value,
+                    )
+                )
+                .order_by(TestResult.created_at.desc())
+                .limit(1)
+            )
+            result = await self.db.execute(query)
+            test_result = result.scalar_one_or_none()
+
+            if test_result:
+                results[cat] = {
+                    "id": test_result.id,
+                    "session_id": test_result.session_id,
+                    "ad_risk_score": test_result.ad_risk_score,
+                    "pd_risk_score": test_result.pd_risk_score,
+                    "category_score": test_result.category_score,
+                    "stage": test_result.stage,
+                    "severity": test_result.severity,
+                    "extracted_features": test_result.extracted_features,
+                    "xai_explanation": test_result.xai_explanation,
+                    "created_at": str(test_result.created_at) if test_result.created_at else None,
+                }
+
+        return results
+
     # ============== TEST ITEMS ==============
     
     async def add_test_item(

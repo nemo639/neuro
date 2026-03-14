@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     # File Upload Settings
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
     UPLOAD_DIR: str = "uploads"
-    ALLOWED_AUDIO_TYPES: List[str] = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/webm"]
+    ALLOWED_AUDIO_TYPES: List[str] = ["audio/wav", "audio/mp3", "audio/mpeg", "audio/webm", "audio/x-wav", "application/octet-stream"]
     ALLOWED_IMAGE_TYPES: List[str] = ["image/jpg", "image/jpeg", "image/png", "image/webp"]
     ALLOWED_FILE_TYPES: str = ".jpg,.jpeg,.png,.pdf,.docx,.txt"  # Added this
     

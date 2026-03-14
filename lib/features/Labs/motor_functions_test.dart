@@ -28,11 +28,11 @@ Map<String, Map<String, dynamic>> _testResults = {};
   // Test data
   final List<TestComponent> testComponents = [
     TestComponent(
-      name: 'Finger Tapping',
-      description: 'Measure tapping speed and rhythm',
+      name: 'Resting Tremor',
+      description: 'Detect hand tremor using phone sensors',
       duration: '2 min',
       isCompleted: false,
-      icon: Icons.touch_app_rounded,
+      icon: Icons.vibration_rounded,
     ),
     TestComponent(
       name: 'Spiral Drawing',
@@ -101,13 +101,100 @@ Future<void> _completeSession() async {
   setState(() => _isSubmitting = false);
   if (mounted) {
     if (result['success']) {
-      Navigator.pushReplacementNamed(context, '/XAI', arguments: {'result': result['data']});
+      _showResultsDialog(result['data']);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result['error'] ?? 'Failed'), backgroundColor: Colors.red),
       );
     }
   }
+}
+
+void _showResultsDialog(Map<String, dynamic> resultData) {
+  final adRisk = (resultData['ad_risk_score'] ?? 0).toDouble();
+  final pdRisk = (resultData['pd_risk_score'] ?? 0).toDouble();
+  final severity = resultData['severity'] ?? 'low';
+  final severityColor = severity == 'high' ? Colors.red : severity == 'medium' ? Colors.orange : greenAccent;
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Icon(Icons.check_circle_rounded, color: greenAccent, size: 28),
+          const SizedBox(width: 10),
+          const Expanded(child: Text('Test Complete', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18))),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              children: [
+                _resultRow('AD Risk', '${adRisk.toStringAsFixed(1)}%', adRisk > 50 ? Colors.red : greenAccent),
+                const SizedBox(height: 8),
+                _resultRow('PD Risk', '${pdRisk.toStringAsFixed(1)}%', pdRisk > 50 ? Colors.red : greenAccent),
+                const SizedBox(height: 8),
+                _resultRow('Severity', severity.toString().toUpperCase(), severityColor),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Your motor analysis is complete. You can view detailed AI explanations or return to tests.',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(ctx);
+            Navigator.pop(context);
+          },
+          child: const Text('Done', style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton.icon(
+          onPressed: () {
+            Navigator.pop(ctx);
+            Navigator.pushReplacementNamed(context, '/XAI', arguments: {'result': resultData});
+          },
+          icon: const Icon(Icons.auto_awesome_rounded, size: 18, color: Colors.white),
+          label: const Text('View AI Analysis', style: TextStyle(color: Colors.white)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: orangeAccent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _resultRow(String label, String value, Color color) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: color)),
+      ),
+    ],
+  );
 }
 
 void _showCompleteDialog() {
@@ -688,8 +775,8 @@ void _showCompleteDialog() {
     HapticFeedback.mediumImpact();
     
     String routeName = '';
-    if (test.name == 'Finger Tapping') {
-      routeName = '/test/finger-tapping-test';
+    if (test.name == 'Resting Tremor') {
+      routeName = '/test/resting-tremor-test';
     } else if (test.name == 'Spiral Drawing') {
       routeName = '/test/spiral-drawing-test';
     } else if (test.name == 'Meander Drawing') {

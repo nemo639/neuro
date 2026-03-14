@@ -36,6 +36,16 @@ async def get_test_dashboard(
     return await service.get_dashboard(user_id)
 
 
+@router.get("/latest-results")
+async def get_latest_results_with_xai(
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get latest test result per category with full XAI explanations."""
+    service = TestService(db)
+    return await service.get_latest_results_with_xai(user_id)
+
+
 @router.post("/", response_model=TestSessionResponse, status_code=201)
 async def create_test_session(
     data: TestSessionCreate,

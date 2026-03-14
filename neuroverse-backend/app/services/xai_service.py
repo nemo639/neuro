@@ -195,6 +195,15 @@ class XAIService:
         """
         predictions = predictions or {}
 
+        # Extract model + tensor passed from predictor for real XAI computation
+        xai_model = predictions.pop("_xai_model", None)
+        xai_tensor = predictions.pop("_xai_tensor", None)
+
+        # Build a predict_fn for LIME/SHAP when model is available
+        predict_fn = None
+        if xai_model is not None and xai_tensor is not None:
+            predict_fn = self._make_predict_fn(xai_model, features)
+
         # 1. SHAP values (feature attributions)
         raw_shap = self.shap.compute_shap_values(features, predictions)
         shap_values = self._to_shap_schema(raw_shap)
@@ -206,26 +215,40 @@ class XAIService:
         raw_interps = self.interpreter.interpret(category, features, risk_scores, predictions)
         interpretations = [Interpretation(**i) for i in raw_interps]
 
-        # 4. Saliency / visual data (GradCAM)
-        raw_saliency = self.saliency.generate(category, features, predictions)
+        # 4. Saliency / visual data (GradCAM) — pass model+tensor for real heatmaps
+        raw_saliency = self.saliency.generate(
+            category, features, predictions,
+            model=xai_model, input_tensor=xai_tensor,
+        )
         saliency_data = SaliencyData(**raw_saliency) if raw_saliency else None
 
-        # 5. LIME explanations
-        lime_data = self.lime.explain_tabular(features, predictions)
+        # 5. LIME explanations — pass predict_fn for real LIME
+        lime_data = self.lime.explain_tabular(features, predictions, predict_fn=predict_fn)
 
-        # 6. Integrated Gradients
-        ig_data = self.ig.compute_attributions(features, predictions)
+        # 6. Integrated Gradients — pass model+tensor for real IG
+        ig_data = self.ig.compute_attributions(
+            features, predictions,
+            model=xai_model, input_tensor=xai_tensor,
+        )
 
         # 7. Counterfactual analysis
         cf_data = self.counterfactual.generate_counterfactuals(
             features, predictions, category
         )
 
-        # 8. Attention visualization
+        # 8. Attention visualization — use real weights + spatial attention from model
         attn_weights = predictions.get("attention_weights", {})
         attn_data = self.attention.visualize_feature_attention(
             attn_weights, features, category
         ) if attn_weights else None
+
+        # Try spatial attention from image model if no feature attention
+        if attn_data is None and xai_model is not None and xai_tensor is not None:
+            spatial = self.attention.visualize_spatial_attention(
+                model=xai_model, input_tensor=xai_tensor,
+            )
+            if spatial:
+                attn_data = spatial
 
         attn_summary = self.attention.generate_attention_summary(
             category, attn_data or {}, predictions
@@ -336,6 +359,72 @@ class XAIService:
             return f"Your {category} assessment indicates some areas of concern (AD risk: {ad:.0f}%, PD risk: {pd:.0f}%). Follow-up recommended."
         else:
             return f"Your {category} assessment shows patterns that should be discussed with a healthcare provider (AD risk: {ad:.0f}%, PD risk: {pd:.0f}%)."
+
+    @staticmethod
+    def _make_predict_fn(model, features: dict):
+        """
+        Build a callable predict_fn(X) for LIME/SHAP.
+        X is a numpy array of shape (n_samples, n_features).
+        Returns numpy array of shape (n_samples,) with risk scores.
+
+        The function handles dimension mismatches by padding/truncating
+        to match the model's expected input size.
+        """
+        try:
+            import torch
+            import numpy as np
+
+            model.eval()
+
+            # Detect expected input dim from model's first linear layer
+            expected_dim = None
+            for name, param in model.named_parameters():
+                if "weight" in name and param.dim() == 2:
+                    expected_dim = param.shape[1]
+                    break
+
+            def predict_fn(X):
+                if not isinstance(X, np.ndarray):
+                    X = np.array(X, dtype=np.float64)
+                X = X.astype(np.float32)
+                if X.ndim == 1:
+                    X = X.reshape(1, -1)
+
+                # Match model input dimension
+                if expected_dim is not None and X.shape[1] != expected_dim:
+                    if X.shape[1] > expected_dim:
+                        X = X[:, :expected_dim]
+                    else:
+                        pad = np.zeros((X.shape[0], expected_dim - X.shape[1]), dtype=np.float32)
+                        X = np.concatenate([X, pad], axis=1)
+
+                t = torch.from_numpy(X).float()
+                with torch.no_grad():
+                    out = model(t)
+                if isinstance(out, dict):
+                    risk = out.get("risk", out.get("ad_risk", None))
+                    if risk is not None:
+                        return risk.detach().cpu().numpy().flatten()
+                    logits = out.get("logits", None)
+                    if logits is not None:
+                        return torch.softmax(logits, dim=-1)[:, 0].detach().cpu().numpy()
+                    # Fallback: first scalar output
+                    for v in out.values():
+                        if hasattr(v, 'detach'):
+                            arr = v.detach().cpu().numpy()
+                            return arr[:, 0] if arr.ndim == 2 else arr.flatten()
+                # Raw tensor output (e.g. TMTNet logits)
+                arr = out.detach().cpu().numpy()
+                if arr.ndim == 2:
+                    # Multi-class: return risk class probability (class 0 = AD)
+                    probs = torch.softmax(out, dim=-1).detach().cpu().numpy()
+                    return probs[:, 0]
+                return arr.flatten()
+
+            return predict_fn
+        except Exception as exc:
+            logger.warning("Failed to create predict_fn for XAI: %s", exc)
+            return None
 
     @staticmethod
     def _feature_description(feat: str, shap_val: float) -> str:

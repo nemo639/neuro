@@ -28,6 +28,7 @@ import 'package:neuroverse/features/labs/tests/stroop_test.dart';
 import 'package:neuroverse/features/labs/tests/nback_test.dart';
 import 'package:neuroverse/features/labs/tests/word_recall_test.dart';
 import 'package:neuroverse/features/labs/tests/finger_tapping_test.dart';
+import 'package:neuroverse/features/labs/tests/resting_tremor_test.dart';
 import 'package:neuroverse/features/labs/tests/spiral_drawing_test.dart';
 import 'package:neuroverse/features/labs/tests/meander_drawing_test.dart';
 import 'package:neuroverse/features/labs/tests/clock_drawing_test.dart';
@@ -95,6 +96,7 @@ class MyApp extends StatelessWidget {
         '/test/nback-test': (context) => const NBackTestScreen(),
         '/test/word-recall-test': (context) => const WordRecallTestScreen(),
         '/test/finger-tapping-test': (context) => const FingerTappingTestScreen(),
+        '/test/resting-tremor-test': (context) => const RestingTremorTestScreen(),
         '/test/spiral-drawing-test': (context) => const SpiralDrawingTestScreen(),
         '/test/gait_assessment_test': (context) => const GaitAssessmentTestScreen(),
         '/test/clock-drawing-test': (context) => const ClockDrawingTestScreen(),

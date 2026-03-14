@@ -49,8 +49,12 @@ class CognitiveExtractor(BaseExtractor):
     async def _extract_item(self, item_name: str, raw: Dict[str, Any]) -> Dict[str, Any]:
         dispatch = {
             "stroop": self._stroop,
+            "stroop_test": self._stroop,           # Flutter: 'Stroop Test'
             "nback": self._nback,
+            "n-back_memory": self._nback,           # Flutter: 'N-Back Memory'
+            "n_back_memory": self._nback,
             "word_recall": self._word_recall,
+            "word_list_recall": self._word_recall,  # Flutter: 'Word List Recall'
             "tmt": self._tmt,
             "tmt_a": self._tmt,
             "tmt_b": self._tmt,
@@ -112,13 +116,47 @@ class CognitiveExtractor(BaseExtractor):
     def _word_recall(self, raw: dict) -> dict:
         words_shown = raw.get("words_shown", [])
         total_words = len(words_shown) if isinstance(words_shown, list) else self.safe_get(raw, "total_words", 1)
+
+        # Flutter sends nested: immediate_recall.correct_count, delayed_recall, recognition
+        imm = raw.get("immediate_recall", {})
+        delayed = raw.get("delayed_recall", {})
+        recognition = raw.get("recognition", {})
+
+        # correct_recalls: try flat key first, then nested
         correct = self.safe_get(raw, "correct_recalls")
+        if correct == 0 and isinstance(imm, dict):
+            correct = imm.get("correct_count", 0)
+
+        # intrusions: try flat key first, then nested
+        intrusions = self.safe_get(raw, "intrusions")
+        if intrusions == 0 and isinstance(imm, dict):
+            intrusions = imm.get("intrusion_count", 0)
+
+        # Recall accuracy: prefer pre-computed, else compute
+        recall_acc = self.safe_get(raw, "recall_accuracy")
+        if recall_acc == 0 and isinstance(imm, dict) and imm.get("accuracy"):
+            recall_acc = imm["accuracy"]
+        elif recall_acc == 0 and correct > 0:
+            recall_acc = self.safe_ratio(correct, max(total_words, 1))
+
+        # Delayed recall accuracy
+        delayed_acc = 0.0
+        if isinstance(delayed, dict):
+            delayed_acc = delayed.get("accuracy", 0.0)
+
+        # Recognition discriminability
+        recog_disc = 0.0
+        if isinstance(recognition, dict):
+            recog_disc = recognition.get("discriminability", 0.0)
 
         return {
-            "recall_accuracy": self.safe_ratio(correct, max(total_words, 1)),
-            "recall_intrusions": self.safe_get(raw, "intrusions"),
+            "recall_accuracy": recall_acc,
+            "recall_intrusions": float(intrusions),
             "recall_first_time": self.safe_get(raw, "time_to_first_recall_ms"),
             "recall_total_words": float(total_words),
+            "recall_delayed_accuracy": delayed_acc,
+            "recall_recognition_discriminability": recog_disc,
+            "recall_retention_rate": self.safe_get(raw, "retention_rate"),
         }
 
     # ------------------------------------------------------------------ #

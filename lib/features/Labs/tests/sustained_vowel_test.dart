@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:neuroverse/core/audio_recorder_service.dart';
 
 // Test phases - must be outside class
 enum SustainedVowelPhase { instructions, recording, completed }
@@ -37,6 +38,9 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
     {'sound': 'Eeee', 'symbol': 'E', 'color': Color(0xFF8B5CF6)},
     {'sound': 'Oooo', 'symbol': 'O', 'color': Color(0xFFF97316)},
   ];
+
+  // Audio recorder
+  final AudioRecorderService _audioRecorder = AudioRecorderService();
 
   // Timing
   final int _targetDurationSeconds = 5; // Hold each vowel for 5 seconds
@@ -98,6 +102,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
 
   @override
   void dispose() {
+    _audioRecorder.dispose();
     _pageController.dispose();
     _pulseController.dispose();
     _waveController.dispose();
@@ -108,7 +113,23 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
 
   Map<String, dynamic> get _currentVowel => _vowels[_currentTrial];
 
-  void _startRecording() {
+  Future<void> _startRecording() async {
+    final vowelSymbol = _currentVowel['symbol'].toString().toLowerCase();
+    final fileName = 'vowel_${vowelSymbol}_${DateTime.now().millisecondsSinceEpoch}';
+    final started = await _audioRecorder.startRecording(fileName);
+
+    if (!started && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Microphone permission required for recording'),
+          backgroundColor: redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _currentPhase = SustainedVowelPhase.recording;
       _isRecording = true;
@@ -124,7 +145,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
         _recordingMilliseconds += 100;
         _recordingSeconds = _recordingMilliseconds ~/ 1000;
         _recordingProgress = _recordingMilliseconds / (_targetDurationSeconds * 1000);
-        
+
         if (_recordingMilliseconds >= _targetDurationSeconds * 1000) {
           _stopRecording();
         }
@@ -132,22 +153,23 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
     });
   }
 
-  void _stopRecording() {
+  Future<void> _stopRecording() async {
     _recordingTimer?.cancel();
-    
+
     final duration = DateTime.now().difference(_recordingStartTime!).inMilliseconds;
-    
+    final audioPath = await _audioRecorder.stopRecording();
+
     // Save trial result
     _trialResults.add({
       'vowel': _currentVowel['sound'],
       'duration_ms': duration,
       'target_duration_ms': _targetDurationSeconds * 1000,
-      'audio_path': 'recordings/vowel_${_currentVowel['symbol'].toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}.wav',
+      'audio_path': audioPath ?? '',
     });
 
     setState(() {
       _isRecording = false;
-      
+
       if (_currentTrial < _totalTrials - 1) {
         // Move to next vowel
         _currentTrial++;
@@ -159,6 +181,23 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
         _testData['completed'] = true;
         _currentPhase = SustainedVowelPhase.completed;
       }
+    });
+  }
+
+  Future<void> _retakeRecording() async {
+    HapticFeedback.mediumImpact();
+    await _audioRecorder.cancelRecording();
+    setState(() {
+      // Clear all trials and restart from the first vowel
+      _trialResults.clear();
+      _testData['completed'] = false;
+      _testData['trials'] = [];
+      _testData['total_duration_ms'] = 0;
+      _currentTrial = 0;
+      _recordingSeconds = 0;
+      _recordingMilliseconds = 0;
+      _recordingProgress = 0.0;
+      _currentPhase = SustainedVowelPhase.instructions;
     });
   }
 
@@ -842,6 +881,33 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _retakeRecording,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.black.withOpacity(0.1)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.refresh_rounded, color: Colors.grey[700], size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Retake Recording',
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
