@@ -89,6 +89,8 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
       _errorsA = 0;
       _trajectoryPoints.clear();
       _hasError = false;
+      _circlePositions = [];
+      _distractorPositions = [];
     });
   }
 
@@ -101,11 +103,20 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
       _errorsB = 0;
       _trajectoryPoints.clear();
       _hasError = false;
+      _circlePositions = [];
+      _distractorPositions = [];
     });
   }
 
+  // Distractor circles (greyed out, not part of sequence)
+  List<Offset> _distractorPositions = [];
+
   void _generateCirclePositions(Size canvasSize) {
-    final rng = math.Random(42); // Fixed seed for reproducibility
+    // TRUE randomization each session — prevents memorization across sessions
+    // Uses current timestamp so every attempt has a unique layout
+    final seed = DateTime.now().microsecondsSinceEpoch +
+        (_currentPhase == TMTPhase.partA ? 0 : 999999);
+    final rng = math.Random(seed);
     final count = _currentPhase == TMTPhase.partA ? _partACount : _partBCount;
 
     // Generate labels
@@ -138,9 +149,38 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
       } while (_tooClose(pos) && attempts < 100);
       _circlePositions.add(pos);
     }
+
+    // Add distractor circles to prevent pattern recognition
+    // These are numbered/lettered circles that are NOT part of the sequence
+    // They force visual search rather than spatial memorization
+    _distractorPositions = [];
+    final distractorCount = _currentPhase == TMTPhase.partA ? 5 : 4;
+    for (int i = 0; i < distractorCount; i++) {
+      Offset pos;
+      int attempts = 0;
+      do {
+        pos = Offset(
+          margin + rng.nextDouble() * maxW,
+          margin + rng.nextDouble() * maxH,
+        );
+        attempts++;
+      } while ((_tooClose(pos) || _tooCloseToDistractors(pos)) && attempts < 100);
+      _distractorPositions.add(pos);
+    }
   }
 
   bool _tooClose(Offset pos) {
+    for (var existing in _circlePositions) {
+      if ((pos - existing).distance < _circleRadius * 3) return true;
+    }
+    return false;
+  }
+
+  bool _tooCloseToDistractors(Offset pos) {
+    for (var existing in _distractorPositions) {
+      if ((pos - existing).distance < _circleRadius * 3) return true;
+    }
+    // Also check against real circles
     for (var existing in _circlePositions) {
       if ((pos - existing).distance < _circleRadius * 3) return true;
     }
@@ -713,6 +753,7 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
                     circleRadius: _circleRadius,
                     accentColor: color,
                     hasError: _hasError,
+                    distractorPositions: _distractorPositions,
                   ),
                   size: Size.infinite,
                 ),
@@ -854,6 +895,7 @@ class TMTCanvasPainter extends CustomPainter {
   final double circleRadius;
   final Color accentColor;
   final bool hasError;
+  final List<Offset> distractorPositions;
 
   TMTCanvasPainter({
     required this.circlePositions,
@@ -864,6 +906,7 @@ class TMTCanvasPainter extends CustomPainter {
     required this.circleRadius,
     required this.accentColor,
     required this.hasError,
+    this.distractorPositions = const [],
   });
 
   @override
@@ -964,6 +1007,42 @@ class TMTCanvasPainter extends CustomPainter {
           Offset(pos.dx - textPainter.width / 2, pos.dy - textPainter.height / 2),
         );
       }
+    }
+
+    // Draw distractor circles (greyed out, not tappable)
+    // These prevent spatial memorization across Part A → Part B
+    for (int i = 0; i < distractorPositions.length; i++) {
+      final pos = distractorPositions[i];
+
+      // Faded circle fill
+      final fillPaint = Paint()..color = Colors.grey.withOpacity(0.08);
+      canvas.drawCircle(pos, circleRadius * 0.85, fillPaint);
+
+      // Faded border
+      final borderPaint = Paint()
+        ..color = Colors.grey.withOpacity(0.25)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke;
+      canvas.drawCircle(pos, circleRadius * 0.85, borderPaint);
+
+      // Fake label (random-looking number or letter)
+      final fakeLabel = i % 2 == 0 ? '${26 + i}' : String.fromCharCode(77 + i);
+      final tp = TextPainter(
+        text: TextSpan(
+          text: fakeLabel,
+          style: TextStyle(
+            color: Colors.grey.withOpacity(0.3),
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      tp.layout();
+      tp.paint(
+        canvas,
+        Offset(pos.dx - tp.width / 2, pos.dy - tp.height / 2),
+      );
     }
   }
 

@@ -50,10 +50,7 @@ class _StroopTestScreenState extends State<StroopTestScreen>
   // ==================== RANDOMIZATION ====================
   // Shuffled button order (prevents motor automaticity)
   List<String> _shuffledColors = [];
-  
-  // Button position micro-offsets for additional randomization
-  List<Offset> _buttonOffsets = [];
-  
+
   // Track position history to prevent same layout twice in a row
   String _lastButtonLayout = '';
 
@@ -120,23 +117,15 @@ class _StroopTestScreenState extends State<StroopTestScreen>
     // Shuffle until we get a different layout than last time
     String newLayout;
     int attempts = 0;
-    
+
     do {
       _shuffledColors = List.from(_colorWords)..shuffle(_random);
       newLayout = _shuffledColors.join(',');
       attempts++;
     } while (newLayout == _lastButtonLayout && attempts < 10);
-    
+
     _lastButtonLayout = newLayout;
-    
-    // Generate micro-offsets for each button (subtle position variation)
-    _buttonOffsets = List.generate(4, (index) {
-      return Offset(
-        (_random.nextDouble() - 0.5) * 16, // -8 to +8 pixels X
-        (_random.nextDouble() - 0.5) * 8,  // -4 to +4 pixels Y
-      );
-    });
-    
+
     // Animate the button transition
     _buttonAnimController.forward(from: 0);
   }
@@ -804,61 +793,49 @@ class _StroopTestScreenState extends State<StroopTestScreen>
   }
 
   Widget _buildColorButtons() {
-    return AnimatedBuilder(
-      animation: _buttonAnimController,
-      builder: (context, child) {
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          alignment: WrapAlignment.center,
-          children: List.generate(_shuffledColors.length, (index) {
-            final colorName = _shuffledColors[index];
-            final color = _colors[colorName]!;
-            final offset = _buttonOffsets.isNotEmpty && index < _buttonOffsets.length
-                ? _buttonOffsets[index]
-                : Offset.zero;
-            
-            return Transform.translate(
-              offset: offset * _buttonAnimController.value,
-              child: AnimatedOpacity(
-                opacity: _showingStimulus && !_showingFeedback ? 1.0 : 0.5,
-                duration: const Duration(milliseconds: 200),
-                child: GestureDetector(
-                  onTap: _showingStimulus && !_showingFeedback
-                      ? () => _handleResponse(colorName)
-                      : null,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withOpacity(0.4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+    final isActive = _showingStimulus && !_showingFeedback;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_shuffledColors.length, (index) {
+        final colorName = _shuffledColors[index];
+        final color = _colors[colorName]!;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: AnimatedOpacity(
+            opacity: isActive ? 1.0 : 0.5,
+            duration: const Duration(milliseconds: 200),
+            child: GestureDetector(
+              onTap: isActive ? () => _handleResponse(colorName) : null,
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                    child: Center(
-                      child: Text(
-                        colorName.substring(0, 1),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    colorName.substring(0, 1),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
               ),
-            );
-          }),
+            ),
+          ),
         );
-      },
+      }),
     );
   }
 

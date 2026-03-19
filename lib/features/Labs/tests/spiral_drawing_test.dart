@@ -35,6 +35,21 @@ class _SpiralDrawingTestScreenState extends State<SpiralDrawingTestScreen>
   // Canvas key for image capture
   final GlobalKey _canvasKey = GlobalKey();
 
+  // Drawing tool options
+  Color _selectedColor = const Color(0xFF3B82F6); // default blueAccent
+  double _selectedThickness = 4.0;
+
+  static const List<Color> _penColors = [
+    Color(0xFF1A1A1A), // Black
+    Color(0xFF3B82F6), // Blue
+    Color(0xFFEF4444), // Red
+    Color(0xFF10B981), // Green
+    Color(0xFF8B5CF6), // Purple
+    Color(0xFFF97316), // Orange
+  ];
+
+  static const List<double> _penThicknesses = [2.0, 4.0, 6.0, 8.0];
+
   // Results
   Map<String, dynamic> _leftHandResults = {};
   Map<String, dynamic> _rightHandResults = {};
@@ -556,26 +571,102 @@ class _SpiralDrawingTestScreenState extends State<SpiralDrawingTestScreen>
     );
   }
 
+  Widget _buildDrawingToolbar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          // Color options
+          ..._penColors.map((c) => GestureDetector(
+            onTap: () => setState(() => _selectedColor = c),
+            child: Container(
+              width: 24,
+              height: 24,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                color: c,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _selectedColor == c ? Colors.black87 : Colors.transparent,
+                  width: 2.5,
+                ),
+              ),
+            ),
+          )),
+          const SizedBox(width: 8),
+          Container(width: 1, height: 24, color: Colors.grey[300]),
+          const SizedBox(width: 8),
+          // Thickness options
+          ..._penThicknesses.map((t) => GestureDetector(
+            onTap: () => setState(() => _selectedThickness = t),
+            child: Container(
+              width: 28,
+              height: 28,
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: _selectedThickness == t ? Colors.grey[200] : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Container(
+                  width: t + 2,
+                  height: t + 2,
+                  decoration: BoxDecoration(
+                    color: _selectedColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDrawingPhase() {
     final isLeft = _currentPhase == SpiralPhase.leftHand;
-    final color = isLeft ? blueAccent : purpleAccent;
+    final phaseColor = isLeft ? blueAccent : purpleAccent;
 
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            color: phaseColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: phaseColor.withOpacity(0.3)),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(isLeft ? Icons.back_hand_rounded : Icons.front_hand_rounded, color: color, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                isLeft ? 'LEFT HAND' : 'RIGHT HAND',
-                style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1),
+              Icon(isLeft ? Icons.back_hand_rounded : Icons.front_hand_rounded, color: phaseColor, size: 22),
+              const SizedBox(width: 10),
+              Column(
+                children: [
+                  Text(
+                    isLeft ? 'LEFT HAND' : 'RIGHT HAND',
+                    style: TextStyle(color: phaseColor, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isLeft ? 'Use only your left hand to draw' : 'Use only your right hand to draw',
+                    style: TextStyle(color: phaseColor.withOpacity(0.7), fontSize: 11),
+                  ),
+                ],
               ),
             ],
           ),
         ),
+        _buildDrawingToolbar(),
+        const SizedBox(height: 8),
         Expanded(
           child: GestureDetector(
             onPanStart: _onPanStart,
@@ -586,7 +677,7 @@ class _SpiralDrawingTestScreenState extends State<SpiralDrawingTestScreen>
               decoration: BoxDecoration(
                 color: Colors.grey[50],
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: color.withOpacity(0.3), width: 2),
+                border: Border.all(color: phaseColor.withOpacity(0.3), width: 2),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
@@ -595,7 +686,8 @@ class _SpiralDrawingTestScreenState extends State<SpiralDrawingTestScreen>
                   child: CustomPaint(
                     painter: SpiralCanvasPainter(
                       templateColor: Colors.grey[300]!,
-                      strokeColor: color,
+                      strokeColor: _selectedColor,
+                      strokeWidth: _selectedThickness,
                       allStrokes: _allStrokes,
                       currentStroke: _currentStroke,
                     ),
@@ -638,7 +730,7 @@ class _SpiralDrawingTestScreenState extends State<SpiralDrawingTestScreen>
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: _allStrokes.isNotEmpty ? color : Colors.grey[300],
+                      color: _allStrokes.isNotEmpty ? phaseColor : Colors.grey[300],
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Row(
@@ -816,12 +908,14 @@ class SpiralTemplatePainter extends CustomPainter {
 class SpiralCanvasPainter extends CustomPainter {
   final Color templateColor;
   final Color strokeColor;
+  final double strokeWidth;
   final List<List<Offset>> allStrokes;
   final List<Offset> currentStroke;
 
   SpiralCanvasPainter({
     required this.templateColor,
     required this.strokeColor,
+    this.strokeWidth = 4.0,
     required this.allStrokes,
     required this.currentStroke,
   });
@@ -858,7 +952,7 @@ class SpiralCanvasPainter extends CustomPainter {
     // Draw user strokes
     final strokePaint = Paint()
       ..color = strokeColor
-      ..strokeWidth = 4
+      ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;

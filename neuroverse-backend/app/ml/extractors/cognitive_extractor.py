@@ -71,23 +71,38 @@ class CognitiveExtractor(BaseExtractor):
     # Stroop Test                                                         #
     # ------------------------------------------------------------------ #
     def _stroop(self, raw: dict) -> dict:
-        total_correct = self.safe_get(raw, "total_correct")
-        total_errors = self.safe_get(raw, "total_errors")
+        # Flutter sends: correct, errors, accuracy, avg_reaction_time_ms,
+        #   avg_congruent_rt_ms, avg_incongruent_rt_ms, stroop_interference_ms
+        total_correct = self.safe_get(raw, "correct", self.safe_get(raw, "total_correct"))
+        total_errors = self.safe_get(raw, "errors", self.safe_get(raw, "total_errors"))
         total = total_correct + total_errors
 
-        congruent_rt = self.safe_get(raw, "congruent_avg_ms")
-        incongruent_rt = self.safe_get(raw, "incongruent_avg_ms")
-        interference = self.safe_get(raw, "interference_score")
+        # RT fields: Flutter uses avg_congruent_rt_ms / avg_incongruent_rt_ms
+        congruent_rt = self.safe_get(raw, "avg_congruent_rt_ms",
+                        self.safe_get(raw, "congruent_avg_ms"))
+        incongruent_rt = self.safe_get(raw, "avg_incongruent_rt_ms",
+                          self.safe_get(raw, "incongruent_avg_ms"))
 
+        # Interference in ms: Flutter sends stroop_interference_ms
+        interference = self.safe_get(raw, "stroop_interference_ms",
+                        self.safe_get(raw, "interference_score"))
         if interference == 0 and congruent_rt > 0:
             interference = incongruent_rt - congruent_rt
 
+        # Accuracy: Flutter sends pre-computed 'accuracy' as decimal
+        accuracy = self.safe_get(raw, "accuracy")
+        if accuracy == 0 and total > 0:
+            accuracy = self.safe_ratio(total_correct, max(total, 1))
+
+        avg_rt = self.safe_get(raw, "avg_reaction_time_ms",
+                  self.safe_get(raw, "avg_response_time_ms"))
+
         return {
-            "stroop_accuracy": self.safe_ratio(total_correct, max(total, 1)),
-            "stroop_interference": interference,
-            "stroop_avg_rt": self.safe_get(raw, "avg_response_time_ms"),
-            "stroop_congruent_rt": congruent_rt,
-            "stroop_incongruent_rt": incongruent_rt,
+            "stroop_accuracy": float(accuracy),
+            "stroop_interference": float(interference),  # in ms
+            "stroop_avg_rt": float(avg_rt),
+            "stroop_congruent_rt": float(congruent_rt),
+            "stroop_incongruent_rt": float(incongruent_rt),
             "stroop_error_rate": self.safe_ratio(total_errors, max(total, 1)),
         }
 
@@ -321,19 +336,54 @@ class CognitiveExtractor(BaseExtractor):
         features: Dict[str, Any] = {}
 
         # Pass through the base64 image for CDTNet
-        b64 = raw.get("clock_image_base64", raw.get("image_base64", raw.get("drawing_base64")))
+        # Check all possible locations where Flutter might put the image
+        b64 = None
+        search_keys = ("clock_image_base64", "image_base64", "drawing_base64")
+
+        # 1. Top-level keys
+        for key in search_keys:
+            val = raw.get(key)
+            if val and isinstance(val, str) and len(val) > 100:
+                b64 = val
+                break
+
+        # 2. Inside nested drawing_data dict
+        if not b64:
+            drawing_data = raw.get("drawing_data", {})
+            if isinstance(drawing_data, dict):
+                for key in search_keys:
+                    val = drawing_data.get(key)
+                    if val and isinstance(val, str) and len(val) > 100:
+                        b64 = val
+                        break
+
         if b64:
             features["clock_image_base64"] = b64
             features["_has_cdt_image"] = True
+            logger.info("CDT image found (%d chars)", len(b64))
+        else:
+            logger.warning("CDT image NOT found in raw_data keys: %s",
+                          [k for k in raw.keys()])
 
         # Pre-scored features (if clinician/app has scored the clock)
-        features["shulman_score"] = self.safe_get(raw, "shulman_score")
-        features["clock_contour"] = self.safe_get(raw, "clock_contour", 1.0)  # 0-1
-        features["numbers_placed"] = self.safe_get(raw, "numbers_placed", 12)
-        features["numbers_correct"] = self.safe_get(raw, "numbers_correct", 12)
-        features["hands_present"] = 1.0 if raw.get("hands_present", True) else 0.0
-        features["center_deviation"] = self.safe_get(raw, "center_deviation")
-        features["drawing_time"] = self.safe_get(raw, "drawing_time_ms", self.safe_get(raw, "duration_ms"))
+        # Flutter nests calculated results inside drawing_data
+        dd = raw.get("drawing_data", {})
+        if not isinstance(dd, dict):
+            dd = {}
+
+        features["shulman_score"] = self.safe_get(raw, "shulman_score", self.safe_get(dd, "shulman_score"))
+        features["clock_contour"] = self.safe_get(raw, "clock_contour",
+                                     self.safe_get(dd, "circle_quality", 1.0))
+        features["numbers_placed"] = self.safe_get(raw, "numbers_placed",
+                                      self.safe_get(dd, "numbers_placed", 12))
+        features["numbers_correct"] = self.safe_get(raw, "numbers_correct",
+                                       self.safe_get(dd, "numbers_correct", 12))
+        features["hands_present"] = 1.0 if raw.get("hands_present", dd.get("hands_present", True)) else 0.0
+        features["center_deviation"] = self.safe_get(raw, "center_deviation",
+                                        self.safe_get(dd, "center_deviation"))
+        features["drawing_time"] = self.safe_get(raw, "drawing_time_ms",
+                                    self.safe_get(raw, "duration_ms",
+                                    self.safe_get(dd, "drawing_duration_ms")))
 
         # CDT-derived scoring features
         if features["numbers_placed"] > 0:
@@ -362,9 +412,20 @@ class CognitiveExtractor(BaseExtractor):
     def preprocess_cdt_image(
         img: np.ndarray,
         target_size: int = 224,
+        phone_input: bool = True,
     ) -> np.ndarray:
-        """Resize + ImageNet-normalize CDT image to (C, H, W) float32."""
+        """Resize + ImageNet-normalize CDT image to (C, H, W) float32.
+
+        When phone_input=True, applies domain adaptation to bridge the gap
+        between phone finger drawings and the paper scans the model was trained on.
+        """
         from PIL import Image
+        from app.ml.extractors.phone_image_adapter import adapt_phone_drawing
+
+        # Phone domain adaptation: make finger drawing look like paper scan
+        if phone_input:
+            img = adapt_phone_drawing(img, thin_iterations=1, noise_level=5.0, blur_sigma=0.5)
+
         mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
         std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 1, 3)
 
@@ -389,12 +450,20 @@ class CognitiveExtractor(BaseExtractor):
         age = float(features.get("age", 65))
         edu = max(float(features.get("education_years", 12)), 1.0)
 
+        # In clinical TMT, Part B always takes longer than Part A (switching cost).
+        # Our app can produce B ≤ A due to spatial learning from Part A.
+        # Floor B/A to 1.5 (healthy lower bound) so the model doesn't misinterpret
+        # a fast B as severe executive dysfunction.
+        b_over_a_raw = tmt_b / tmt_a
+        b_over_a = max(b_over_a_raw, 1.5)
+        # Also floor b_minus_a to a small positive value
+        b_minus_a_raw = tmt_b - tmt_a
+        b_minus_a = max(b_minus_a_raw, tmt_a * 0.5)  # at least 50% of A time
+
         b_a_total = tmt_a + tmt_b
         log_tmt_b = math.log1p(tmt_b)
         log_tmt_a = math.log1p(tmt_a)
-        b_over_a = tmt_b / tmt_a
         log_b_over_a = math.log1p(b_over_a)
-        b_minus_a = tmt_b - tmt_a
         tmt_b_slow = 1.0 if tmt_b > 180 else 0.0
         tmt_b_impaired = 1.0 if tmt_b > 300 else 0.0
         tmt_a_impaired = 1.0 if tmt_a > 78 else 0.0
@@ -470,10 +539,11 @@ class CognitiveExtractor(BaseExtractor):
             derived["processing_speed_ms"] = sum(rts) / len(rts)
 
         # TMT-derived: B/A ratio (classic AD indicator)
+        # Floor at 1.5 — app can produce B ≤ A due to spatial learning
         tmt_a = features.get("tmt_a_time", 0)
         tmt_b = features.get("tmt_b_time", 0)
         if tmt_a > 0 and tmt_b > 0:
-            derived["tmt_ba_ratio"] = tmt_b / tmt_a
+            derived["tmt_ba_ratio"] = max(tmt_b / tmt_a, 1.5)
 
         return derived
 

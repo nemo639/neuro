@@ -21,6 +21,7 @@ import torch.nn as nn
 
 from app.ml.predictors.base_predictor import BasePredictor, MODELS_DIR, torch_available, _import_torch
 from app.ml.extractors.motor_extractor import MotorExtractor, IMAGENET_MEAN, IMAGENET_STD
+from app.ml.extractors.phone_image_adapter import calibrate_phone_risk
 
 logger = logging.getLogger(__name__)
 
@@ -136,12 +137,19 @@ class MotorPredictor(BasePredictor):
         """
         results = []
 
+        # Log available image keys for debugging
+        img_keys = [k for k in features if "image" in k.lower() or "base64" in k.lower()]
+        logger.info("Motor predict: image-related keys in features: %s", img_keys)
+
         # Try spiral image prediction
         spiral_result = await self._try_image_prediction(
             features, "spiral_image_base64", self._spiral_model, self._spiral_loaded, "spiral"
         )
         if spiral_result:
             results.append(spiral_result)
+        else:
+            logger.warning("Spiral image prediction failed (key present: %s, model loaded: %s)",
+                          "spiral_image_base64" in features, self._spiral_loaded)
 
         # Try meander image prediction
         meander_result = await self._try_image_prediction(
@@ -149,6 +157,9 @@ class MotorPredictor(BasePredictor):
         )
         if meander_result:
             results.append(meander_result)
+        else:
+            logger.warning("Meander image prediction failed (key present: %s, model loaded: %s)",
+                          "meander_image_base64" in features, self._meander_loaded)
 
         # Also check generic drawing key
         if not results:
@@ -184,17 +195,28 @@ class MotorPredictor(BasePredictor):
         if model_loaded and model is not None:
             with torch.no_grad():
                 out = model(tensor)
-            pd_risk = float(out["risk"].item())
+            raw_pd_risk = float(out["risk"].item()) * 100
             logits = out["logits"].squeeze(0)
             probs = torch.softmax(logits, dim=-1)
             healthy_p = float(probs[0].item())
             pd_p = float(probs[1].item())
+            confidence = max(healthy_p, pd_p)
+
+            # Phone calibration: model trained on paper pen drawings
+            # overestimates PD risk for phone finger drawings because:
+            # - Finger on glass = unnaturally smooth (no pen tremor)
+            # - Thick finger strokes look different from thin pen lines
+            modality = f"motor_{source_tag}"
+            pd_risk = calibrate_phone_risk(raw_pd_risk, modality=modality, confidence=confidence)
+            logger.info("Motor %s: raw_risk=%.1f%%, calibrated=%.1f%% (conf=%.3f)",
+                       source_tag, raw_pd_risk, pd_risk, confidence)
 
             return {
-                "ad_risk": round(min(pd_risk * 5, 10.0), 2),
-                "pd_risk": round(pd_risk * 100, 2),
-                "confidence": round(max(healthy_p, pd_p), 3),
-                "classification": "PD" if pd_p > healthy_p else "Healthy",
+                "ad_risk": round(min(pd_risk * 0.05, 5.0), 2),
+                "pd_risk": round(pd_risk, 2),
+                "confidence": round(confidence, 3),
+                "classification": "PD" if pd_risk > 50 else "Healthy",
+                "raw_model_risk": round(raw_pd_risk, 2),
                 "class_probabilities": {"Healthy": round(healthy_p, 3), "PD": round(pd_p, 3)},
                 "source": f"{source_tag}_model",
                 "input_tensor": tensor,  # Keep for GradCAM XAI
@@ -260,58 +282,69 @@ class MotorPredictor(BasePredictor):
 
     @staticmethod
     def _heuristic_from_features(features: dict) -> Dict[str, Any]:
-        """Rule-based PD risk from tapping + drawing numeric features."""
-        pd_risk = 5.0
+        """Rule-based PD risk from tremor + drawing numeric features.
 
-        rate = features.get("tapping_rate", 5.0)
-        if rate < 3.0:
-            pd_risk += 20
-        elif rate < 4.0:
-            pd_risk += 10
+        Phone-aware thresholds:
+        - spiral_tremor on phone is INVERTED: high = smooth finger (normal)
+          so we only penalize very LOW tremor_score (> 0.9 means smooth = phone artifact)
+        - deviation thresholds relaxed (finger imprecision on glass)
+        - tremor_score from drawing point analysis is more reliable than
+          the raw Flutter tremor_score (which measures smoothness)
+        """
+        pd_risk = 3.0  # Lower baseline
 
-        regularity = features.get("tapping_regularity", 0.7)
-        if regularity < 0.4:
-            pd_risk += 18
-        elif regularity < 0.6:
-            pd_risk += 8
+        # Resting tremor features (accelerometer — NOT affected by phone drawing)
+        tremor_amp = features.get("tremor_amplitude", 0.0)
+        if tremor_amp > 0:
+            # Accelerometer tremor is reliable regardless of input device
+            if tremor_amp > 1.0:
+                pd_risk += 25
+            elif tremor_amp > 0.5:
+                pd_risk += 15
+            elif tremor_amp > 0.2:
+                pd_risk += 5
 
-        fatigue = features.get("tapping_fatigue", 0.1)
-        if fatigue > 0.5:
+            # PD-characteristic frequency (4-7 Hz)
+            pd_freq = features.get("tremor_pd_freq_match", 0.0)
+            if pd_freq > 0:
+                pd_risk += 10
+
+        # Spiral features — phone-recalibrated
+        # On phone, spiral_tremor is a Flutter-computed score where HIGH = smooth
+        # This is the OPPOSITE of clinical tremor (high tremor = bad)
+        # Only penalize if we have drawing-point-derived tremor_score
+        drawing_tremor = features.get("spiral_tremor_score", features.get("drawing_tremor_score", 0.0))
+        if drawing_tremor > 1.5:  # Point-analysis tremor (acceleration std)
             pd_risk += 12
-        elif fatigue > 0.3:
+        elif drawing_tremor > 0.8:
             pd_risk += 5
 
-        # Spiral features
-        tremor = features.get("spiral_tremor", 0.0)
-        if tremor > 0.5:
-            pd_risk += 20
-
         deviation = features.get("spiral_deviation", 0.0)
-        if deviation > 0.6:
-            pd_risk += 10
-
-        tremor_score = features.get("spiral_tremor_score", features.get("drawing_tremor_score", 0.0))
-        if tremor_score > 0.5:
-            pd_risk += 12
+        if deviation > 0.8:  # Relaxed from 0.6 (phone finger = less precise)
+            pd_risk += 8
+        elif deviation > 0.5:
+            pd_risk += 3
 
         speed_var = features.get("spiral_speed_variability", features.get("drawing_speed_variability", 0.0))
-        if speed_var > 1.0:
-            pd_risk += 8
+        if speed_var > 2.0:  # Relaxed from 1.0 (phone finger movement is more variable)
+            pd_risk += 5
 
-        # Meander features
-        meander_tremor = features.get("meander_tremor", 0.0)
-        if meander_tremor > 0.5:
-            pd_risk += 15
+        # Meander features — phone-recalibrated
+        meander_tremor = features.get("meander_tremor_score", 0.0)
+        if meander_tremor > 1.5:
+            pd_risk += 10
+        elif meander_tremor > 0.8:
+            pd_risk += 4
 
         meander_dev = features.get("meander_deviation", 0.0)
-        if meander_dev > 0.6:
-            pd_risk += 8
+        if meander_dev > 0.8:  # Relaxed from 0.6
+            pd_risk += 5
 
         pd_risk = min(max(pd_risk, 0.0), 100.0)
         return {
             "ad_risk": round(min(pd_risk * 0.05, 5.0), 2),
             "pd_risk": round(pd_risk, 2),
-            "confidence": 0.45,
+            "confidence": 0.40,
             "classification": "PD" if pd_risk > 50 else "Healthy",
             "source": "heuristic",
         }

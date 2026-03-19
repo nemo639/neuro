@@ -176,9 +176,34 @@ class MotorExtractor(BaseExtractor):
         }
 
         # Base64 image for MotorNet
-        b64 = raw.get("image_base64", raw.get("drawing_base64"))
+        # Flutter nests image inside left_hand/right_hand sub-dicts
+        b64 = None
+        # 1. Check top-level (unlikely but just in case)
+        for key in ("image_base64", "drawing_base64"):
+            val = raw.get(key)
+            if val and isinstance(val, str) and len(val) > 100:
+                b64 = val
+                break
+        # 2. Check inside right_hand dict
+        if not b64 and isinstance(raw.get("right_hand"), dict):
+            for key in ("image_base64", "drawing_base64"):
+                val = raw["right_hand"].get(key)
+                if val and isinstance(val, str) and len(val) > 100:
+                    b64 = val
+                    break
+        # 3. Check inside left_hand dict
+        if not b64 and isinstance(raw.get("left_hand"), dict):
+            for key in ("image_base64", "drawing_base64"):
+                val = raw["left_hand"].get(key)
+                if val and isinstance(val, str) and len(val) > 100:
+                    b64 = val
+                    break
         if b64:
             features["spiral_image_base64"] = b64
+            logger.info("Spiral image found (%d chars)", len(b64))
+        else:
+            logger.warning("Spiral image NOT found in raw_data keys: %s",
+                          [k for k in raw.keys()])
 
         # Drawing points analysis
         points = raw.get("drawing_points", [])
@@ -210,9 +235,31 @@ class MotorExtractor(BaseExtractor):
         }
 
         # Base64 image for MotorNet (meander)
-        b64 = raw.get("image_base64", raw.get("drawing_base64"))
+        # Flutter nests image inside left_hand/right_hand sub-dicts
+        b64 = None
+        for key in ("image_base64", "drawing_base64"):
+            val = raw.get(key)
+            if val and isinstance(val, str) and len(val) > 100:
+                b64 = val
+                break
+        if not b64 and isinstance(raw.get("right_hand"), dict):
+            for key in ("image_base64", "drawing_base64"):
+                val = raw["right_hand"].get(key)
+                if val and isinstance(val, str) and len(val) > 100:
+                    b64 = val
+                    break
+        if not b64 and isinstance(raw.get("left_hand"), dict):
+            for key in ("image_base64", "drawing_base64"):
+                val = raw["left_hand"].get(key)
+                if val and isinstance(val, str) and len(val) > 100:
+                    b64 = val
+                    break
         if b64:
             features["meander_image_base64"] = b64
+            logger.info("Meander image found (%d chars)", len(b64))
+        else:
+            logger.warning("Meander image NOT found in raw_data keys: %s",
+                          [k for k in raw.keys()])
 
         # Drawing points analysis
         points = raw.get("drawing_points", [])
@@ -276,14 +323,24 @@ class MotorExtractor(BaseExtractor):
         target_size: int = 224,
         mean: Optional[List[float]] = None,
         std: Optional[List[float]] = None,
+        phone_input: bool = True,
     ) -> np.ndarray:
-        """Resize + normalise an image to (C, H, W) float32 for EfficientNet-B0."""
+        """Resize + normalise an image to (C, H, W) float32 for EfficientNet-B0.
+
+        When phone_input=True, applies domain adaptation to bridge the gap
+        between phone finger drawings and the paper drawings the model trained on.
+        """
         from PIL import Image
+        from app.ml.extractors.phone_image_adapter import adapt_phone_drawing
 
         if mean is None:
             mean = IMAGENET_MEAN
         if std is None:
             std = IMAGENET_STD
+
+        # Phone domain adaptation: make finger drawing look like paper scan
+        if phone_input:
+            img = adapt_phone_drawing(img, thin_iterations=1, noise_level=4.0, blur_sigma=0.5)
 
         pil_img = Image.fromarray(img).resize(
             (target_size, target_size), Image.BILINEAR

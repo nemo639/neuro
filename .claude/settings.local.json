@@ -59,7 +59,25 @@
       "Bash(ls -lh \"D:\\\\neuroverse\\\\neuroverse-backend\\\\app\\\\ml\\\\models\"\" 2>/dev/null | grep -E \".pt)",
       "Bash(Total \")",
       "Bash(cd /d D:neuroverseneuroverse-backend)",
-      "Bash(find app/ml/models -name \"*.pt\" -type f -exec ls -lh {} +)"
+      "Bash(find app/ml/models -name \"*.pt\" -type f -exec ls -lh {} +)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''neuroverse-backend/app/ml/extractors/cognitive_extractor.py''\\).read\\(\\)\\); print\\(''cognitive_extractor: OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''neuroverse-backend/app/ml/extractors/motor_extractor.py''\\).read\\(\\)\\); print\\(''motor_extractor: OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''neuroverse-backend/app/ml/predictors/cognitive_predictor.py''\\).read\\(\\)\\); print\\(''cognitive_predictor: OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''neuroverse-backend/app/services/fusion_service.py''\\).read\\(\\)\\); print\\(''fusion_service: OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''neuroverse-backend/app/services/fusion_service.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''fusion_service: OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''neuroverse-backend/app/ml/extractors/cognitive_extractor.py''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(python -c \"import torch; print\\(''torch OK:'', torch.__version__\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''neuroverse-backend/app/ml/extractors/motor_extractor.py''\\).read\\(\\)\\); print\\(''motor_extractor OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''neuroverse-backend/app/ml/extractors/cognitive_extractor.py''\\).read\\(\\)\\); print\\(''cognitive_extractor OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''neuroverse-backend/app/ml/predictors/motor_predictor.py''\\).read\\(\\)\\); print\\(''motor_predictor OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/extractors/phone_image_adapter.py''\\).read\\(\\)\\); print\\(''phone_image_adapter OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/predictors/cognitive_predictor.py''\\).read\\(\\)\\); print\\(''cognitive_predictor OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/predictors/motor_predictor.py''\\).read\\(\\)\\); print\\(''motor_predictor OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/extractors/cognitive_extractor.py''\\).read\\(\\)\\); print\\(''cognitive_extractor OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/extractors/motor_extractor.py''\\).read\\(\\)\\); print\\(''motor_extractor OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/fusion_service.py''\\).read\\(\\)\\); print\\(''fusion_service OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/fusion_service.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''fusion_service OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/predictors/cognitive_predictor.py''\\).read\\(\\)\\); print\\(''OK''\\)\")"
     ]
   }
 }

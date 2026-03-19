@@ -114,11 +114,17 @@ class BasePredictor(abc.ABC):
         ...
 
     def _to_tensor(self, arr):
-        """Numpy array → batched float32 tensor on correct device."""
+        """Numpy array → batched float32 tensor on correct device.
+
+        Always returns a tensor with a leading batch dimension:
+          1-D (features,)        → (1, features)
+          2-D (H, W)             → (1, H, W)        (unlikely)
+          3-D (C, H, W)          → (1, C, H, W)     (image)
+          4-D already batched    → unchanged
+        """
         torch = _import_torch()
-        np = _import_numpy()
         t = torch.from_numpy(arr).float()
-        if t.dim() == 1:
+        if t.dim() < 4 and t.dim() >= 1:
             t = t.unsqueeze(0)
         return t.to(self._device)
 

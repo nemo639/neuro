@@ -30,6 +30,17 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
 
   // Canvas key for image capture
   final GlobalKey _canvasKey = GlobalKey();
+  String? _capturedImageBase64;  // captured before phase transition
+
+  // Drawing tool options
+  Color _selectedColor = const Color(0xFF1A1A1A);
+  double _selectedThickness = 3.0;
+
+  static const List<Color> _penColors = [
+    Color(0xFF1A1A1A), Color(0xFF3B82F6), Color(0xFFEF4444),
+    Color(0xFF10B981), Color(0xFF8B5CF6), Color(0xFFF97316),
+  ];
+  static const List<double> _penThicknesses = [2.0, 3.0, 5.0, 7.0];
 
   // Design colors
   static const Color bgColor = Color(0xFFF7F7F7);
@@ -107,6 +118,8 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
 
   Future<void> _finishDrawing() async {
     _drawingEndTime = DateTime.now();
+    // Capture canvas image BEFORE switching phase (which removes the canvas widget)
+    _capturedImageBase64 = await _captureCanvasAsBase64();
     setState(() {
       _currentPhase = CDTPhase.completed;
     });
@@ -202,7 +215,8 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
 
   Future<Map<String, dynamic>> _getTestData() async {
     final results = _calculateResults();
-    final base64Image = await _captureCanvasAsBase64();
+    // Use pre-captured image (captured before phase transition removed canvas)
+    final base64Image = _capturedImageBase64 ?? await _captureCanvasAsBase64();
 
     return {
       'test_type': 'clock_drawing',
@@ -518,11 +532,58 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
     );
   }
 
+  Widget _buildDrawingToolbar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          ..._penColors.map((c) => GestureDetector(
+            onTap: () => setState(() => _selectedColor = c),
+            child: Container(
+              width: 24, height: 24,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                color: c, shape: BoxShape.circle,
+                border: Border.all(
+                  color: _selectedColor == c ? Colors.black87 : Colors.transparent, width: 2.5,
+                ),
+              ),
+            ),
+          )),
+          const SizedBox(width: 8),
+          Container(width: 1, height: 24, color: Colors.grey[300]),
+          const SizedBox(width: 8),
+          ..._penThicknesses.map((t) => GestureDetector(
+            onTap: () => setState(() => _selectedThickness = t),
+            child: Container(
+              width: 28, height: 28,
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: _selectedThickness == t ? Colors.grey[200] : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(child: Container(
+                width: t + 2, height: t + 2,
+                decoration: BoxDecoration(color: _selectedColor, shape: BoxShape.circle),
+              )),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDrawingPhase() {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -535,6 +596,8 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
             ],
           ),
         ),
+        _buildDrawingToolbar(),
+        const SizedBox(height: 8),
         Expanded(
           child: GestureDetector(
             onPanStart: _onPanStart,
@@ -553,7 +616,8 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
                   key: _canvasKey,
                   child: CustomPaint(
                     painter: ClockCanvasPainter(
-                      strokeColor: darkCard,
+                      strokeColor: _selectedColor,
+                      strokeWidth: _selectedThickness,
                       allStrokes: _allStrokes,
                       currentStroke: _currentStroke,
                     ),
@@ -770,11 +834,13 @@ class ClockTemplatePainter extends CustomPainter {
 // Canvas painter for user drawing
 class ClockCanvasPainter extends CustomPainter {
   final Color strokeColor;
+  final double strokeWidth;
   final List<List<Offset>> allStrokes;
   final List<Offset> currentStroke;
 
   ClockCanvasPainter({
     required this.strokeColor,
+    this.strokeWidth = 3.0,
     required this.allStrokes,
     required this.currentStroke,
   });
@@ -798,7 +864,7 @@ class ClockCanvasPainter extends CustomPainter {
     // Draw user strokes
     final strokePaint = Paint()
       ..color = strokeColor
-      ..strokeWidth = 3
+      ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;

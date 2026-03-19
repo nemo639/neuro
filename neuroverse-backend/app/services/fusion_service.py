@@ -129,8 +129,8 @@ class ClinicalNorms:
     DIGIT_SPAN_IMPAIRED = 4   # <4 impaired
     
     # ===== Stroop Test (MacLeod, 1991) =====
-    STROOP_INTERFERENCE_NORMAL = 20    # seconds
-    STROOP_INTERFERENCE_IMPAIRED = 40  # seconds
+    STROOP_INTERFERENCE_NORMAL = 100   # milliseconds (normal <100ms)
+    STROOP_INTERFERENCE_IMPAIRED = 200 # milliseconds (>200ms = impaired)
     STROOP_ACCURACY_NORMAL = 0.95
     STROOP_ACCURACY_FLOOR = 0.50       # Below chance suggests invalid
     
@@ -270,7 +270,8 @@ class ValidityDetector:
             )
         
         # Recognition memory should be ~90%+ in normal and impaired individuals
-        recognition_acc = features.get("recognition_accuracy", None)
+        recognition_acc = features.get("recall_recognition_discriminability",
+                          features.get("recognition_accuracy", None))
         if recognition_acc is not None and recognition_acc < 0.60:
             indicators.below_chance_tests.append("Recognition memory suspiciously low")
             indicators.validity_concerns.append(
@@ -335,7 +336,8 @@ class ValidityDetector:
         - Related tasks correlate
         """
         recall_acc = features.get("recall_accuracy", None)
-        recognition_acc = features.get("recognition_accuracy", None)
+        recognition_acc = features.get("recall_recognition_discriminability",
+                          features.get("recognition_accuracy", None))
         
         # Recognition should ALWAYS be >= Recall
         # Even in severe dementia, recognition is preserved relative to recall
@@ -599,25 +601,34 @@ class FusionService:
         - Combined → MoCA/ADAS-Cog equivalent
         """
         
-        # Initialize domain scores
+        # Initialize domain scores — 'max' starts at 0 and grows as tests contribute
+        # This prevents untested domains from diluting the MoCA equivalent
         domains = {
-            "attention_concentration": {"score": 0, "max": 6},      # MoCA attention
-            "executive_function": {"score": 0, "max": 5},           # MoCA executive
-            "memory_immediate": {"score": 0, "max": 5},             # MoCA memory
-            "memory_delayed": {"score": 0, "max": 5},               # Delayed recall
-            "working_memory": {"score": 0, "max": 4},               # Digit span
-            "processing_speed": {"score": 0, "max": 3},             # TMT-A
-            "language": {"score": 0, "max": 3},                     # Fluency
+            "attention_concentration": {"score": 0, "max": 0, "tested": False},
+            "executive_function": {"score": 0, "max": 0, "tested": False},
+            "memory_immediate": {"score": 0, "max": 0, "tested": False},
+            "memory_delayed": {"score": 0, "max": 0, "tested": False},
+            "working_memory": {"score": 0, "max": 0, "tested": False},
+            "processing_speed": {"score": 0, "max": 0, "tested": False},
+            "language": {"score": 0, "max": 0, "tested": False},
         }
-        
+
         clinical_notes = []
         
         # ========== STROOP TEST → Executive Function + Attention ==========
         stroop_accuracy = features.get("stroop_accuracy", 0)
-        stroop_interference = features.get("stroop_interference", 100)
-        stroop_rt = features.get("stroop_mean_rt", 0)
+        # Interference comes from extractor in ms; convert thresholds accordingly
+        stroop_interference = features.get("stroop_interference", 0)
+        stroop_rt = features.get("stroop_avg_rt", features.get("stroop_mean_rt", 0))
         
         if stroop_accuracy > 0:
+            domains["attention_concentration"]["tested"] = True
+            domains["attention_concentration"]["max"] += 3  # Stroop can give up to 3 attention pts
+            domains["executive_function"]["tested"] = True
+            domains["executive_function"]["max"] += 3  # Stroop can give up to 3 executive pts
+            domains["processing_speed"]["tested"] = True
+            domains["processing_speed"]["max"] += 2  # Stroop RT can give up to 2 speed pts
+
             # Accuracy scoring (Attention domain)
             if stroop_accuracy >= 0.95:
                 domains["attention_concentration"]["score"] += 3
@@ -627,22 +638,22 @@ class FusionService:
                 domains["attention_concentration"]["score"] += 1
             else:
                 clinical_notes.append(f"Low Stroop accuracy ({stroop_accuracy*100:.0f}%) suggests attention deficits")
-            
-            # Interference scoring (Executive Function)
-            # Maps to Trail Making B concept
-            if stroop_interference <= self.norms.STROOP_INTERFERENCE_NORMAL:
-                domains["executive_function"]["score"] += 3
-            elif stroop_interference <= 30:
-                domains["executive_function"]["score"] += 2
-            elif stroop_interference <= self.norms.STROOP_INTERFERENCE_IMPAIRED:
-                domains["executive_function"]["score"] += 1
-            else:
-                clinical_notes.append(f"Elevated Stroop interference ({stroop_interference:.0f}s) indicates executive dysfunction")
-            
+
+            # Interference scoring (Executive Function) — values in ms
+            if stroop_interference > 0:
+                if stroop_interference <= self.norms.STROOP_INTERFERENCE_NORMAL:
+                    domains["executive_function"]["score"] += 3
+                elif stroop_interference <= 150:
+                    domains["executive_function"]["score"] += 2
+                elif stroop_interference <= self.norms.STROOP_INTERFERENCE_IMPAIRED:
+                    domains["executive_function"]["score"] += 1
+                else:
+                    clinical_notes.append(f"Elevated Stroop interference ({stroop_interference:.0f}ms) indicates executive dysfunction")
+
             # Processing speed from RT
             if stroop_rt > 0 and stroop_rt < 800:
                 domains["processing_speed"]["score"] += 2
-            elif stroop_rt < 1200:
+            elif stroop_rt > 0 and stroop_rt < 1200:
                 domains["processing_speed"]["score"] += 1
         
         # ========== N-BACK → Working Memory ==========
@@ -651,6 +662,11 @@ class FusionService:
         nback_level = features.get("nback_level", 2)  # 1-back, 2-back, etc.
         
         if nback_accuracy > 0:
+            domains["working_memory"]["tested"] = True
+            domains["working_memory"]["max"] += 4  # N-Back can give up to 3 acc + 1 dprime
+            domains["attention_concentration"]["tested"] = True
+            domains["attention_concentration"]["max"] += 2  # N-Back can give up to 2 attention pts
+
             # Accuracy-based scoring
             if nback_accuracy >= self.norms.NBACK_ACCURACY_NORMAL:
                 domains["working_memory"]["score"] += 3
@@ -670,11 +686,17 @@ class FusionService:
         
         # ========== WORD RECALL → Memory Domain (CERAD methodology) ==========
         recall_accuracy = features.get("recall_accuracy", 0)
-        delayed_recall = features.get("delayed_recall_accuracy", 0)
-        recognition_accuracy = features.get("recognition_accuracy", 0)
+        # Extractor outputs recall_delayed_accuracy (not delayed_recall_accuracy)
+        delayed_recall = features.get("recall_delayed_accuracy",
+                          features.get("delayed_recall_accuracy", 0))
+        # Extractor outputs recall_recognition_discriminability
+        recognition_accuracy = features.get("recall_recognition_discriminability",
+                                features.get("recognition_accuracy", 0))
         
         # Immediate recall (3 learning trials)
         if recall_accuracy > 0:
+            domains["memory_immediate"]["tested"] = True
+            domains["memory_immediate"]["max"] += 6  # up to 5 acc + 1 recognition bonus
             if recall_accuracy >= self.norms.RECALL_IMMEDIATE_NORMAL:
                 domains["memory_immediate"]["score"] += 5
             elif recall_accuracy >= 0.60:
@@ -688,6 +710,8 @@ class FusionService:
         
         # Delayed recall (critical for AD detection)
         if delayed_recall > 0:
+            domains["memory_delayed"]["tested"] = True
+            domains["memory_delayed"]["max"] += 5  # up to 5 delayed recall pts
             if delayed_recall >= self.norms.RECALL_DELAYED_NORMAL:
                 domains["memory_delayed"]["score"] += 5
             elif delayed_recall >= 0.55:
@@ -706,11 +730,20 @@ class FusionService:
                 clinical_notes.append("Recognition memory unusually low - verify data validity")
         
         # ========== CALCULATE COMPOSITE SCORES ==========
-        
-        # MoCA Equivalent (0-30 scale)
+
+        # MoCA Equivalent (0-30 scale) — ONLY count domains that were actually tested
+        # This prevents untested domains from dragging the score to 0 and
+        # artificially inflating AD risk (the main overestimation bug).
+        tested_earned = sum(d["score"] for d in domains.values() if d["tested"])
+        tested_possible = sum(d["max"] for d in domains.values() if d["tested"])
         total_earned = sum(d["score"] for d in domains.values())
         total_possible = sum(d["max"] for d in domains.values())
-        moca_equivalent = (total_earned / total_possible) * 30 if total_possible > 0 else 15
+
+        if tested_possible > 0:
+            moca_equivalent = (tested_earned / tested_possible) * 30
+        else:
+            # No tests completed — use neutral midpoint, not extreme
+            moca_equivalent = 25  # assume normal until tested
         
         # ADAS-Cog Equivalent (0-70 scale, lower is better)
         # Invert the score
@@ -755,10 +788,13 @@ class FusionService:
             "moca_equivalent": round(moca_equivalent, 1),
             "adas_cog_equivalent": round(adas_equivalent, 1),
             
-            # Domain breakdown
-            "domain_scores": {k: f"{v['score']}/{v['max']}" for k, v in domains.items()},
+            # Domain breakdown (only tested domains)
+            "domain_scores": {
+                k: f"{v['score']}/{v['max']}" if v['tested'] else "Not tested"
+                for k, v in domains.items()
+            },
             "domain_percentages": {
-                k: round(v['score']/v['max']*100, 1) if v['max'] > 0 else 0 
+                k: round(v['score']/v['max']*100, 1) if v['tested'] and v['max'] > 0 else None
                 for k, v in domains.items()
             },
             
@@ -774,12 +810,13 @@ class FusionService:
         clinical_notes = []
         ad_score = 0
         pd_score = 0
-        max_ad = 10
-        max_pd = 10
-        
-        # Story Recall (AD marker)
+        max_ad_tested = 0  # only count max for tests actually taken
+        max_pd_tested = 0
+
+        # Story Recall (AD marker — max 5 points)
         story_accuracy = features.get("story_recall_accuracy", 0)
         if story_accuracy > 0:
+            max_ad_tested += 5
             if story_accuracy >= 0.80:
                 ad_score += 5
             elif story_accuracy >= 0.60:
@@ -788,10 +825,11 @@ class FusionService:
                 ad_score += 1
             else:
                 clinical_notes.append("Poor story recall - verbal memory concern")
-        
-        # Sustained Vowel (PD marker)
+
+        # Sustained Vowel (PD marker — max 5 points)
         vowel_duration = features.get("vowel_duration", 0)
         if vowel_duration > 0:
+            max_pd_tested += 5
             if vowel_duration >= self.norms.VOWEL_DURATION_NORMAL:
                 pd_score += 5
             elif vowel_duration >= self.norms.VOWEL_DURATION_IMPAIRED:
@@ -800,19 +838,22 @@ class FusionService:
                 pd_score += 1
             else:
                 clinical_notes.append("Reduced phonation time - respiratory/laryngeal concern")
-        
-        # Speech rate
+
+        # Speech rate (AD+PD — max 2 points each)
         speech_rate = features.get("speech_rate", 0)
         if speech_rate > 0:
+            max_ad_tested += 2
+            max_pd_tested += 2
             if self.norms.SPEECH_RATE_NORMAL_MIN <= speech_rate <= self.norms.SPEECH_RATE_NORMAL_MAX:
                 ad_score += 2
                 pd_score += 2
             elif speech_rate < 100:
                 clinical_notes.append("Slow speech rate - possible motor speech involvement")
-        
-        # Fluency (AD marker)
+
+        # Fluency (AD marker — max 3 points)
         word_count = features.get("fluency_word_count", 0)
         if word_count > 0:
+            max_ad_tested += 3
             if word_count >= self.norms.FLUENCY_NORMAL:
                 ad_score += 3
             elif word_count >= self.norms.FLUENCY_MCI:
@@ -821,10 +862,16 @@ class FusionService:
                 ad_score += 1
             else:
                 clinical_notes.append("Reduced verbal fluency - semantic memory concern")
-        
-        category_score = ((ad_score + pd_score) / (max_ad + max_pd)) * 100
-        ad_risk = (1 - ad_score/max_ad) * 25
-        pd_risk = (1 - pd_score/max_pd) * 25
+
+        # Calculate risk only from tested components
+        total_tested = max_ad_tested + max_pd_tested
+        if total_tested > 0:
+            category_score = ((ad_score + pd_score) / total_tested) * 100
+        else:
+            category_score = 50.0  # neutral when untested
+
+        ad_risk = (1 - ad_score / max_ad_tested) * 25 if max_ad_tested > 0 else 5.0
+        pd_risk = (1 - pd_score / max_pd_tested) * 25 if max_pd_tested > 0 else 5.0
         
         return {
             "ad_risk": round(ad_risk, 2),
@@ -870,24 +917,45 @@ class FusionService:
                 clinical_notes.append("Significant bradykinesia detected")
         
         # Spiral Drawing (UPDRS 3.15-3.18 - Tremor)
-        spiral_tremor = features.get("spiral_tremor", 0)
+        # PHONE AWARENESS: spiral_tremor from Flutter is a SMOOTHNESS score
+        # (high = smooth finger movement on glass = NORMAL for phone input)
+        # Use drawing-point-derived tremor_score instead (acceleration std)
+        # or accelerometer tremor_amplitude from resting tremor test
+        tremor_amplitude = features.get("tremor_amplitude", 0)
         tremor_frequency = features.get("tremor_frequency", 0)
-        
-        if features.get("spiral_duration"):
-            if spiral_tremor <= 0.10:
-                updrs_scores["tremor"] = 0
-            elif spiral_tremor <= 0.25:
-                updrs_scores["tremor"] = 1
-            elif spiral_tremor <= 0.50:
-                updrs_scores["tremor"] = 2
-            elif spiral_tremor <= 0.75:
-                updrs_scores["tremor"] = 3
-                clinical_notes.append("Moderate tremor detected in drawing")
+        drawing_tremor = features.get("spiral_tremor_score",
+                          features.get("drawing_tremor_score", 0))
+
+        if tremor_amplitude > 0 or features.get("spiral_duration"):
+            # Prefer accelerometer-based tremor (not affected by phone drawing)
+            if tremor_amplitude > 0:
+                if tremor_amplitude <= 0.1:
+                    updrs_scores["tremor"] = 0
+                elif tremor_amplitude <= 0.3:
+                    updrs_scores["tremor"] = 1
+                elif tremor_amplitude <= 0.6:
+                    updrs_scores["tremor"] = 2
+                elif tremor_amplitude <= 1.0:
+                    updrs_scores["tremor"] = 3
+                    clinical_notes.append("Moderate resting tremor detected")
+                else:
+                    updrs_scores["tremor"] = 4
+                    clinical_notes.append("Severe resting tremor present")
+            elif drawing_tremor > 0:
+                # Drawing-point tremor (acceleration std from point analysis)
+                if drawing_tremor <= 0.5:
+                    updrs_scores["tremor"] = 0
+                elif drawing_tremor <= 1.0:
+                    updrs_scores["tremor"] = 1
+                elif drawing_tremor <= 2.0:
+                    updrs_scores["tremor"] = 2
+                else:
+                    updrs_scores["tremor"] = 3
+                    clinical_notes.append("Tremor detected in drawing kinematics")
             else:
-                updrs_scores["tremor"] = 4
-                clinical_notes.append("Severe tremor present")
-            
-            # Check for PD-characteristic 4-6 Hz tremor
+                updrs_scores["tremor"] = 0  # No reliable tremor data
+
+            # Check for PD-characteristic 4-6 Hz tremor (accelerometer only)
             if 4 <= tremor_frequency <= 6:
                 clinical_notes.append(f"Tremor frequency ({tremor_frequency:.1f} Hz) in Parkinsonian range (4-6 Hz)")
         
@@ -915,8 +983,9 @@ class FusionService:
             "clinical_notes": clinical_notes if clinical_notes else ["Motor function within normal limits"],
             "motor_metrics": {
                 "tapping_rate_hz": round(tapping_rate, 2) if tapping_rate else None,
-                "tremor_severity_pct": round(spiral_tremor * 100, 1) if spiral_tremor else None,
+                "tremor_amplitude": round(tremor_amplitude, 3) if tremor_amplitude else None,
                 "tremor_frequency_hz": round(tremor_frequency, 1) if tremor_frequency else None,
+                "drawing_tremor_score": round(drawing_tremor, 3) if drawing_tremor else None,
             }
         }
     
