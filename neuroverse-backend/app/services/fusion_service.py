@@ -580,6 +580,10 @@ class FusionService:
             c_val = clinical.get(key, 0.0)
             clinical[key] = round(clinical_weight * c_val + model_weight * m_val, 2)
 
+        # Update category_score to reflect blended risk (100 = healthy, 0 = severe)
+        blended_risk = max(clinical.get("ad_risk", 0), clinical.get("pd_risk", 0))
+        clinical["category_score"] = round(max(0, 100 - blended_risk), 2)
+
         # Preserve model metadata
         clinical["model_confidence"] = round(confidence, 3)
         clinical["model_source"] = model.get("source", "model")
@@ -1053,14 +1057,21 @@ class FusionService:
         }
     
     async def _assess_facial(self, features: Dict[str, Any]) -> Dict[str, Any]:
-        """Facial expression assessment (UPDRS 3.2 - Hypomimia)."""
-        
+        """
+        Comprehensive facial expression assessment (UPDRS 3.2 - Hypomimia).
+
+        Evaluates 5 markers from FacialExtractor:
+        - Blink rate (normal 15-20/min; <10 = PD indicator)
+        - Smile velocity (fast onset = healthy; slow = facial masking)
+        - Smile symmetry (>85% = normal; <70% = asymmetric)
+        - Expression range (wide = healthy; narrow = hypomimia)
+        - Hypomimia score (direct PD indicator, 0-100)
+        """
         updrs_scores = {}
         clinical_notes = []
-        
+
+        # 1. Blink rate (max UPDRS = 3)
         blink_rate = features.get("blink_rate", 0)
-        smile_intensity = features.get("smile_intensity", 0)
-        
         if blink_rate > 0:
             if self.norms.BLINK_NORMAL_MIN <= blink_rate <= self.norms.BLINK_NORMAL_MAX:
                 updrs_scores["blink"] = 0
@@ -1070,26 +1081,86 @@ class FusionService:
                 updrs_scores["blink"] = 2
             else:
                 updrs_scores["blink"] = 3
-                clinical_notes.append(f"Reduced blink rate ({blink_rate:.0f}/min) - hypomimia indicator")
-        
-        if features.get("smile_count"):
-            if smile_intensity >= 0.80:
+                clinical_notes.append(
+                    f"Reduced blink rate ({blink_rate:.0f}/min) — hypomimia indicator"
+                )
+
+        # 2. Smile velocity (max UPDRS = 3)
+        smile_vel = features.get("smile_velocity", 0)
+        if smile_vel > 0 or features.get("smile_count", 0) > 0:
+            if smile_vel >= 0.7:
+                updrs_scores["smile_velocity"] = 0  # Fast onset
+            elif smile_vel >= 0.4:
+                updrs_scores["smile_velocity"] = 1  # Slightly slow
+            elif smile_vel >= 0.2:
+                updrs_scores["smile_velocity"] = 2  # Slow onset
+            else:
+                updrs_scores["smile_velocity"] = 3  # Very slow / absent
+                clinical_notes.append("Delayed smile onset — facial bradykinesia")
+
+        # 3. Smile symmetry (max UPDRS = 2)
+        smile_sym = features.get("smile_symmetry", 90)
+        if smile_sym > 0:
+            if smile_sym >= 85:
+                updrs_scores["smile_symmetry"] = 0
+            elif smile_sym >= 70:
+                updrs_scores["smile_symmetry"] = 1
+            else:
+                updrs_scores["smile_symmetry"] = 2
+                clinical_notes.append(
+                    f"Asymmetric smile ({smile_sym:.0f}%) — unilateral masking"
+                )
+
+        # 4. Expression range (max UPDRS = 3)
+        expr_range = features.get("expression_range", 70)
+        if expr_range > 0:
+            if expr_range >= 70:
+                updrs_scores["expression_range"] = 0
+            elif expr_range >= 50:
+                updrs_scores["expression_range"] = 1
+            elif expr_range >= 30:
+                updrs_scores["expression_range"] = 2
+            else:
+                updrs_scores["expression_range"] = 3
+                clinical_notes.append("Severely limited expression range — masked facies")
+
+        # 5. Hypomimia score (max UPDRS = 3)
+        hypomimia = features.get("hypomimia_score", 0)
+        if hypomimia > 0:
+            if hypomimia <= 20:
+                updrs_scores["hypomimia"] = 0
+            elif hypomimia <= 40:
+                updrs_scores["hypomimia"] = 1
+            elif hypomimia <= 60:
+                updrs_scores["hypomimia"] = 2
+            else:
+                updrs_scores["hypomimia"] = 3
+                clinical_notes.append(
+                    f"Elevated hypomimia ({hypomimia:.0f}%) — PD facial masking"
+                )
+
+        # 6. Smile amplitude as supplementary marker
+        smile_amp = features.get("smile_intensity", 0)
+        if smile_amp > 0 or features.get("smile_count", 0) > 0:
+            if smile_amp >= 0.6:
                 updrs_scores["facial_expression"] = 0
-            elif smile_intensity >= 0.60:
+            elif smile_amp >= 0.4:
                 updrs_scores["facial_expression"] = 1
-            elif smile_intensity >= 0.40:
+            elif smile_amp >= 0.2:
                 updrs_scores["facial_expression"] = 2
             else:
                 updrs_scores["facial_expression"] = 3
-                clinical_notes.append("Reduced facial expressivity - masked facies")
-        
+                clinical_notes.append("Reduced facial expressivity — masked facies")
+
         total = sum(updrs_scores.values())
-        max_score = len(updrs_scores) * 4 if updrs_scores else 8
-        
+        max_score = len(updrs_scores) * 3 if updrs_scores else 18  # 6 markers × 3 max
+
         facial_health = ((max_score - total) / max_score) * 100 if max_score > 0 else 50
-        pd_risk = (total / max_score) * 20 if max_score > 0 else 0
+        # PD risk is primary for facial; scale to 0-60 range (facial alone shouldn't exceed 60)
+        pd_risk = (total / max_score) * 60 if max_score > 0 else 0
+        # AD risk is minimal from facial data
         ad_risk = pd_risk * 0.05
-        
+
         return {
             "ad_risk": round(ad_risk, 2),
             "pd_risk": round(pd_risk, 2),
@@ -1099,11 +1170,17 @@ class FusionService:
             "ad_stage": self._get_ad_stage_from_risk(ad_risk),
             "pd_stage": self._get_pd_stage_from_risk(pd_risk),
             "updrs_subscores": updrs_scores,
-            "clinical_notes": clinical_notes if clinical_notes else ["Facial expression within normal range"],
+            "clinical_notes": clinical_notes if clinical_notes else [
+                "Facial expression within normal range"
+            ],
             "facial_metrics": {
                 "blink_rate_per_min": round(blink_rate, 1) if blink_rate else None,
-                "expression_intensity_pct": round(smile_intensity * 100, 1) if smile_intensity else None,
-            }
+                "smile_velocity": round(smile_vel, 2) if smile_vel else None,
+                "smile_symmetry_pct": round(smile_sym, 1) if smile_sym else None,
+                "expression_range_pct": round(expr_range, 1) if expr_range else None,
+                "hypomimia_pct": round(hypomimia, 1) if hypomimia else None,
+                "smile_amplitude": round(smile_amp, 3) if smile_amp else None,
+            },
         }
     
     # ========== HELPER METHODS ==========
@@ -1139,27 +1216,33 @@ class FusionService:
             return "severe"
     
     def _get_stage_from_risk(self, risk: float) -> str:
-        if risk < 15:
+        """General severity from calibrated risk score."""
+        if risk < 20:
             return "Normal"
-        elif risk < 30:
+        elif risk < 35:
             return "Minimal"
-        elif risk < 50:
+        elif risk < 55:
             return "Mild"
-        elif risk < 70:
+        elif risk < 75:
             return "Moderate"
         else:
             return "Severe"
     
     def _get_ad_stage_from_risk(self, risk: float) -> str:
-        if risk < 10:
+        """Map calibrated AD risk % to clinical stage.
+
+        Thresholds adjusted for phone-calibrated scores where a healthy
+        person typically scores 10-25% due to irreducible phone artifact.
+        """
+        if risk < 20:
             return CognitiveStage.NORMAL.value
-        elif risk < 25:
+        elif risk < 35:
             return CognitiveStage.SUBJECTIVE_DECLINE.value
-        elif risk < 40:
+        elif risk < 55:
             return CognitiveStage.MCI.value
-        elif risk < 60:
+        elif risk < 70:
             return CognitiveStage.MILD_DEMENTIA.value
-        elif risk < 80:
+        elif risk < 85:
             return CognitiveStage.MODERATE_DEMENTIA.value
         else:
             return CognitiveStage.SEVERE_DEMENTIA.value
@@ -1243,21 +1326,28 @@ class CompositeFusionService:
         final_risk = 0.6 * ml_fusion + 0.4 * clinical_norms
     """
     
-    # Evidence-based category weights (clinical norms layer)
+    # ── Fusion Weights (domain-adapted priorities) ──
+    #
+    # AD:  Cognitive tests are domain-adapted (TMT, CDT, Stroop) → highest weight.
+    #      Speech model is NOT domain-adapted but still informative.
+    #      Motor/facial contribute minimally to AD.
+    #
+    # PD:  Facial (UFNet ShallowANN, 0.835 AUROC) & Speech (SpeechNeuroNet)
+    #      are the most robust single-modality PD detectors.
+    #      Motor tests (spiral/meander) are domain-adapted but lower priority
+    #      since facial+speech already capture the core PD signal.
+    #
     WEIGHTS_AD = {
-        "cognitive": 0.45,   # Primary: Memory, executive
-        "speech": 0.20,      # Language, semantic fluency
-        "gait": 0.20,        # Falls risk, spatial navigation
-        "motor": 0.05,       # Late-stage only
-        "facial": 0.10,      # Minimal contribution
+        "speech": 0.45,      # Highest — robust SpeechNeuroNet, language/semantic markers
+        "cognitive": 0.30,   # Domain-adapted TMT, CDT, Stroop, Recall
+        "motor": 0.15,       # Some late-stage AD motor signs
+        "facial": 0.10,      # Minimal AD contribution
     }
-    
+
     WEIGHTS_PD = {
-        "motor": 0.35,       # Cardinal: Bradykinesia, tremor, rigidity
-        "gait": 0.25,        # Festination, freezing, postural instability
-        "speech": 0.15,      # Hypokinetic dysarthria
-        "cognitive": 0.15,   # PD-MCI, PD-dementia
-        "facial": 0.10,      # Hypomimia
+        "facial": 0.45,      # UFNet-based, 0.835 AUROC — hypomimia, blink, smile
+        "speech": 0.40,      # SpeechNeuroNet — hypokinetic dysarthria
+        "motor": 0.15,       # Domain-adapted spiral/meander/tapping
     }
     
     def __init__(self):

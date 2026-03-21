@@ -32,10 +32,12 @@ def _init_extractors():
         from app.ml.extractors.speech_extractor import SpeechExtractor
         from app.ml.extractors.cognitive_extractor import CognitiveExtractor
         from app.ml.extractors.motor_extractor import MotorExtractor
+        from app.ml.extractors.facial_extractor import FacialExtractor
         _EXTRACTORS.update({
             "speech": SpeechExtractor(),
             "cognitive": CognitiveExtractor(),
             "motor": MotorExtractor(),
+            "facial": FacialExtractor(),
         })
     except ImportError as exc:
         logger.warning("Extractors unavailable (%s). Using generic extraction.", exc)

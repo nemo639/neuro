@@ -132,8 +132,31 @@ FEATURE_DISPLAY = {
     # Facial
     "blink_rate": "Blink Rate",
     "blink_count": "Blink Count",
-    "smile_intensity": "Expression Intensity",
+    "avg_blink_duration_ms": "Avg Blink Duration",
+    "smile_intensity": "Smile Amplitude",
+    "smile_velocity": "Smile Velocity",
+    "smile_symmetry": "Smile Symmetry",
     "smile_count": "Smile Count",
+    "facial_symmetry": "Facial Symmetry",
+    "muscle_tone": "Muscle Tone",
+    "expression_range": "Expression Range",
+    "hypomimia_score": "Hypomimia Score",
+    "facial_expressivity": "Facial Expressivity",
+    "symmetry_composite": "Symmetry Composite",
+    "au01_mean": "AU01 (Inner Brow Raise)",
+    "au06_mean": "AU06 (Cheek Raiser)",
+    "au12_mean": "AU12 (Lip Corner Puller)",
+    "au25_mean": "AU25 (Lips Part)",
+    "au45_mean": "AU45 (Blink)",
+    "mouth_open_mean": "Mouth Opening",
+    "mouth_width_mean": "Mouth Width",
+    "jaw_open_mean": "Jaw Opening",
+    "eye_open_mean": "Eye Opening",
+    "eye_raise_mean": "Eye Raise",
+    "blink_score": "Blink Score",
+    "smile_score": "Smile Score",
+    "expression_score": "Expression Score",
+    "combined_score": "Combined Facial Score",
 }
 
 # Category-specific importance weights (from clinical literature)
@@ -165,7 +188,11 @@ CATEGORY_WEIGHTS = {
         "turn_stability": 0.20,
     },
     "facial": {
-        "blink_rate": 0.50, "smile_intensity": 0.30, "smile_count": 0.20,
+        "blink_rate": 0.12, "blink_count": 0.05, "avg_blink_duration_ms": 0.04,
+        "smile_velocity": 0.10, "smile_symmetry": 0.08, "smile_intensity": 0.10,
+        "facial_symmetry": 0.08, "expression_range": 0.10, "hypomimia_score": 0.12,
+        "facial_expressivity": 0.08, "symmetry_composite": 0.05,
+        "au12_mean": 0.04, "au06_mean": 0.02, "au45_mean": 0.02,
     },
 }
 
@@ -222,14 +249,35 @@ class XAIService:
         )
         saliency_data = SaliencyData(**raw_saliency) if raw_saliency else None
 
-        # 5. LIME explanations — pass predict_fn for real LIME
-        lime_data = self.lime.explain_tabular(features, predictions, predict_fn=predict_fn)
+        # 5. LIME explanations
+        # For image models (CDT, motor), skip real LIME tabular since the model
+        # expects 4D image tensors, not 2D feature vectors.  Use approximation.
+        is_image_model = category in ("motor",) or features.get("_has_cdt_image")
+        lime_predict_fn = None if is_image_model else predict_fn
+        lime_data = self.lime.explain_tabular(features, predictions, predict_fn=lime_predict_fn)
 
-        # 6. Integrated Gradients — pass model+tensor for real IG
-        ig_data = self.ig.compute_attributions(
-            features, predictions,
-            model=xai_model, input_tensor=xai_tensor,
-        )
+        # 6. Integrated Gradients
+        # For image models, use image IG (pixel-level); for tabular, use feature IG
+        if is_image_model and xai_model is not None and xai_tensor is not None:
+            ig_heatmap = self.ig.compute_image_attributions(
+                xai_model, xai_tensor, target_output="risk",
+            )
+            # Convert image IG heatmap to feature-level format for consistent output
+            if ig_heatmap is not None:
+                ig_data = [{
+                    "feature": "image_attribution",
+                    "attribution": 1.0,
+                    "importance": 1.0,
+                    "direction": "risk",
+                    "heatmap": ig_heatmap,
+                }]
+            else:
+                ig_data = self.ig._approx_ig(features, predictions)
+        else:
+            ig_data = self.ig.compute_attributions(
+                features, predictions,
+                model=xai_model, input_tensor=xai_tensor,
+            )
 
         # 7. Counterfactual analysis
         cf_data = self.counterfactual.generate_counterfactuals(
@@ -340,7 +388,8 @@ class XAIService:
                     "tmt", "clock", "shulman", "number", "trail"}
         pd_keys = {"tapping", "tremor", "spiral", "meander", "motor", "gait", "balance",
                     "blink", "step", "fatigue", "jitter", "shimmer", "drawing",
-                    "vowel", "stability", "sway", "wave"}
+                    "vowel", "stability", "sway", "wave", "smile", "facial", "hypomimia",
+                    "expression", "au01", "au06", "au12", "au25", "au45", "mouth", "jaw"}
 
         target = ad_keys if disease == "ad" else pd_keys
         return [sv for sv in shap_values if any(k in sv.name.lower() for k in target)][:5]

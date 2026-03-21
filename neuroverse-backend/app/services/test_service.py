@@ -62,6 +62,12 @@ CATEGORY_CONFIG = {
         "description": "Tests for fine motor control and coordination",
         "mini_tests": ["resting_tremor", "spiral_drawing", "meander_drawing"],
         "estimated_duration": "8-10 min"
+    },
+    "facial": {
+        "display_name": "Facial Analysis",
+        "description": "Facial expression and movement analysis for PD screening",
+        "mini_tests": ["facial_analysis"],
+        "estimated_duration": "2-3 min"
     }
 }
 
@@ -474,34 +480,60 @@ class TestService:
         return session
     
     async def _update_user_scores(self, user_id: int, category: str, risk_scores: dict):
-        """Update user's overall scores after test completion."""
+        """
+        Update user's overall scores after test completion.
+
+        Uses weighted fusion matching CompositeRiskCalculator weights:
+          AD = cognitive(0.55) + speech(0.35) + motor(0.05) + facial(0.05)
+          PD = facial(0.45)   + speech(0.40) + motor(0.15)
+        Only categories that have been tested (score > 0) participate;
+        weights are re-normalised over the available categories.
+        """
         result = await self.db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
-        
+
         if not user:
             return
-        
-        # Update category score
+
+        # 1. Update the per-category score
         score_field = f"{category}_score"
         setattr(user, score_field, risk_scores["category_score"])
-        
-        # Recalculate overall AD/PD risk (simple average for now)
-        # TODO: Use proper fusion weights
-        scores = [
-            user.cognitive_score or 0,
-            user.speech_score or 0,
-            user.motor_score or 0,
-        ]
-        
-        # Only average non-zero scores
-        active_scores = [s for s in scores if s > 0]
-        if active_scores:
-            # For now, use category contributions
-            user.ad_risk_score = risk_scores["ad_risk"]
-            user.pd_risk_score = risk_scores["pd_risk"]
-            user.ad_stage = risk_scores.get("ad_stage")
-            user.pd_stage = risk_scores.get("pd_stage")
-        
+
+        # 2. Collect all per-category risk scores stored on the user
+        #    category_score is 0-100 (100 = healthy).  ad/pd risk = 0-100 (100 = worst).
+        #    We convert category_score → risk approximation: risk ≈ 100 - category_score.
+        cat_risks = {}
+        for cat in ("cognitive", "speech", "motor", "facial"):
+            cat_score = getattr(user, f"{cat}_score", 0) or 0
+            if cat_score > 0:
+                cat_risks[cat] = 100.0 - cat_score  # invert: higher = more risk
+
+        # Also store the *current* category's exact ad/pd risk from this session
+        # so the latest result dominates its own category.
+        cat_risks[category] = max(risk_scores.get("ad_risk", 0), risk_scores.get("pd_risk", 0))
+
+        # 3. Weighted fusion — AD
+        WEIGHTS_AD = {"speech": 0.45, "cognitive": 0.30, "motor": 0.15, "facial": 0.10}
+        ad_num, ad_den = 0.0, 0.0
+        for cat, w in WEIGHTS_AD.items():
+            if cat in cat_risks:
+                ad_num += cat_risks[cat] * w
+                ad_den += w
+        fused_ad = (ad_num / ad_den) if ad_den > 0 else risk_scores.get("ad_risk", 0)
+
+        # 4. Weighted fusion — PD
+        WEIGHTS_PD = {"facial": 0.45, "speech": 0.40, "motor": 0.15}
+        pd_num, pd_den = 0.0, 0.0
+        for cat, w in WEIGHTS_PD.items():
+            if cat in cat_risks:
+                pd_num += cat_risks[cat] * w
+                pd_den += w
+        fused_pd = (pd_num / pd_den) if pd_den > 0 else risk_scores.get("pd_risk", 0)
+
+        user.ad_risk_score = round(fused_ad, 2)
+        user.pd_risk_score = round(fused_pd, 2)
+        user.ad_stage = risk_scores.get("ad_stage")
+        user.pd_stage = risk_scores.get("pd_stage")
         user.updated_at = datetime.utcnow()
     
     async def _count_sessions(

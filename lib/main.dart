@@ -34,6 +34,8 @@ import 'package:neuroverse/features/labs/tests/meander_drawing_test.dart';
 import 'package:neuroverse/features/labs/tests/clock_drawing_test.dart';
 import 'package:neuroverse/features/labs/tests/trail_making_test.dart';
 import 'package:neuroverse/features/labs/tests/gait_assessment_test.dart';
+import 'package:neuroverse/features/labs/tests/facial_analysis_test.dart';
+import 'package:neuroverse/features/labs/facial_analysis_category.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -84,6 +86,8 @@ class MyApp extends StatelessWidget {
         '/test/cognitive-memory': (context) => const CognitiveMemoryTestScreen(),
         '/test/motor-functions': (context) => const MotorFunctionsTestScreen(),
         '/test/gait-movement': (context) => const GaitMovementTestScreen(),
+        '/test/facial-eye': (context) => const FacialAnalysisCategoryScreen(),
+        '/test/facial-analysis': (context) => const FacialAnalysisTestScreen(),
         '/test/story-recall-test': (context) => const StoryRecallTestScreen(),
         '/test/sustained-vowel-test': (context) => const SustainedVowelTestScreen(),
         '/test/picture-description-test': (context) => const PictureDescriptionTestScreen(),

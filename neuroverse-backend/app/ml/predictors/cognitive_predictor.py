@@ -390,7 +390,7 @@ class CognitivePredictor(BasePredictor):
             ad_risk += 8
 
         ad_risk = min(max(ad_risk, 0), 100)
-        stage = "AD" if ad_risk > 60 else "MCI" if ad_risk > 35 else "Normal"
+        stage = "AD" if ad_risk > 70 else "MCI" if ad_risk > 40 else "Normal"
         return {
             "ad_risk": round(ad_risk, 2),
             "confidence": 0.40,
@@ -533,7 +533,7 @@ class CognitivePredictor(BasePredictor):
             ad_risk += 8
 
         ad_risk = min(max(ad_risk, 0), 100)
-        stage = "AD" if ad_risk > 60 else "MCI" if ad_risk > 35 else "Normal"
+        stage = "AD" if ad_risk > 70 else "MCI" if ad_risk > 40 else "Normal"
         return {
             "ad_risk": round(ad_risk, 2),
             "confidence": 0.42,

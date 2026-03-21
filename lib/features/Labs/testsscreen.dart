@@ -82,6 +82,17 @@ Map<String, int> _categoryCompletedTests = {};
         TestItem(name: 'Meander Drawing', duration: '3 min'),
       ],
     ),
+    TestCategory(
+      title: 'Facial Analysis',
+      description: 'Facial expression & movement analysis',
+      icon: Icons.face_retouching_natural_rounded,
+      color: Color(0xFFEC4899),
+      bgColor: Color(0xFFFCE7F3),
+      route: '/test/facial-eye',
+      tests: [
+        TestItem(name: 'Facial Analysis', duration: '2 min'),
+      ],
+    ),
   ];
 
   @override
@@ -118,7 +129,7 @@ Map<String, int> _categoryCompletedTests = {};
         _testDashboard = result['data'];
 
         // Map backend category keys to local testCategories indices
-        const categoryIndexMap = {'speech': 0, 'cognitive': 1, 'motor': 2};
+        const categoryIndexMap = {'speech': 0, 'cognitive': 1, 'motor': 2, 'facial': 3};
 
         // Parse completed sessions per category
         final categories = _testDashboard?['categories'] as List? ?? [];
@@ -397,7 +408,7 @@ Map<String, int> _categoryCompletedTests = {};
     bool isExpanded = expandedCategories[index] ?? false;
 
     // Map index to backend category key for completion lookup
-    const indexToCategoryKey = {0: 'speech', 1: 'cognitive', 2: 'motor'};
+    const indexToCategoryKey = {0: 'speech', 1: 'cognitive', 2: 'motor', 3: 'facial'};
     final catKey = indexToCategoryKey[index] ?? '';
     final isCompleted = (_categoryCompletedTests[catKey] ?? 0) > 0;
 

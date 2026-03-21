@@ -77,7 +77,19 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/extractors/motor_extractor.py''\\).read\\(\\)\\); print\\(''motor_extractor OK''\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/fusion_service.py''\\).read\\(\\)\\); print\\(''fusion_service OK''\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/fusion_service.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''fusion_service OK''\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/predictors/cognitive_predictor.py''\\).read\\(\\)\\); print\\(''OK''\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/predictors/cognitive_predictor.py''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/fusion_service.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''fusion OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/xai_service.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''xai OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/ml/predictors/cognitive_predictor.py''\\).read\\(\\)\\); print\\(''cog OK''\\)\")",
+      "Bash(ls -lh neuroverse-backend/app/ml/models/*.pt)",
+      "Bash(pip list:*)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(python -c \"from app.ml.extractors.facial_extractor import FacialExtractor; print\\(''FacialExtractor OK''\\)\")",
+      "Bash(python -c \"from app.ml.predictors.facial_predictor import FacialPredictor; print\\(''FacialPredictor OK''\\)\")",
+      "Bash(python notebooks/facial_training.py)",
+      "Bash(python -c \"from app.services.fusion_service import FusionService, CompositeRiskCalculator; print\\(''FusionService OK''\\); c = CompositeRiskCalculator\\(\\); print\\(''AD weights:'', c.WEIGHTS_AD\\); print\\(''PD weights:'', c.WEIGHTS_PD\\)\")",
+      "Bash(python -c \"from app.services.fusion_service import FusionService, CompositeFusionService; print\\(''FusionService OK''\\); c = CompositeFusionService\\(\\); print\\(''AD weights:'', c.WEIGHTS_AD\\); print\\(''PD weights:'', c.WEIGHTS_PD\\)\")"
     ]
   }
 }
