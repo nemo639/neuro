@@ -21,7 +21,7 @@ from app.schemas.test_session import (
 from app.schemas.test_item import TestItemCreate, TestItemBatchCreate, TestItemResponse
 from app.schemas.test_result import TestResultDetailResponse
 from app.services.ml_service import MLService
-from app.services.fusion_service import FusionService
+from app.services.fusion_service import FusionService, CompositeFusionService
 from app.services.xai_service import XAIService
 import numpy as np
 
@@ -271,7 +271,7 @@ class TestService:
     
     async def get_latest_results_with_xai(self, user_id: int) -> dict:
         """Get latest completed test result per category with full XAI explanations."""
-        categories = ["cognitive", "speech", "motor"]
+        categories = ["cognitive", "speech", "motor", "facial"]
         results = {}
 
         for cat in categories:
@@ -483,50 +483,67 @@ class TestService:
         """
         Update user's overall scores after test completion.
 
-        Uses weighted fusion matching CompositeRiskCalculator weights:
-          AD = cognitive(0.55) + speech(0.35) + motor(0.05) + facial(0.05)
-          PD = facial(0.45)   + speech(0.40) + motor(0.15)
-        Only categories that have been tested (score > 0) participate;
-        weights are re-normalised over the available categories.
+        Queries actual ad_risk_score and pd_risk_score from the test_results
+        table for each category, then applies weighted fusion using
+        CompositeFusionService weights (single source of truth).
+        AD and PD risks are tracked SEPARATELY — never mixed via max().
         """
         result = await self.db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
-
         if not user:
             return
 
-        # 1. Update the per-category score
+        # 1. Update the per-category health score
         score_field = f"{category}_score"
         setattr(user, score_field, risk_scores["category_score"])
 
-        # 2. Collect all per-category risk scores stored on the user
-        #    category_score is 0-100 (100 = healthy).  ad/pd risk = 0-100 (100 = worst).
-        #    We convert category_score → risk approximation: risk ≈ 100 - category_score.
-        cat_risks = {}
+        # 2. Fetch actual ad_risk / pd_risk per category from test_results
+        #    (NOT derived from category_score — these are separate signals)
+        cat_ad_risks = {}
+        cat_pd_risks = {}
         for cat in ("cognitive", "speech", "motor", "facial"):
-            cat_score = getattr(user, f"{cat}_score", 0) or 0
-            if cat_score > 0:
-                cat_risks[cat] = 100.0 - cat_score  # invert: higher = more risk
+            if cat == category:
+                # Use current session's values directly (not yet committed)
+                cat_ad_risks[cat] = float(risk_scores.get("ad_risk", 0))
+                cat_pd_risks[cat] = float(risk_scores.get("pd_risk", 0))
+            else:
+                # Query latest completed test_result for this category
+                query = (
+                    select(TestResult.ad_risk_score, TestResult.pd_risk_score)
+                    .join(TestSession, TestResult.session_id == TestSession.id)
+                    .where(
+                        and_(
+                            TestSession.user_id == user_id,
+                            TestSession.category == cat,
+                            TestSession.status == SessionStatus.COMPLETED.value,
+                        )
+                    )
+                    .order_by(TestResult.created_at.desc())
+                    .limit(1)
+                )
+                res = await self.db.execute(query)
+                row = res.first()
+                if row and row[0] is not None:
+                    cat_ad_risks[cat] = float(row[0])
+                    cat_pd_risks[cat] = float(row[1] or 0)
 
-        # Also store the *current* category's exact ad/pd risk from this session
-        # so the latest result dominates its own category.
-        cat_risks[category] = max(risk_scores.get("ad_risk", 0), risk_scores.get("pd_risk", 0))
+        # 3. Weighted fusion using CompositeFusionService weights (single source of truth)
+        WEIGHTS_AD = CompositeFusionService.WEIGHTS_AD
+        WEIGHTS_PD = CompositeFusionService.WEIGHTS_PD
 
-        # 3. Weighted fusion — AD
-        WEIGHTS_AD = {"speech": 0.45, "cognitive": 0.30, "motor": 0.15, "facial": 0.10}
+        # AD fusion — uses per-category AD risk values separately
         ad_num, ad_den = 0.0, 0.0
         for cat, w in WEIGHTS_AD.items():
-            if cat in cat_risks:
-                ad_num += cat_risks[cat] * w
+            if cat in cat_ad_risks:
+                ad_num += cat_ad_risks[cat] * w
                 ad_den += w
         fused_ad = (ad_num / ad_den) if ad_den > 0 else risk_scores.get("ad_risk", 0)
 
-        # 4. Weighted fusion — PD
-        WEIGHTS_PD = {"facial": 0.45, "speech": 0.40, "motor": 0.15}
+        # PD fusion — uses per-category PD risk values separately
         pd_num, pd_den = 0.0, 0.0
         for cat, w in WEIGHTS_PD.items():
-            if cat in cat_risks:
-                pd_num += cat_risks[cat] * w
+            if cat in cat_pd_risks:
+                pd_num += cat_pd_risks[cat] * w
                 pd_den += w
         fused_pd = (pd_num / pd_den) if pd_den > 0 else risk_scores.get("pd_risk", 0)
 

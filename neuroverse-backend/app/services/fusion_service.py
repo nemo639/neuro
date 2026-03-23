@@ -580,9 +580,10 @@ class FusionService:
             c_val = clinical.get(key, 0.0)
             clinical[key] = round(clinical_weight * c_val + model_weight * m_val, 2)
 
-        # Update category_score to reflect blended risk (100 = healthy, 0 = severe)
-        blended_risk = max(clinical.get("ad_risk", 0), clinical.get("pd_risk", 0))
-        clinical["category_score"] = round(max(0, 100 - blended_risk), 2)
+        # Blend category_score with same confidence weighting (preserve clinical assessment)
+        m_cat = model.get("category_score", clinical.get("category_score", 50))
+        c_cat = clinical.get("category_score", 50)
+        clinical["category_score"] = round(clinical_weight * c_cat + model_weight * m_cat, 2)
 
         # Preserve model metadata
         clinical["model_confidence"] = round(confidence, 3)
@@ -1099,7 +1100,7 @@ class FusionService:
                 clinical_notes.append("Delayed smile onset — facial bradykinesia")
 
         # 3. Smile symmetry (max UPDRS = 2)
-        smile_sym = features.get("smile_symmetry", 90)
+        smile_sym = features.get("smile_symmetry", 0)
         if smile_sym > 0:
             if smile_sym >= 85:
                 updrs_scores["smile_symmetry"] = 0
@@ -1112,7 +1113,7 @@ class FusionService:
                 )
 
         # 4. Expression range (max UPDRS = 3)
-        expr_range = features.get("expression_range", 70)
+        expr_range = features.get("expression_range", 0)
         if expr_range > 0:
             if expr_range >= 70:
                 updrs_scores["expression_range"] = 0

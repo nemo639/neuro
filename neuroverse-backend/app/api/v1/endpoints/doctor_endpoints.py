@@ -178,7 +178,8 @@ async def doctor_forgot_password(
     await db.commit()
     
     # Send OTP email
-    await send_otp_email(doctor.email, otp, "Doctor Portal Password Reset")
+    email_service = EmailService()
+    await email_service.send_otp_email(doctor.email, otp, "Doctor Portal Password Reset")
     
     return {"success": True, "message": "OTP sent to your email"}
 
@@ -1014,6 +1015,15 @@ async def get_alerts(
     )
 
 
+@router.post("/alerts/{alert_id}/read")
+async def mark_alert_read(
+    alert_id: str,
+    current_doctor: Doctor = Depends(get_current_doctor),
+):
+    """Mark an alert as read. Alerts are ephemeral so this is a no-op acknowledgement."""
+    return {"success": True, "alert_id": alert_id, "is_read": True}
+
+
 # ==================== DATASET REQUESTS ====================
 
 @router.post("/dataset-requests", response_model=DatasetRequestResponse)
@@ -1155,21 +1165,29 @@ async def generate_report_pdf(
     current_doctor: Doctor = Depends(get_current_doctor),
     db: AsyncSession = Depends(get_db),
 ):
-    """Generate a formatted PDF report for a patient and return report_id + download URL."""
+    """
+    Generate a comprehensive PDF report with full XAI visualizations.
+
+    Includes: risk summary, category breakdowns, SHAP charts, GradCAM overlays
+    on patient drawings, cognitive radar, LIME, integrated gradients,
+    counterfactual analysis, fusion breakdown, doctor notes, and recommendations.
+    """
+    from app.services.report_pdf_generator import generate_comprehensive_report
+
     # Get the patient
     patient = await db.get(User, body.patient_id)
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    # Gather sessions
+    # Gather completed sessions
     sess_q = (
         select(TestSession)
         .where(TestSession.user_id == body.patient_id, TestSession.status == "completed")
         .order_by(desc(TestSession.completed_at))
     )
-    sessions = (await db.execute(sess_q)).scalars().all()
+    sessions = list((await db.execute(sess_q)).scalars().all())
 
-    # Gather scores from TestResults (join through TestSession to get per-category scores)
+    # Gather latest test result per category (with XAI + features)
     results_q = (
         select(TestResult, TestSession.category)
         .join(TestSession, TestResult.session_id == TestSession.id)
@@ -1178,217 +1196,69 @@ async def generate_report_pdf(
     )
     result_rows = (await db.execute(results_q)).all()
 
-    # Build per-category score map from the latest result for each category
+    # Build per-category data: latest result wins
+    test_results: dict = {}
     category_scores: dict = {}
-    ad_risk = 0.0
-    pd_risk = 0.0
     for result, category in result_rows:
-        if category not in category_scores:
+        if category not in test_results:
+            test_results[category] = {
+                "ad_risk_score": result.ad_risk_score or 0,
+                "pd_risk_score": result.pd_risk_score or 0,
+                "category_score": result.category_score or 0,
+                "stage": result.stage,
+                "severity": result.severity,
+                "extracted_features": result.extracted_features or {},
+                "xai_explanation": result.xai_explanation or {},
+            }
             category_scores[category] = round(result.category_score or 0, 1)
-        if result.ad_risk_score and result.ad_risk_score > ad_risk:
-            ad_risk = round(result.ad_risk_score, 1)
-        if result.pd_risk_score and result.pd_risk_score > pd_risk:
-            pd_risk = round(result.pd_risk_score, 1)
 
-    cognitive = category_scores.get("cognitive")
-    speech = category_scores.get("speech")
-    motor = category_scores.get("motor")
-    gait = category_scores.get("gait")
-    facial = category_scores.get("facial")
+    # Overall risk from user record (fused scores)
+    ad_risk = round(patient.ad_risk_score or 0, 1)
+    pd_risk = round(patient.pd_risk_score or 0, 1)
 
-    # Determine stage
     def _stage(score):
         if score >= 75: return "Severe"
         if score >= 50: return "Moderate"
         if score >= 25: return "Mild"
         return "Normal"
 
-    ad_stage = _stage(ad_risk)
-    pd_stage = _stage(pd_risk)
+    ad_stage = patient.ad_stage or _stage(ad_risk)
+    pd_stage = patient.pd_stage or _stage(pd_risk)
+
+    # Generate comprehensive PDF
+    filepath, filename = generate_comprehensive_report(
+        patient=patient,
+        doctor=current_doctor,
+        sessions=sessions,
+        test_results=test_results,
+        report_type=body.report_type,
+        doctor_notes=body.doctor_notes or "",
+        ad_risk=ad_risk,
+        pd_risk=pd_risk,
+        ad_stage=ad_stage,
+        pd_stage=pd_stage,
+        category_scores=category_scores,
+    )
 
     patient_name = f"{patient.first_name or ''} {patient.last_name or ''}".strip() or patient.email
-
-    # ---- Build PDF with fpdf2 ----
-    from fpdf import FPDF
-
-    class NVReport(FPDF):
-        def header(self):
-            self.set_fill_color(30, 30, 30)
-            self.rect(0, 0, 210, 36, "F")
-            self.set_text_color(198, 233, 75)
-            self.set_font("Helvetica", "B", 18)
-            self.set_xy(10, 8)
-            self.cell(0, 10, "NeuroVerse", align="L")
-            self.set_text_color(255, 255, 255)
-            self.set_font("Helvetica", "", 9)
-            self.set_xy(10, 20)
-            self.cell(0, 8, "Neurodegenerative Disease Assessment Report", align="L")
-            self.set_xy(140, 20)
-            self.cell(60, 8, f"Generated: {datetime.utcnow().strftime('%B %d, %Y')}", align="R")
-            self.ln(30)
-
-        def footer(self):
-            self.set_y(-15)
-            self.set_font("Helvetica", "I", 7)
-            self.set_text_color(150, 150, 150)
-            self.cell(0, 10, f"NeuroVerse Confidential  |  Page {self.page_no()}/{{nb}}", align="C")
-
-    pdf = NVReport()
-    pdf.alias_nb_pages()
-    pdf.set_auto_page_break(auto=True, margin=20)
-    pdf.add_page()
-
-    # Patient Info box
-    pdf.set_fill_color(245, 246, 250)
-    pdf.rect(10, pdf.get_y(), 190, 28, "F")
-    y0 = pdf.get_y() + 4
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.set_text_color(30, 30, 30)
-    pdf.set_xy(14, y0)
-    pdf.cell(90, 7, f"Patient: {patient_name}")
-    pdf.set_font("Helvetica", "", 9)
-    pdf.set_xy(14, y0 + 8)
-    pdf.cell(90, 6, f"ID: {patient.id}  |  Email: {patient.email}")
-    pdf.set_xy(14, y0 + 15)
-    dob_str = str(patient.date_of_birth) if patient.date_of_birth else "N/A"
-    pdf.cell(90, 6, f"DOB: {dob_str}  |  Gender: {patient.gender or 'N/A'}")
-    pdf.set_xy(120, y0)
-    pdf.set_font("Helvetica", "B", 10)
-    pdf.cell(80, 7, f"Report Type: {body.report_type.replace('_', ' ').title()}")
-    pdf.set_font("Helvetica", "", 9)
-    pdf.set_xy(120, y0 + 8)
-    pdf.cell(80, 6, f"Tests Completed: {len(sessions)}")
-    pdf.set_xy(120, y0 + 15)
-    pdf.cell(80, 6, f"Assessed by: Dr. {current_doctor.first_name} {current_doctor.last_name}")
-    pdf.ln(32)
-
-    # Section helper
-    def section_title(title):
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.set_text_color(30, 30, 30)
-        pdf.cell(0, 10, title, ln=True)
-        pdf.set_draw_color(198, 233, 75)
-        pdf.set_line_width(0.8)
-        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(3)
-
-    def score_bar(label, value, max_val=100, width=120):
-        if value is None:
-            return
-        pdf.set_font("Helvetica", "", 9)
-        pdf.set_text_color(60, 60, 60)
-        pdf.cell(50, 7, label)
-        x_start = pdf.get_x()
-        y_bar = pdf.get_y() + 1.5
-        # bg bar
-        pdf.set_fill_color(230, 230, 230)
-        pdf.rect(x_start, y_bar, width, 4, "F")
-        # value bar
-        pct = min(value / max_val, 1.0)
-        if pct >= 0.7:
-            pdf.set_fill_color(239, 68, 68)
-        elif pct >= 0.4:
-            pdf.set_fill_color(245, 158, 11)
-        else:
-            pdf.set_fill_color(16, 185, 129)
-        pdf.rect(x_start, y_bar, width * pct, 4, "F")
-        pdf.set_xy(x_start + width + 3, y_bar - 1)
-        pdf.set_font("Helvetica", "B", 9)
-        pdf.cell(20, 6, f"{value}%")
-        pdf.ln(8)
-
-    # 1. Risk Summary
-    section_title("1. Overall Risk Assessment")
-    score_bar("Alzheimer's Disease Risk", round(ad_risk))
-    score_bar("Parkinson's Disease Risk", round(pd_risk))
-    pdf.ln(2)
-    pdf.set_font("Helvetica", "", 9)
-    pdf.set_text_color(80, 80, 80)
-    pdf.cell(0, 6, f"AD Stage: {ad_stage}  |  PD Stage: {pd_stage}", ln=True)
-    pdf.ln(6)
-
-    # 2. Category Scores
-    section_title("2. Category-Wise Scores")
-    for label, val in [("Cognitive", cognitive), ("Speech", speech), ("Motor", motor), ("Gait", gait), ("Facial", facial)]:
-        score_bar(label, round(val) if val is not None else None)
-    pdf.ln(4)
-
-    # 3. Test Sessions Summary
-    section_title("3. Test Sessions Summary")
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.set_fill_color(240, 240, 240)
-    headers = ["#", "Category", "Status", "Date", "Score"]
-    widths = [10, 50, 30, 50, 40]
-    for i, h in enumerate(headers):
-        pdf.cell(widths[i], 7, h, border=1, fill=True)
-    pdf.ln()
-    pdf.set_font("Helvetica", "", 8)
-    pdf.set_text_color(50, 50, 50)
-    for idx, s in enumerate(sessions[:15], 1):
-        pdf.cell(widths[0], 6, str(idx), border=1)
-        pdf.cell(widths[1], 6, (s.category or "N/A")[:25], border=1)
-        pdf.cell(widths[2], 6, s.status or "completed", border=1)
-        dt_str = s.completed_at.strftime("%Y-%m-%d") if s.completed_at else "N/A"
-        pdf.cell(widths[3], 6, dt_str, border=1)
-        score_val = ""
-        if hasattr(s, "category_score") and s.category_score is not None:
-            score_val = f"{s.category_score:.1f}%"
-        pdf.cell(widths[4], 6, score_val, border=1)
-        pdf.ln()
-    if not sessions:
-        pdf.set_font("Helvetica", "I", 9)
-        pdf.cell(0, 8, "No completed test sessions found.", ln=True)
-    pdf.ln(6)
-
-    # 4. Recommendations
-    section_title("4. Clinical Recommendations")
-    recommendations = []
-    if ad_risk >= 70:
-        recommendations.append("Immediate referral to neurology specialist for AD evaluation recommended.")
-        recommendations.append("Consider advanced neuroimaging (MRI/PET) for further assessment.")
-    elif ad_risk >= 40:
-        recommendations.append("Schedule follow-up cognitive assessments within 3 months.")
-    if pd_risk >= 70:
-        recommendations.append("Urgent motor function evaluation and dopamine transporter scan recommended.")
-    elif pd_risk >= 40:
-        recommendations.append("Monitor motor symptoms; repeat gait and motor assessments in 6 weeks.")
-    if not recommendations:
-        recommendations.append("Continue routine monitoring. Current scores are within normal range.")
-    recommendations.append("Regular wellness tracking and lifestyle modifications are advised.")
-    pdf.set_font("Helvetica", "", 9)
-    pdf.set_text_color(60, 60, 60)
-    for i, rec in enumerate(recommendations, 1):
-        pdf.multi_cell(0, 6, f"  {i}. {rec}")
-        pdf.ln(1)
-    pdf.ln(4)
-
-    # Disclaimer
-    pdf.set_font("Helvetica", "I", 7)
-    pdf.set_text_color(130, 130, 130)
-    pdf.multi_cell(0, 4, "Disclaimer: This report is generated by AI-assisted analysis and should be reviewed by a qualified healthcare professional. It is not intended as a definitive diagnosis.")
-
-    # Save PDF
-    os.makedirs(os.path.join(settings.UPLOAD_DIR, "reports"), exist_ok=True)
-    filename = f"report_{patient.id}_{uuid.uuid4().hex[:8]}.pdf"
-    filepath = os.path.join(settings.UPLOAD_DIR, "reports", filename)
-    pdf.output(filepath)
 
     # Create Report record
     new_report = Report(
         user_id=patient.id,
         title=f"{body.report_type.replace('_', ' ').title()} Report",
         report_type=body.report_type,
-        sessions_included=[s.id for s in sessions[:15]],
+        sessions_included=[s.id for s in sessions[:20]],
         tests_count=len(sessions),
         ad_risk_score=ad_risk,
         pd_risk_score=pd_risk,
-        cognitive_score=cognitive,
-        speech_score=speech,
-        motor_score=motor,
-        gait_score=gait,
-        facial_score=facial,
+        cognitive_score=category_scores.get("cognitive"),
+        speech_score=category_scores.get("speech"),
+        motor_score=category_scores.get("motor"),
+        gait_score=category_scores.get("gait"),
+        facial_score=category_scores.get("facial"),
         ad_stage=ad_stage,
         pd_stage=pd_stage,
+        doctor_notes=body.doctor_notes,
         pdf_path=f"reports/{filename}",
         is_ready=True,
     )
@@ -1436,6 +1306,148 @@ async def download_report(
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="PDF file missing")
     return FileResponse(filepath, media_type="application/pdf", filename=os.path.basename(filepath))
+
+
+# ==================== SEND REPORT TO PATIENT ====================
+
+@router.post("/patients/{patient_id}/send-report")
+async def send_report_to_patient(
+    patient_id: int,
+    body: dict,
+    current_doctor: Doctor = Depends(get_current_doctor),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Generate and send a report to a specific patient.
+    The report will appear in the patient's Reports screen.
+
+    Body: { "report_type": "comprehensive", "doctor_notes": "...", "title": "..." }
+    """
+    from app.services.report_pdf_generator import generate_comprehensive_report
+
+    if not current_doctor.can_view_patients:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to manage patients"
+        )
+
+    # Get the patient
+    patient = await db.get(User, patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    report_type = body.get("report_type", "comprehensive")
+    doctor_notes = body.get("doctor_notes", "")
+    custom_title = body.get("title", "")
+
+    # Gather completed sessions
+    sess_q = (
+        select(TestSession)
+        .where(TestSession.user_id == patient_id, TestSession.status == "completed")
+        .order_by(desc(TestSession.completed_at))
+    )
+    sessions = list((await db.execute(sess_q)).scalars().all())
+
+    # Gather latest test result per category
+    results_q = (
+        select(TestResult, TestSession.category)
+        .join(TestSession, TestResult.session_id == TestSession.id)
+        .where(TestSession.user_id == patient_id)
+        .order_by(desc(TestResult.created_at))
+    )
+    result_rows = (await db.execute(results_q)).all()
+
+    test_results: dict = {}
+    category_scores: dict = {}
+    for result, category in result_rows:
+        if category not in test_results:
+            test_results[category] = {
+                "ad_risk_score": result.ad_risk_score or 0,
+                "pd_risk_score": result.pd_risk_score or 0,
+                "category_score": result.category_score or 0,
+                "stage": result.stage,
+                "severity": result.severity,
+                "extracted_features": result.extracted_features or {},
+                "xai_explanation": result.xai_explanation or {},
+            }
+            category_scores[category] = round(result.category_score or 0, 1)
+
+    ad_risk = round(patient.ad_risk_score or 0, 1)
+    pd_risk = round(patient.pd_risk_score or 0, 1)
+
+    def _stage(score):
+        if score >= 75: return "Severe"
+        if score >= 50: return "Moderate"
+        if score >= 25: return "Mild"
+        return "Normal"
+
+    ad_stage = patient.ad_stage or _stage(ad_risk)
+    pd_stage = patient.pd_stage or _stage(pd_risk)
+
+    # Generate PDF
+    filepath, filename = generate_comprehensive_report(
+        patient=patient,
+        doctor=current_doctor,
+        sessions=sessions,
+        test_results=test_results,
+        report_type=report_type,
+        doctor_notes=doctor_notes,
+        ad_risk=ad_risk,
+        pd_risk=pd_risk,
+        ad_stage=ad_stage,
+        pd_stage=pd_stage,
+        category_scores=category_scores,
+    )
+
+    patient_name = f"{patient.first_name or ''} {patient.last_name or ''}".strip() or patient.email
+    title = custom_title or f"{report_type.replace('_', ' ').title()} Report"
+
+    # Create Report record linked to patient
+    new_report = Report(
+        user_id=patient.id,
+        title=title,
+        report_type=report_type,
+        sessions_included=[s.id for s in sessions[:20]],
+        tests_count=len(sessions),
+        ad_risk_score=ad_risk,
+        pd_risk_score=pd_risk,
+        cognitive_score=category_scores.get("cognitive"),
+        speech_score=category_scores.get("speech"),
+        motor_score=category_scores.get("motor"),
+        gait_score=category_scores.get("gait"),
+        facial_score=category_scores.get("facial"),
+        ad_stage=ad_stage,
+        pd_stage=pd_stage,
+        doctor_notes=doctor_notes,
+        pdf_path=f"reports/{filename}",
+        is_ready=True,
+    )
+    db.add(new_report)
+    current_doctor.total_reports_exported = (current_doctor.total_reports_exported or 0) + 1
+    await db.flush()
+    await db.refresh(new_report)
+
+    # Create notification for the patient
+    from app.models.notification import Notification as NotifModel
+    doctor_name = f"Dr. {current_doctor.first_name or ''} {current_doctor.last_name or ''}".strip()
+    notif = NotifModel(
+        user_id=patient.id,
+        title="New Report Available",
+        message=f"{doctor_name} has sent you a {report_type.replace('_', ' ')} report: {title}",
+        notification_type="report_ready",
+        action_type="view_report",
+        action_id=new_report.id,
+    )
+    db.add(notif)
+
+    return {
+        "success": True,
+        "report_id": new_report.id,
+        "patient_name": patient_name,
+        "title": title,
+        "download_url": f"/uploads/reports/{filename}",
+        "message": f"Report sent to {patient_name}",
+    }
 
 
 # ==================== AVATAR UPLOAD ====================

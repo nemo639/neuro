@@ -44,6 +44,20 @@ export const authApi = {
     const response = await api.post('/admin/login', { email, password });
     return response.data;
   },
+
+  forgotPassword: async (email: string) => {
+    const response = await api.post('/admin/forgot-password', { email });
+    return response.data;
+  },
+
+  resetPassword: async (email: string, otp: string, newPassword: string) => {
+    const response = await api.post('/admin/reset-password', {
+      email,
+      otp,
+      new_password: newPassword,
+    });
+    return response.data;
+  },
 };
 
 // ==================== DASHBOARD API ====================

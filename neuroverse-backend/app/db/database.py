@@ -19,6 +19,11 @@ engine = create_async_engine(
     connect_args={
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
+        "command_timeout": 60,
+        "server_settings": {
+            "statement_timeout": "60000",
+            "idle_in_transaction_session_timeout": "30000",
+        },
     }
 )
 
@@ -51,6 +56,10 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def init_db():
     """Initialize database - create all tables."""
     from app.models import User, TestSession, TestItem, TestResult, WellnessEntry, Report
+    from app.models.chat_conversation import ChatConversation
+    from app.models.chat_message import ChatMessage
+    from app.models.symptom import SymptomEntry
+    from app.models.notification import Notification
 
     try:
         async with engine.begin() as conn:

@@ -381,7 +381,7 @@ String _monthName(int month) {
                  child: _selectedImage != null
     ? Image.file(_selectedImage!, fit: BoxFit.cover)
     : (_profileImagePath != null && _profileImagePath!.isNotEmpty
-        ? Image.network("${ApiService.baseUrl}/${_profileImagePath!}", fit: BoxFit.cover)
+        ? Image.network("${ApiService.baseUrl}/uploads/${_profileImagePath!}", fit: BoxFit.cover)
         : const Icon(Icons.person_rounded, size: 60, color: Colors.white)),
 
                 ),

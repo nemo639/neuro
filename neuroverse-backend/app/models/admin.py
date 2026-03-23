@@ -48,6 +48,10 @@ class Admin(Base):
     # Status
     is_active = Column(Boolean, default=True)
     
+    # OTP (for password reset)
+    otp_code = Column(String(10), nullable=True)
+    otp_expires_at = Column(DateTime(timezone=True), nullable=True)
+
     # Activity Stats
     total_actions = Column(Integer, default=0)
     tickets_resolved = Column(Integer, default=0)

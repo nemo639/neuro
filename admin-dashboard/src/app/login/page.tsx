@@ -180,7 +180,7 @@ export default function AdminLoginPage() {
                   <input type="checkbox" className="w-4 h-4 rounded border-dash-border accent-accent" />
                   <span className="text-sm text-dash-muted group-hover:text-dash-text transition-colors">Remember me</span>
                 </label>
-                <a href="#" className="text-sm font-medium text-accent-dark hover:text-dash-dark transition-colors">
+                <a href="/forgot-password" className="text-sm font-medium text-accent-dark hover:text-dash-dark transition-colors">
                   Forgot password?
                 </a>
               </div>

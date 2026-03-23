@@ -99,7 +99,22 @@ async def login(
     """
     service = AuthService(db)
     user, access_token, refresh_token = await service.login(data)
-    
+
+    # Create login alert notification
+    try:
+        from app.models.notification import Notification as NotifModel
+        from datetime import datetime
+        notif = NotifModel(
+            user_id=user.id,
+            title="Login Detected",
+            message=f"You signed in at {datetime.now().strftime('%I:%M %p, %b %d %Y')}. If this wasn't you, change your password immediately.",
+            notification_type="login_alert",
+        )
+        db.add(notif)
+        await db.flush()
+    except Exception:
+        pass  # Non-critical — don't block login
+
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,

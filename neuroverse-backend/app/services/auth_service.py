@@ -153,7 +153,7 @@ class AuthService:
         """Refresh access and refresh tokens."""
         payload = decode_token(refresh_token)
         
-        if not payload or payload.get("type") != "refresh":
+        if not payload or payload.get("token_type") != "refresh":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid refresh token"

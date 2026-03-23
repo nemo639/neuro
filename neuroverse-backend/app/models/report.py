@@ -37,6 +37,9 @@ class Report(Base):
     ad_stage = Column(String, nullable=True)
     pd_stage = Column(String, nullable=True)
 
+    # Doctor's clinical notes
+    doctor_notes = Column(String, nullable=True)
+
     # Wellness data included
     include_wellness = Column(Boolean, default=False)
 

@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
-import 'package:url_launcher/url_launcher.dart';  // For opening PDF
 import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 
 
 class ReportsScreen extends StatefulWidget {
@@ -15,7 +18,7 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProviderStateMixin {
   late AnimationController _pageController;
-  int _selectedNavIndex = 2; // Reports is selected
+  int _selectedNavIndex = 4; // Reports is selected
 
   // Design colors matching home screen
   static const Color bgColor = Color(0xFFF7F7F7);
@@ -32,7 +35,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
   // State variables
   List<ReportItem> reports = [];
   bool _isLoading = true;
-  bool _isGenerating = false;
+  // _isGenerating removed — reports are doctor-sent only
 
   @override
   void initState() {
@@ -64,7 +67,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
         setState(() {
           _isLoading = false;
           if (result['success']) {
-            final items = result['data']['items'] as List? ?? [];
+            final items = result['data']['reports'] as List? ?? [];
             reports = items.map((r) => ReportItem.fromJson(r)).toList();
             // Sort by date (newest first)
             reports.sort((a, b) => b.id.compareTo(a.id));
@@ -90,82 +93,6 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  void _showGenerateReportDialog() {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => _GenerateReportSheet(
-      onGenerate: (String title, List<int> sessionIds, String? category) async {
-        Navigator.pop(context);
-        await _generateReport(title, sessionIds, category);
-      },
-    ),
-  );
-}
-
-  Future<void> _generateReport(String title, List<int> sessionIds, String? category) async {
-  setState(() => _isGenerating = true);
-  
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Row(
-        children: [
-          SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-          SizedBox(width: 12),
-          Text('Generating report...'),
-        ],
-      ),
-      duration: Duration(seconds: 30),
-    ),
-  );
-  
-  try {
-    final result = await ApiService.createReport(
-      title: title,
-      sessionIds: sessionIds.isEmpty ? null : sessionIds,
-      category: category,
-    );
-    
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    
-    if (result['success']) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Report generated successfully!'),
-          backgroundColor: greenAccent,
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'View',
-            textColor: Colors.white,
-            onPressed: () => _viewReport(result['data']['id']),
-          ),
-        ),
-      );
-      // Refresh reports list to show the new report
-      await _loadReports();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['error'] ?? 'Failed to generate report'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  } finally {
-    if (mounted) {
-      setState(() => _isGenerating = false);
-    }
-  }
-}
 
   Future<void> _viewReport(int reportId) async {
     // Navigate to report detail screen
@@ -174,21 +101,50 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
 
   Future<void> _downloadReport(int reportId) async {
     final url = '${ApiService.baseUrl}/api/v1/reports/$reportId/download';
-    
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Downloading report...'), duration: Duration(seconds: 2)),
+      );
+    }
+
     try {
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      // Get auth token for authenticated download
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: 'auth_token');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Save to temp directory
+        final dir = await getApplicationDocumentsDirectory();
+        final filePath = '${dir.path}/NeuroVerse_Report_$reportId.pdf';
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+
+        // Open via share sheet (works on all platforms)
+        if (mounted) {
+          await Share.shareXFiles(
+            [XFile(filePath, mimeType: 'application/pdf')],
+            text: 'NeuroVerse Report #$reportId',
+          );
+        }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open PDF')),
+            SnackBar(content: Text('Download failed (${response.statusCode})'), backgroundColor: Colors.red),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error opening PDF: $e')),
+          SnackBar(content: Text('Download failed: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -237,7 +193,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
 
   void _onNavItemTapped(int index) {
     HapticFeedback.selectionClick();
-    
+
     switch (index) {
       case 0:
         Navigator.pushReplacementNamed(context, '/home');
@@ -246,12 +202,15 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
         Navigator.pushReplacementNamed(context, '/tests');
         break;
       case 2:
-        setState(() => _selectedNavIndex = index);
-        break;
-      case 3:
         Navigator.pushNamed(context, '/XAI');
         break;
+      case 3:
+        Navigator.pushNamed(context, '/neuro-chat');
+        break;
       case 4:
+        setState(() => _selectedNavIndex = index);
+        break;
+      case 5:
         Navigator.pushNamed(context, '/profile');
         break;
     }
@@ -286,8 +245,6 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                       _buildEmptyState()
                     else
                       _buildReportsList(),
-                    const SizedBox(height: 20),
-                    _buildGenerateButton(),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -313,7 +270,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Assessment Reports',
+                    'My Reports',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -323,7 +280,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Downloadable PDF reports with AI insights',
+                    'Reports shared by your doctor',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -405,7 +362,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Total Reports Generated',
+                    'Total Reports Received',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -506,7 +463,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
             ),
             const SizedBox(height: 8),
             Text(
-              'Generate your first assessment report',
+              'Your doctor hasn\'t shared any reports yet',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.black.withOpacity(0.4),
@@ -805,75 +762,6 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildGenerateButton() {
-    return _buildAnimatedWidget(
-      delay: 0.35,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: GestureDetector(
-          onTap: _isGenerating ? null : () {
-            HapticFeedback.mediumImpact();
-            _showGenerateReportDialog();
-          },
-          child: Opacity(
-            opacity: _isGenerating ? 0.6 : 1.0,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: darkCard,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: darkCard.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_isGenerating)
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  else
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: mintGreen,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.add_rounded,
-                        color: Colors.black87,
-                        size: 18,
-                      ),
-                    ),
-                  const SizedBox(width: 10),
-                  Text(
-                    _isGenerating ? 'Generating...' : 'Generate New Report',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildBottomNav() {
     return Container(
@@ -899,9 +787,10 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
             children: [
               _buildNavItem(0, Icons.home_rounded, 'Home'),
               _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.analytics_outlined, 'Reports'),
-              _buildNavItem(3, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(4, Icons.person_outline_rounded, 'Profile'),
+              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
+              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
+              _buildNavItem(4, Icons.description_outlined, 'Reports'),
+              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
             ],
           ),
         ),
@@ -915,7 +804,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
       onTap: () => _onNavItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? darkCard : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
@@ -1000,15 +889,15 @@ class ReportItem {
       id: json['id'],
       title: json['title'] ?? 'Report',
       date: _formatDate(json['created_at']),
-      testsCount: json['total_tests'] ?? 0,
-      sessionsCount: json['sessions_count'] ?? 0,
+      testsCount: json['tests_count'] ?? json['total_tests'] ?? 0,
+      sessionsCount: (json['sessions_included'] as List?)?.length ?? 0,
       adRisk: (json['ad_risk_score'] ?? 0).toInt(),
       pdRisk: (json['pd_risk_score'] ?? 0).toInt(),
-      status: json['status'] ?? 'completed',
-      pdfUrl: json['pdf_url'],
+      status: (json['is_ready'] == true) ? 'completed' : 'processing',
+      pdfUrl: json['pdf_path'],
       iconColor: const Color(0xFF8B5CF6),
       iconBgColor: const Color(0xFFF3E8FF),
-      sessionDetails: List<Map<String, dynamic>>.from(json['sessions'] ?? []),
+      sessionDetails: [],
     );
   }
   

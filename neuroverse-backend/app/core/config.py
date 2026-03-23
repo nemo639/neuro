@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Groq API (for Neuro chatbot)
+    GROQ_API_KEY: Optional[str] = None
+
     # OTP Settings
     OTP_EXPIRE_MINUTES: int = 10
     OTP_LENGTH: int = 6

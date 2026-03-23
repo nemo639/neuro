@@ -152,7 +152,7 @@ Map<String, int> _categoryCompletedTests = {};
 }
   void _onNavItemTapped(int index) {
     HapticFeedback.selectionClick();
-    
+
     switch (index) {
       case 0:
         Navigator.pushReplacementNamed(context, '/home');
@@ -162,12 +162,15 @@ Map<String, int> _categoryCompletedTests = {};
         _loadData(); // Refresh progress when Tests tab re-selected
         break;
       case 2:
-        Navigator.pushNamed(context, '/reports');
-        break;
-      case 3:
         Navigator.pushNamed(context, '/XAI');
         break;
+      case 3:
+        Navigator.pushNamed(context, '/neuro-chat');
+        break;
       case 4:
+        Navigator.pushNamed(context, '/reports');
+        break;
+      case 5:
         Navigator.pushNamed(context, '/profile');
         break;
     }
@@ -717,9 +720,10 @@ Map<String, int> _categoryCompletedTests = {};
             children: [
               _buildNavItem(0, Icons.home_rounded, 'Home'),
               _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.analytics_outlined, 'Reports'),
-              _buildNavItem(3, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(4, Icons.person_outline_rounded, 'Profile'),
+              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
+              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
+              _buildNavItem(4, Icons.description_outlined, 'Reports'),
+              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
             ],
           ),
         ),
@@ -733,7 +737,7 @@ Map<String, int> _categoryCompletedTests = {};
       onTap: () => _onNavItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? darkCard : Colors.transparent,
           borderRadius: BorderRadius.circular(16),

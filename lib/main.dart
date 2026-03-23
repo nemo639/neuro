@@ -36,9 +36,13 @@ import 'package:neuroverse/features/labs/tests/trail_making_test.dart';
 import 'package:neuroverse/features/labs/tests/gait_assessment_test.dart';
 import 'package:neuroverse/features/labs/tests/facial_analysis_test.dart';
 import 'package:neuroverse/features/labs/facial_analysis_category.dart';
-void main() {
+import 'package:neuroverse/features/chat/neuro_chat_screen.dart';
+import 'package:neuroverse/core/notification_service.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+  await NotificationService.init();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -110,6 +114,7 @@ class MyApp extends StatelessWidget {
         '/admin-home': (context) => const AdminHomeScreen(),
         '/reports': (context) => const ReportsScreen(),
         '/XAI': (context) => const XAIScreen(),
+        '/neuro-chat': (context) => const NeuroChatScreen(),
       },
     );
   }

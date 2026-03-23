@@ -2,7 +2,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 // API Base URL - Change this to your FastAPI backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://10.54.16.25:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_VERSION = '/api/v1';
 
 // Create axios instance
@@ -180,6 +180,15 @@ export const reportsApi = {
   },
 
   getDownloadUrl: (path: string) => `${API_BASE_URL}${path}`,
+
+  sendReportToPatient: async (patientId: number, data: {
+    report_type?: string;
+    doctor_notes?: string;
+    title?: string;
+  }) => {
+    const response = await api.post(`/doctors/patients/${patientId}/send-report`, data);
+    return response.data;
+  },
 };
 
 // ==================== PROFILE API ====================

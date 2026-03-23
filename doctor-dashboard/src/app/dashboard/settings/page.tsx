@@ -159,6 +159,7 @@ export default function SettingsPage() {
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [sidebarWidth, setSidebarWidth] = useState<'compact' | 'standard' | 'wide'>('standard');
   const [compactMode, setCompactMode] = useState(false);
+  const [appearanceLoaded, setAppearanceLoaded] = useState(false);
 
   /* ── Clinical ── */
   const [clinical, setClinical] = useState(DEFAULT_CLINICAL);
@@ -172,7 +173,19 @@ export default function SettingsPage() {
     setFontSize(loadFromStorage('nv_doc_fontSize', 'medium'));
     setSidebarWidth(loadFromStorage('nv_doc_sidebarWidth', 'standard'));
     setCompactMode(loadFromStorage('nv_doc_compactMode', false));
+    setAppearanceLoaded(true);
   }, []);
+
+  /* ── Auto-save appearance to localStorage on every change ── */
+  useEffect(() => {
+    if (!appearanceLoaded) return; // skip initial render with defaults
+    localStorage.setItem('nv_doc_theme', JSON.stringify(theme));
+    localStorage.setItem('nv_doc_accent', JSON.stringify(accentColor));
+    localStorage.setItem('nv_doc_fontSize', JSON.stringify(fontSize));
+    localStorage.setItem('nv_doc_sidebarWidth', JSON.stringify(sidebarWidth));
+    localStorage.setItem('nv_doc_compactMode', JSON.stringify(compactMode));
+    window.dispatchEvent(new Event('nv-appearance-changed'));
+  }, [theme, accentColor, fontSize, sidebarWidth, compactMode, appearanceLoaded]);
 
   /* ── Apply theme to DOM ── */
   useEffect(() => {

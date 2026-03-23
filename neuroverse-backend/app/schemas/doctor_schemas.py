@@ -339,6 +339,7 @@ class ExportReportRequest(BaseModel):
     date_range_end: Optional[datetime] = None
     include_xai: bool = True
     include_raw_data: bool = False
+    doctor_notes: Optional[str] = None  # Free-text clinical notes from the doctor
     format: str = "pdf"  # pdf, csv, json
 
 

@@ -13,12 +13,15 @@ import uuid as uuid_mod
 
 from app.db.database import get_db
 from app.core.security import (
-    verify_password, 
-    get_password_hash, 
-    create_access_token, 
+    verify_password,
+    get_password_hash,
+    create_access_token,
     create_refresh_token,
     get_current_admin,
+    generate_otp,
+    verify_otp,
 )
+from app.services.email_service import EmailService
 from app.models.admin import Admin, SupportTicket, TicketMessage, AdminActivityLog, DataPermission, AdminTask
 from app.models.user import User
 from app.models.doctor_model import Doctor, DoctorStatus, DatasetRequest
@@ -103,6 +106,74 @@ async def admin_login(credentials: AdminLogin, db: AsyncSession = Depends(get_db
         refresh_token=refresh_token,
         admin=AdminProfile.model_validate(admin)
     )
+
+
+# ==================== FORGOT / RESET PASSWORD ====================
+
+@router.post("/forgot-password")
+async def admin_forgot_password(
+    request: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """Send OTP to admin's email for password reset."""
+    email = request.get("email", "").lower()
+    result = await db.execute(
+        select(Admin).where(Admin.email == email)
+    )
+    admin = result.scalar_one_or_none()
+
+    if not admin:
+        # Don't reveal if email exists
+        return {"success": True, "message": "If the email exists, an OTP has been sent"}
+
+    # Generate and save OTP
+    otp = generate_otp()
+    admin.otp_code = otp
+    admin.otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
+    await db.commit()
+
+    # Send OTP email
+    email_service = EmailService()
+    await email_service.send_otp_email(admin.email, otp, "Admin Portal Password Reset")
+
+    return {"success": True, "message": "OTP sent to your email"}
+
+
+@router.post("/reset-password")
+async def admin_reset_password(
+    request: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """Reset admin password using OTP."""
+    email = request.get("email", "").lower()
+    otp = request.get("otp", "")
+    new_password = request.get("new_password", "")
+
+    result = await db.execute(
+        select(Admin).where(Admin.email == email)
+    )
+    admin = result.scalar_one_or_none()
+
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid request"
+        )
+
+    # Verify OTP
+    if not verify_otp(admin.otp_code, admin.otp_expires_at, otp):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP"
+        )
+
+    # Update password
+    admin.password_hash = get_password_hash(new_password)
+    admin.otp_code = None
+    admin.otp_expires_at = None
+    await db.commit()
+
+    return {"success": True, "message": "Password reset successfully"}
 
 
 # ==================== DASHBOARD ====================

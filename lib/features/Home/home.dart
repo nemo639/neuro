@@ -1,8 +1,8 @@
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,33 +13,125 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _pageController;
+  late PageController _tipsPageController;
   int _selectedNavIndex = 0;
-  final String userName = "Dr. Sarah";
-  
+  int _currentTipIndex = 0;
+
   // State variables
   bool _isLoading = true;
   Map<String, dynamic>? _dashboardData;
   Map<String, dynamic>? _wellnessData;
-  String _userFirstName = 'User';
   int _adRisk = 0;
   int _pdRisk = 0;
   int _overallRisk = 0;
   String _riskLevel = 'Low';
-  String _lastUpdated = '';
   double _screenTime = 0;
   double _gamingHours = 0;
-  double _sleepHours = 0;
+  double _socialHours = 0;
+  int _notificationCount = 0;
+  double _avgScreenTime = 0;
   List<dynamic> _recentTests = [];
-  
-  // Weekly screen time data
-  List<double> _weeklyScreenTime = [6.2, 7.5, 5.8, 8.1, 6.9, 4.5, 3.2];
-  
-  // Design colors from reference
+  List<dynamic> _riskTrend = []; // Per-session risk data for trend chart
+  String _trendCategory = 'All'; // Filter for trend chart
+
+  // Weekly data (loaded from API)
+  List<double> _weeklyScreenTime = [0, 0, 0, 0, 0, 0, 0];
+  List<String> _weeklyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  // Notifications/Alerts
+  List<dynamic> _notifications = [];
+  int _unreadCount = 0;
+
+  // User profile
+  String? _profileImagePath;
+  String _userInitial = 'U';
+  String _userName = '';
+  int _streak = 0;
+
+
+  // Health tips pool (10 total, 7 shown each session with 4 shuffled + 3 fixed)
+  static final List<Map<String, dynamic>> _allHealthTips = [
+    {
+      'title': 'Brain-Boosting Foods',
+      'desc': 'Blueberries, salmon & walnuts improve cognitive function by up to 25%',
+      'icon': Icons.restaurant_rounded,
+      'color': const Color(0xFF7C6AEF),
+    },
+    {
+      'title': 'Sleep & Memory',
+      'desc': '7-9 hours of quality sleep consolidates memories and clears brain toxins',
+      'icon': Icons.bedtime_rounded,
+      'color': const Color(0xFF10B981),
+    },
+    {
+      'title': 'Exercise Your Brain',
+      'desc': '30 min daily aerobic exercise reduces dementia risk by 30%',
+      'icon': Icons.directions_run_rounded,
+      'color': const Color(0xFFF59E0B),
+    },
+    {
+      'title': 'Social Connection',
+      'desc': 'Regular social interaction slows cognitive decline & boosts mental health',
+      'icon': Icons.people_rounded,
+      'color': const Color(0xFFEC4899),
+    },
+    {
+      'title': 'Mindful Meditation',
+      'desc': '10 min daily meditation increases grey matter and reduces stress hormones',
+      'icon': Icons.self_improvement_rounded,
+      'color': const Color(0xFF06B6D4),
+    },
+    {
+      'title': 'Stay Hydrated',
+      'desc': 'Dehydration impairs attention and memory. Aim for 8 glasses of water daily',
+      'icon': Icons.water_drop_rounded,
+      'color': const Color(0xFF3B82F6),
+    },
+    {
+      'title': 'Learn Something New',
+      'desc': 'Learning a new skill builds neural pathways and strengthens brain resilience',
+      'icon': Icons.school_rounded,
+      'color': const Color(0xFF8B5CF6),
+    },
+    {
+      'title': 'Limit Screen Time',
+      'desc': 'Excessive screen time linked to cognitive fatigue. Take 5-min breaks every hour',
+      'icon': Icons.phone_android_rounded,
+      'color': const Color(0xFFEF4444),
+    },
+    {
+      'title': 'Omega-3 Fatty Acids',
+      'desc': 'Fish oil and flaxseed reduce brain inflammation and support neuron health',
+      'icon': Icons.local_pharmacy_rounded,
+      'color': const Color(0xFF14B8A6),
+    },
+    {
+      'title': 'Music Therapy',
+      'desc': 'Listening to music activates multiple brain regions and improves mood & memory',
+      'icon': Icons.music_note_rounded,
+      'color': const Color(0xFFD946EF),
+    },
+  ];
+
+  // First 3 tips are always shown (fixed), remaining 4 are randomly picked
+  late List<Map<String, dynamic>> _healthTips;
+
+  void _shuffleHealthTips() {
+    // First 3 always shown as "anchor" tips
+    final fixed = _allHealthTips.sublist(0, 3);
+    // Remaining 7 tips — shuffle and pick 4
+    final pool = List<Map<String, dynamic>>.from(_allHealthTips.sublist(3))..shuffle();
+    final randomPick = pool.take(4).toList();
+    // Combine: 3 fixed + 4 shuffled = 7 shown
+    _healthTips = [...fixed, ...randomPick];
+  }
+
+
+  // Design colors
   static const Color bgColor = Color(0xFFF7F7F7);
   static const Color mintGreen = Color(0xFFB8E8D1);
   static const Color softLavender = Color(0xFFE8DFF0);
   static const Color creamBeige = Color(0xFFF5EBE0);
-  static const Color softYellow = Color(0xFFFFF3CD);
   static const Color darkCard = Color(0xFF1A1A1A);
   static const Color navBg = Color(0xFFFAFAFA);
 
@@ -50,6 +142,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..forward();
+    _tipsPageController = PageController(viewportFraction: 0.85);
+    _shuffleHealthTips();
     _loadData();
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -62,20 +156,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _pageController.dispose();
+    _tipsPageController.dispose();
     super.dispose();
   }
 
   Future<void> _loadData() async {
     final dashResult = await ApiService.getUserDashboard();
     final wellnessResult = await ApiService.getWellnessDashboard();
-    final userResult = await ApiService.getCurrentUser();
+    final historyResult = await ApiService.getWellnessHistory(days: 7, limit: 7);
+    final profileResult = await ApiService.getUserProfile();
 
     if (mounted) {
       setState(() {
         _isLoading = false;
 
-        if (userResult['success']) {
-          _userFirstName = userResult['data']['first_name'] ?? 'User';
+
+        if (profileResult['success']) {
+          final pData = profileResult['data'];
+          _profileImagePath = pData['profile_image_path']?.toString();
+          final fn = pData['first_name']?.toString() ?? '';
+          _userName = fn;
+          _userInitial = fn.isNotEmpty ? fn[0].toUpperCase() : 'U';
         }
 
         if (dashResult['success']) {
@@ -84,18 +185,202 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _pdRisk = (_dashboardData?['pd_risk_score'] ?? 0).toInt();
           _overallRisk = ((_adRisk + _pdRisk) / 2).toInt();
           _riskLevel = _getRiskLevel(_overallRisk);
-          _recentTests = _dashboardData?['categories'] ?? [];
+          final allCats = _dashboardData?['categories'] as List<dynamic>? ?? [];
+          // Remove gait, sort attempted tests first
+          _recentTests = allCats
+              .where((t) => (t['category'] ?? '').toString().toLowerCase() != 'gait')
+              .toList()
+            ..sort((a, b) {
+              final aCompleted = (a['tests_completed'] ?? 0) as int;
+              final bCompleted = (b['tests_completed'] ?? 0) as int;
+              if (aCompleted > 0 && bCompleted == 0) return -1;
+              if (aCompleted == 0 && bCompleted > 0) return 1;
+              // Both attempted — most recent first
+              final aDate = a['last_tested']?.toString() ?? '';
+              final bDate = b['last_tested']?.toString() ?? '';
+              return bDate.compareTo(aDate);
+            });
+          _riskTrend = _dashboardData?['risk_trend'] ?? [];
         }
 
         if (wellnessResult['success']) {
           _wellnessData = wellnessResult['data'];
-          _screenTime = (_wellnessData?['today']?['screen_time_hours'] ?? 0).toDouble();
-          _gamingHours = (_wellnessData?['today']?['gaming_hours'] ?? 0).toDouble();
-          _sleepHours = (_wellnessData?['today']?['sleep_hours'] ?? 0).toDouble();
+          // Today's entry (field is "today_entry" from backend)
+          final today = _wellnessData?['today_entry'];
+          _screenTime = (today?['screen_time_hours'] ?? 0).toDouble();
+          _gamingHours = (today?['gaming_hours'] ?? 0).toDouble();
+          _socialHours = _screenTime * 0.35; // Fallback until device data
+          _notificationCount = (_screenTime * 12).toInt();
+          // Weekly averages from dashboard
+          _avgScreenTime = (_wellnessData?['avg_screen_time'] ?? 0).toDouble();
+          _streak = (_wellnessData?['logging_streak'] ?? 0) as int;
+        }
+
+        // Build weekly chart from history
+        if (historyResult['success']) {
+          _buildWeeklyChartData(historyResult['data']);
         }
       });
     }
+
+    // Load notifications and ring for new unread ones
+    final notifResult = await ApiService.getNotifications(limit: 10);
+    if (mounted && notifResult['success']) {
+      final notifs = notifResult['data']?['notifications'] ?? [];
+      setState(() {
+        _notifications = notifs;
+        _unreadCount = notifResult['data']?['unread_count'] ?? 0;
+      });
+      // Trigger local push notification with sound for new unread alerts
+      await NotificationService.showNewAlerts(notifs);
+    }
+
+    // Auto-collect device usage and submit to backend
+    _collectAndSubmitDeviceUsage();
+
+    // Check streak milestones and fire notification
+    _checkStreakMilestone();
   }
+
+  Future<void> _checkStreakMilestone() async {
+    if (_streak <= 0) return;
+    final milestones = [3, 7, 14, 21, 30, 50, 100];
+    if (milestones.contains(_streak)) {
+      final emoji = _streak >= 30 ? '🏆' : _streak >= 14 ? '🔥' : '⭐';
+      await NotificationService.show(
+        id: 9000 + _streak,
+        title: '$emoji $_streak-Day Streak Unlocked!',
+        body: _streak >= 30
+            ? 'Incredible! $_streak days of consistent health tracking. You\'re a wellness champion!'
+            : _streak >= 14
+                ? 'Amazing consistency! $_streak days in a row. Keep up the great work!'
+                : 'Nice! $_streak-day streak! Consistent tracking helps detect early signs.',
+      );
+    }
+  }
+
+  /// Collect device screen time via platform channel and submit to backend.
+  /// Falls back to backend data if unavailable.
+  static const _usageChannel = MethodChannel('com.neuroverse/usage_stats');
+
+  Future<void> _collectAndSubmitDeviceUsage() async {
+    try {
+      // Check if usage permission is granted
+      final hasPermission = await _usageChannel.invokeMethod<bool>('hasUsagePermission') ?? false;
+
+      if (!hasPermission) {
+        // Show a dialog asking the user to grant usage access
+        if (mounted) {
+          _showUsagePermissionDialog();
+        }
+        _applyFallbackWellness();
+        return;
+      }
+
+      final result = await _usageChannel.invokeMethod<Map>('getUsageStats');
+      if (result != null) {
+        final screenHours = (result['screenTimeMinutes'] ?? 0) / 60.0;
+        final gamingHrs = (result['gamingMinutes'] ?? 0) / 60.0;
+        final socialMinutes = (result['socialMinutes'] ?? 0).toDouble();
+        final notifs = (result['notificationCount'] ?? 0) as int;
+
+        await ApiService.submitWellnessData(
+          screenTimeHours: double.parse(screenHours.toStringAsFixed(2)),
+          gamingHours: double.parse(gamingHrs.toStringAsFixed(2)),
+        );
+
+        if (mounted) {
+          setState(() {
+            _screenTime = screenHours;
+            _gamingHours = gamingHrs;
+            _socialHours = socialMinutes / 60.0;
+            _notificationCount = notifs;
+          });
+        }
+        return;
+      }
+    } catch (_) {
+      // Platform channel not available (e.g. iOS or desktop)
+    }
+
+    _applyFallbackWellness();
+  }
+
+  void _applyFallbackWellness() {
+    if (mounted) {
+      setState(() {
+        _socialHours = _screenTime * 0.35;
+        _notificationCount = (_screenTime * 12).toInt();
+      });
+    }
+  }
+
+  void _showUsagePermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.phone_android_rounded, color: Color(0xFF7C6AEF)),
+            SizedBox(width: 8),
+            Expanded(child: Text('Enable Usage Access', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
+          ],
+        ),
+        content: const Text(
+          'NeuroVerse needs usage access permission to track your screen time, gaming, and social media usage for Digital Wellness monitoring.\n\nTap "Open Settings" and enable access for NeuroVerse.',
+          style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Later', style: TextStyle(color: Colors.black45)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await _usageChannel.invokeMethod('requestUsagePermission');
+              } catch (_) {}
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C6AEF),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _buildWeeklyChartData(Map<String, dynamic> historyData) {
+    final dailySummary = historyData['daily_summary'] as List<dynamic>? ?? [];
+    final dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    final screenByDay = <int, double>{};
+
+    for (var entry in dailySummary) {
+      final dateStr = entry['date'] as String?;
+      if (dateStr == null) continue;
+      try {
+        final date = DateTime.parse(dateStr);
+        final dayIndex = (date.weekday - 1) % 7; // Mon=0, Sun=6
+        screenByDay[dayIndex] = (entry['screen_time'] ?? 0).toDouble();
+      } catch (_) {}
+    }
+
+    _weeklyLabels = dayLabels;
+    _weeklyScreenTime = List.generate(7, (i) => screenByDay[i] ?? 0);
+
+    // Inject today's live screen time so the chart always shows the current day
+    final todayIndex = (DateTime.now().weekday - 1) % 7;
+    if (_screenTime > 0 && _weeklyScreenTime[todayIndex] == 0) {
+      _weeklyScreenTime[todayIndex] = _screenTime;
+    }
+  }
+
 
   String _getRiskLevel(int score) {
     if (score < 25) return 'Low';
@@ -104,9 +389,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return 'High';
   }
 
+  Color _getBadgeColor(int score) {
+    if (score < 25) return const Color(0xFF10B981);  // green
+    if (score < 50) return const Color(0xFFF59E0B);  // amber
+    if (score < 75) return const Color(0xFFF97316);  // orange
+    return const Color(0xFFEF4444);                    // red
+  }
+
   void _onNavItemTapped(int index) {
     HapticFeedback.selectionClick();
-    
     switch (index) {
       case 0:
         setState(() => _selectedNavIndex = index);
@@ -115,63 +406,92 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Navigator.pushNamed(context, '/tests');
         break;
       case 2:
-        Navigator.pushNamed(context, '/reports');
-        break;
-      case 3:
         Navigator.pushNamed(context, '/XAI');
         break;
+      case 3:
+        Navigator.pushNamed(context, '/neuro-chat');
+        break;
       case 4:
+        Navigator.pushNamed(context, '/reports');
+        break;
+      case 5:
         Navigator.pushNamed(context, '/profile');
         break;
     }
   }
 
-  void _showWellnessGoalsDialog() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _WellnessGoalsSheet(
-        currentScreenTime: _screenTime,
-        currentSleepHours: _sleepHours,
-        currentGamingHours: _gamingHours,
-        onSave: (goals) async {
-          Navigator.pop(context);
-          
-          // Call API to save goals
-          final result = await ApiService.saveWellnessGoals(goals: goals);
-          
-          if (result['success']) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Goals saved successfully!'),
-                backgroundColor: Color(0xFF10B981),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(result['error'] ?? 'Failed to save goals'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-      ),
-    );
+  // Get test config (icon, subtitle, color) from category data
+  Map<String, dynamic> _getTestConfig(String category) {
+    switch (category.toLowerCase()) {
+      case 'speech':
+        return {
+          'title': 'Speech Test',
+          'subtitle': 'Story recall',
+          'icon': Icons.mic_rounded,
+          'bgColor': creamBeige,
+        };
+      case 'motor':
+        return {
+          'title': 'Motor Test',
+          'subtitle': 'Spiral drawing',
+          'icon': Icons.gesture_rounded,
+          'bgColor': const Color(0xFFE0F2FE),
+        };
+      case 'cognitive':
+        return {
+          'title': 'Cognitive',
+          'subtitle': 'Memory & TMT',
+          'icon': Icons.psychology_alt_rounded,
+          'bgColor': softLavender.withOpacity(0.6),
+        };
+      case 'gait':
+        return {
+          'title': 'Gait Test',
+          'subtitle': 'Walk analysis',
+          'icon': Icons.directions_walk_rounded,
+          'bgColor': mintGreen.withOpacity(0.5),
+        };
+      case 'facial':
+        return {
+          'title': 'Facial Test',
+          'subtitle': 'Expression analysis',
+          'icon': Icons.face_rounded,
+          'bgColor': const Color(0xFFFCE7F3),
+        };
+      default:
+        return {
+          'title': category,
+          'subtitle': 'Assessment',
+          'icon': Icons.science_rounded,
+          'bgColor': Colors.white,
+        };
+    }
   }
+
+  String _timeAgo(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return 'Pending';
+    try {
+      final date = DateTime.parse(dateStr);
+      final diff = DateTime.now().difference(date);
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${(diff.inDays / 7).floor()}w ago';
+    } catch (_) {
+      return 'Pending';
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
@@ -179,7 +499,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -193,13 +513,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _buildStatsRow(),
                     const SizedBox(height: 24),
                     _buildRecentTestsSection(),
-                    const SizedBox(height: 20),
-                    _buildDigitalWellnessCard(),
-                    const SizedBox(height: 20),
-                    _buildWellnessCard(),
                     const SizedBox(height: 24),
-                    _buildStartButton(),
-                    const SizedBox(height: 100),
+                    _buildQuickActionsGrid(),
+                    const SizedBox(height: 24),
+                    _buildHealthTipsCarousel(),
+                    const SizedBox(height: 24),
+                    _buildCognitiveScoreTrend(),
+                    const SizedBox(height: 24),
+                    _buildDigitalWellnessCard(),
+                    const SizedBox(height: 14),
+                    _buildWellnessInsightBanner(),
+                    const SizedBox(height: 24),
+                    _buildNeuroEducationCards(),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -211,6 +537,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ===================== HEADER =====================
   Widget _buildHeader() {
     return _buildAnimatedWidget(
       delay: 0.0,
@@ -222,16 +549,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Row(
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: darkCard,
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.black.withOpacity(0.08)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: Center(
-                    child: CustomPaint(
-                      size: const Size(24, 24),
-                      painter: BrainIconPainter(),
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: CustomPaint(
+                          size: const Size(24, 24),
+                          painter: BrainIconPainter(),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -260,63 +603,298 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
-            
             Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.black.withOpacity(0.08)),
-                  ),
-                  child: Stack(
-                    children: [
-                      const Center(
-                        child: Icon(
-                          Icons.notifications_none_rounded,
-                          size: 22,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Positioned(
-                        top: 10,
-                        right: 12,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444),
-                            shape: BoxShape.circle,
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _showNotificationsSheet();
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.black.withOpacity(0.08)),
+                    ),
+                    child: Stack(
+                      children: [
+                        const Center(
+                          child: Icon(
+                            Icons.notifications_none_rounded,
+                            size: 22,
+                            color: Colors.black87,
                           ),
                         ),
-                      ),
-                    ],
+                        if (_unreadCount > 0)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              width: 18, height: 18,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFEF4444),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _unreadCount > 9 ? '9+' : '$_unreadCount',
+                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Navigator.pushNamed(context, '/profile');
+                    Navigator.pushNamed(context, '/profile').then((_) {
+                      // Refresh profile image when returning from profile
+                      _loadData();
+                    });
                   },
                   child: Container(
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: Colors.black.withOpacity(0.08), width: 2),
-                      image: const DecorationImage(
-                        image: NetworkImage('https://i.pravatar.cc/150?img=47'),
-                        fit: BoxFit.cover,
-                      ),
                     ),
+                    clipBehavior: Clip.antiAlias,
+                    child: (_profileImagePath != null && _profileImagePath!.isNotEmpty)
+                        ? Image.network(
+                            '${ApiService.baseUrl}/uploads/$_profileImagePath',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(_userInitial, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                            ),
+                          )
+                        : Center(
+                            child: Text(_userInitial, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                          ),
                   ),
                 ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+
+  // ===================== WELCOME =====================
+  void _showNotificationsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          height: MediaQuery.of(ctx).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Row(
+                  children: [
+                    const Text('Notifications', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                    const Spacer(),
+                    if (_unreadCount > 0)
+                      GestureDetector(
+                        onTap: () async {
+                          await ApiService.markAllNotificationsRead();
+                          setState(() {
+                            for (var n in _notifications) { n['is_read'] = true; }
+                            _unreadCount = 0;
+                          });
+                          setSheetState(() {});
+                        },
+                        child: Text(
+                          'Mark all read',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF6366F1).withOpacity(0.8)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: _notifications.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.notifications_off_rounded, size: 48, color: Colors.grey[300]),
+                            const SizedBox(height: 12),
+                            Text('No notifications yet', style: TextStyle(fontSize: 14, color: Colors.grey[400])),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _notifications.length,
+                        itemBuilder: (ctx, index) {
+                          final n = _notifications[index];
+                          final type = n['type'] ?? 'system';
+                          final isRead = n['is_read'] ?? false;
+                          final notifId = n['id'] as int?;
+
+                          IconData icon;
+                          Color color;
+                          switch (type) {
+                            case 'report_ready':
+                              icon = Icons.description_rounded;
+                              color = const Color(0xFF8B5CF6);
+                              break;
+                            case 'login_alert':
+                              icon = Icons.login_rounded;
+                              color = const Color(0xFF3B82F6);
+                              break;
+                            case 'test_reminder':
+                              icon = Icons.assignment_late_rounded;
+                              color = const Color(0xFFF59E0B);
+                              break;
+                            case 'doctor_message':
+                              icon = Icons.medical_services_rounded;
+                              color = const Color(0xFF10B981);
+                              break;
+                            default:
+                              icon = Icons.notifications_rounded;
+                              color = const Color(0xFF6366F1);
+                          }
+
+                          return Dismissible(
+                            key: ValueKey(notifId ?? index),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              child: const Icon(Icons.delete_rounded, color: Colors.white, size: 22),
+                            ),
+                            onDismissed: (_) async {
+                              final removed = _notifications.removeAt(index);
+                              final wasUnread = !(removed['is_read'] ?? false);
+                              if (wasUnread) _unreadCount = (_unreadCount - 1).clamp(0, 999);
+                              setState(() {});
+                              setSheetState(() {});
+                              if (notifId != null) {
+                                await ApiService.deleteNotification(notifId);
+                              }
+                            },
+                            child: GestureDetector(
+                              onTap: () async {
+                                if (notifId != null && !isRead) {
+                                  await ApiService.markNotificationRead(notifId);
+                                  setState(() {
+                                    n['is_read'] = true;
+                                    _unreadCount = (_unreadCount - 1).clamp(0, 999);
+                                  });
+                                  setSheetState(() {});
+                                }
+                                if (n['action_type'] == 'view_report' && mounted) {
+                                  Navigator.pop(ctx);
+                                  Navigator.pushNamed(context, '/reports');
+                                }
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: isRead ? Colors.grey[50] : color.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: isRead ? Colors.transparent : color.withOpacity(0.1)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40, height: 40,
+                                      decoration: BoxDecoration(
+                                        color: color.withOpacity(isRead ? 0.08 : 0.12),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(icon, size: 20, color: color),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  n['title'] ?? '',
+                                                  style: TextStyle(fontSize: 14, fontWeight: isRead ? FontWeight.w600 : FontWeight.w700),
+                                                ),
+                                              ),
+                                              if (!isRead)
+                                                Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            n['message'] ?? '',
+                                            style: TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5), height: 1.3),
+                                            maxLines: 2, overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  _timeAgo(n['created_at']?.toString()),
+                                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.black.withOpacity(0.3)),
+                                                ),
+                                              ),
+                                              GestureDetector(
+                                                onTap: () async {
+                                                  _notifications.removeAt(index);
+                                                  if (!isRead) _unreadCount = (_unreadCount - 1).clamp(0, 999);
+                                                  setState(() {});
+                                                  setSheetState(() {});
+                                                  if (notifId != null) {
+                                                    await ApiService.deleteNotification(notifId);
+                                                  }
+                                                },
+                                                child: Icon(Icons.delete_outline_rounded, size: 18, color: Colors.black.withOpacity(0.25)),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -356,6 +934,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ===================== MAIN RISK CARD =====================
   Widget _buildMainRiskCard() {
     return _buildAnimatedWidget(
       delay: 0.15,
@@ -529,6 +1108,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ===================== STATS ROW =====================
   Widget _buildStatsRow() {
     return _buildAnimatedWidget(
       delay: 0.2,
@@ -543,9 +1123,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 value: _adRisk.toString(),
                 unit: '/100',
                 badge: _getRiskLevel(_adRisk),
-                badgeColor: _adRisk < 25 ? const Color(0xFF059669) : const Color(0xFFEF4444),
+                badgeColor: _getBadgeColor(_adRisk),
                 bgColor: mintGreen,
-                icon: Icons.psychology_outlined,
+                icon: Icons.memory_rounded,
               ),
             ),
             const SizedBox(width: 14),
@@ -556,7 +1136,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 value: _pdRisk.toString(),
                 unit: '/100',
                 badge: _getRiskLevel(_pdRisk),
-                badgeColor: _pdRisk < 25 ? const Color(0xFF059669) : const Color(0xFFEF4444),
+                badgeColor: _getBadgeColor(_pdRisk),
                 bgColor: softLavender,
                 icon: Icons.timeline_rounded,
               ),
@@ -673,6 +1253,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ===================== RECENT TESTS (DYNAMIC) =====================
   Widget _buildRecentTestsSection() {
     return _buildAnimatedWidget(
       delay: 0.25,
@@ -692,9 +1273,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/tests');
-                  },
+                  onTap: () => Navigator.pushNamed(context, '/tests'),
                   child: Row(
                     children: [
                       Text(
@@ -719,38 +1298,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 140,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                _buildTestCard(
-                  title: 'Speech Test',
-                  subtitle: 'Story recall',
-                  time: '2h ago',
-                  icon: Icons.mic_rounded,
-                  bgColor: creamBeige,
-                  isCompleted: true,
-                ),
-                _buildTestCard(
-                  title: 'Motor Test',
-                  subtitle: 'Spiral drawing',
-                  time: '1d ago',
-                  icon: Icons.gesture_rounded,
-                  bgColor: Colors.white,
-                  isCompleted: true,
-                ),
-                _buildTestCard(
-                  title: 'Cognitive',
-                  subtitle: 'Memory recall',
-                  time: 'Pending',
-                  icon: Icons.psychology_alt_rounded,
-                  bgColor: softLavender.withOpacity(0.5),
-                  isCompleted: false,
-                ),
-              ],
-            ),
+            height: 155,
+            child: _recentTests.isEmpty
+                ? Center(
+                    child: Text(
+                      'No tests yet. Start your first assessment!',
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.4),
+                        fontSize: 14,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: _recentTests.length,
+                    itemBuilder: (context, index) {
+                      final test = _recentTests[index];
+                      final category = test['category'] ?? '';
+                      final config = _getTestConfig(category);
+                      final score = (test['score'] ?? 0).toDouble();
+                      final status = test['status'] ?? 'pending';
+                      final isCompleted = (test['tests_completed'] ?? 0) > 0;
+                      final lastTested = test['last_tested'];
+                      final timeStr = _timeAgo(lastTested?.toString());
+
+                      return _buildTestCard(
+                        title: config['title'],
+                        subtitle: config['subtitle'],
+                        time: timeStr,
+                        icon: config['icon'],
+                        bgColor: config['bgColor'],
+                        isCompleted: isCompleted,
+                        score: score,
+                        status: status,
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -764,11 +1349,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required IconData icon,
     required Color bgColor,
     required bool isCompleted,
+    required double score,
+    required String status,
   }) {
+    Color statusColor;
+    switch (status.toLowerCase()) {
+      case 'good':
+      case 'normal':
+        statusColor = const Color(0xFF10B981);
+        break;
+      case 'moderate':
+      case 'mild':
+        statusColor = const Color(0xFFF59E0B);
+        break;
+      case 'elevated':
+      case 'high':
+        statusColor = const Color(0xFFEF4444);
+        break;
+      default:
+        statusColor = const Color(0xFF9CA3AF);
+    }
+
     return GestureDetector(
-      onTap: () => HapticFeedback.lightImpact(),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.pushNamed(context, '/tests');
+      },
       child: Container(
-        width: 140,
+        width: 155,
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -802,11 +1410,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       color: Colors.black87,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      size: 12,
-                      color: Colors.white,
-                    ),
+                    child: const Icon(Icons.check_rounded, size: 12, color: Colors.white),
                   ),
               ],
             ),
@@ -834,16 +1438,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: isCompleted
-                        ? Colors.black.withOpacity(0.4)
-                        : const Color(0xFFD97706),
-                  ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    if (isCompleted) ...[
+                      // Score badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: statusColor.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          '${score.toInt()}%',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Expanded(
+                      child: Text(
+                        time,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: isCompleted
+                              ? Colors.black.withOpacity(0.4)
+                              : const Color(0xFFD97706),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -853,7 +1484,689 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ===================== HEALTH TIPS CAROUSEL =====================
+  Widget _buildHealthTipsCarousel() {
+    return _buildAnimatedWidget(
+      delay: 0.28,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Health Tips',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                // Dot indicators
+                Row(
+                  children: List.generate(
+                    _healthTips.length,
+                    (i) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.only(left: 4),
+                      width: _currentTipIndex == i ? 16 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: _currentTipIndex == i
+                            ? darkCard
+                            : Colors.black.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 130,
+            child: PageView.builder(
+              controller: _tipsPageController,
+              itemCount: _healthTips.length,
+              onPageChanged: (i) => setState(() => _currentTipIndex = i),
+              itemBuilder: (context, index) {
+                final tip = _healthTips[index];
+                return AnimatedScale(
+                  scale: _currentTipIndex == index ? 1.0 : 0.95,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          (tip['color'] as Color).withOpacity(0.85),
+                          (tip['color'] as Color),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (tip['color'] as Color).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                tip['title'],
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                tip['desc'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white.withOpacity(0.9),
+                                  height: 1.4,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            tip['icon'],
+                            size: 28,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  // ===================== QUICK ACTIONS GRID =====================
+  Widget _buildQuickActionsGrid() {
+    final actions = [
+      {
+        'title': 'Take Test',
+        'icon': Icons.assignment_outlined,
+        'color': const Color(0xFF7C6AEF),
+        'bgColor': const Color(0xFFEDE9FE),
+        'route': '/tests',
+      },
+      {
+        'title': 'View Reports',
+        'icon': Icons.description_outlined,
+        'color': const Color(0xFF10B981),
+        'bgColor': const Color(0xFFD1FAE5),
+        'route': '/reports',
+      },
+      {
+        'title': 'Chat Neuro',
+        'icon': Icons.stars_rounded,
+        'color': const Color(0xFFF59E0B),
+        'bgColor': const Color(0xFFFEF3C7),
+        'route': '/neuro-chat',
+      },
+      {
+        'title': 'XAI Insights',
+        'icon': Icons.auto_awesome_rounded,
+        'color': const Color(0xFFEC4899),
+        'bgColor': const Color(0xFFFCE7F3),
+        'route': '/XAI',
+      },
+    ];
+
+    return _buildAnimatedWidget(
+      delay: 0.3,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Quick Actions',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: actions.map((action) {
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.pushNamed(context, action['route'] as String);
+                    },
+                    child: Container(
+                      margin: EdgeInsets.only(
+                        right: action != actions.last ? 10 : 0,
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      decoration: BoxDecoration(
+                        color: action['bgColor'] as Color,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: (action['color'] as Color).withOpacity(0.15),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (action['color'] as Color).withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              action['icon'] as IconData,
+                              size: 22,
+                              color: action['color'] as Color,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            action['title'] as String,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: (action['color'] as Color),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===================== COGNITIVE SCORE TREND =====================
+  Widget _buildCognitiveScoreTrend() {
+    // Fixed category list (no gait — not trained)
+    final categories = ['All', 'Cognitive', 'Speech', 'Motor', 'Facial'];
+
+    // Filter risk_trend data by selected category
+    final filtered = _trendCategory == 'All'
+        ? _riskTrend
+        : _riskTrend.where((t) => (t['category'] ?? '').toString().toLowerCase() == _trendCategory.toLowerCase()).toList();
+
+    final List<double> trendPoints = [];
+    final List<String> trendLabels = [];
+
+    for (var entry in filtered) {
+      // Use AD risk as the trend value (average of ad+pd would also work)
+      final ad = (entry['ad'] ?? 0).toDouble();
+      final pd = (entry['pd'] ?? 0).toDouble();
+      final score = ((ad + pd) / 2);
+      trendPoints.add(score);
+      final cat = (entry['category'] ?? '').toString();
+      trendLabels.add(cat.isNotEmpty ? cat[0].toUpperCase() : '?');
+    }
+
+    // Placeholder if not enough data
+    if (trendPoints.length < 2) {
+      trendPoints.clear();
+      trendLabels.clear();
+      trendPoints.addAll([35, 28, 42, 30, 25]);
+      trendLabels.addAll(['S', 'M', 'C', 'M', 'S']);
+    }
+
+    final maxVal = trendPoints.reduce((a, b) => a > b ? a : b);
+    final minVal = trendPoints.reduce((a, b) => a < b ? a : b);
+    final avgVal = trendPoints.reduce((a, b) => a + b) / trendPoints.length;
+    final lastVal = trendPoints.last;
+    final prevVal = trendPoints.length >= 2 ? trendPoints[trendPoints.length - 2] : lastVal;
+    final change = lastVal - prevVal;
+
+    return _buildAnimatedWidget(
+      delay: 0.33,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: Colors.black.withOpacity(0.06)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Risk Score Trend',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Across your recent tests',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black.withOpacity(0.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: change <= 0
+                          ? const Color(0xFF10B981).withOpacity(0.12)
+                          : const Color(0xFFEF4444).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: change <= 0
+                            ? const Color(0xFF10B981).withOpacity(0.3)
+                            : const Color(0xFFEF4444).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          change <= 0
+                              ? Icons.trending_down_rounded
+                              : Icons.trending_up_rounded,
+                          size: 14,
+                          color: change <= 0
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${change.abs().toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: change <= 0
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              // Category filter chips
+              SizedBox(
+                height: 32,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  children: categories.map((cat) {
+                    final isSelected = _trendCategory == cat;
+                    return GestureDetector(
+                      onTap: () => setState(() => _trendCategory = cat),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected ? darkCard : Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          cat,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? Colors.white : Colors.black54,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Chart area
+              SizedBox(
+                height: 120,
+                child: CustomPaint(
+                  size: const Size(double.infinity, 120),
+                  painter: _TrendChartPainter(
+                    points: trendPoints,
+                    labels: trendLabels,
+                    maxValue: maxVal > 0 ? maxVal * 1.2 : 100,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Stats row
+              Row(
+                children: [
+                  _buildTrendStat('Average', '${avgVal.toStringAsFixed(0)}%', const Color(0xFF7C6AEF)),
+                  const SizedBox(width: 12),
+                  _buildTrendStat('Lowest', '${minVal.toStringAsFixed(0)}%', const Color(0xFF10B981)),
+                  const SizedBox(width: 12),
+                  _buildTrendStat('Highest', '${maxVal.toStringAsFixed(0)}%', const Color(0xFFEF4444)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTrendStat(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Colors.black.withOpacity(0.4),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===================== EDUCATIONAL NEURO CARDS =====================
+  static final List<Map<String, dynamic>> _neuroCards = [
+    {
+      'title': 'Early Signs of Alzheimer\'s',
+      'content': 'Memory loss that disrupts daily life, challenges in planning, difficulty completing familiar tasks, confusion with time or place, and trouble understanding visual images.',
+      'icon': Icons.psychology_rounded,
+      'color': const Color(0xFF8B5CF6),
+      'category': 'Alzheimer\'s',
+    },
+    {
+      'title': 'Parkinson\'s: More Than Tremors',
+      'content': 'Besides tremors, PD includes rigidity, slow movement (bradykinesia), balance problems, and non-motor symptoms like sleep disorders, depression, and loss of smell.',
+      'icon': Icons.accessibility_new_rounded,
+      'color': const Color(0xFF06B6D4),
+      'category': 'Parkinson\'s',
+    },
+    {
+      'title': 'The Power of Early Detection',
+      'content': 'Early diagnosis of neurodegenerative diseases can slow progression by up to 40% with proper intervention. Regular screening is key to maintaining quality of life.',
+      'icon': Icons.search_rounded,
+      'color': const Color(0xFF10B981),
+      'category': 'Prevention',
+    },
+    {
+      'title': 'How AI Helps Screening',
+      'content': 'AI can detect subtle patterns in speech, handwriting, and movement that humans might miss. NeuroVerse uses multimodal AI to screen for early neurological signs.',
+      'icon': Icons.auto_awesome_rounded,
+      'color': const Color(0xFFF59E0B),
+      'category': 'Technology',
+    },
+    {
+      'title': 'Protect Your Brain Daily',
+      'content': 'Mediterranean diet, 150 min weekly exercise, quality sleep, social engagement, and mental stimulation can reduce dementia risk by up to 60%.',
+      'icon': Icons.shield_rounded,
+      'color': const Color(0xFFEC4899),
+      'category': 'Prevention',
+    },
+    {
+      'title': 'Understanding XAI Results',
+      'content': 'Explainable AI (XAI) shows WHY the AI made its prediction. SHAP values, GradCAM heatmaps, and LIME help you and your doctor understand your screening results.',
+      'icon': Icons.insights_rounded,
+      'color': const Color(0xFF6366F1),
+      'category': 'Technology',
+    },
+    {
+      'title': 'Myth: Dementia Is Inevitable',
+      'content': 'FACT: Dementia is NOT a normal part of aging. Up to 40% of dementia cases could be prevented or delayed by addressing modifiable risk factors like hypertension and diabetes.',
+      'icon': Icons.lightbulb_rounded,
+      'color': const Color(0xFFEF4444),
+      'category': 'Myths vs Facts',
+    },
+    {
+      'title': 'Clock Drawing Test (CDT)',
+      'content': 'Drawing a clock face tests visuospatial ability, memory, and executive function. Errors in number placement or hand positioning can indicate early cognitive impairment.',
+      'icon': Icons.schedule_rounded,
+      'color': const Color(0xFF14B8A6),
+      'category': 'Tests',
+    },
+  ];
+
+  int _neuroCardIndex = 0;
+
+  Widget _buildNeuroEducationCards() {
+    final neuroPageController = PageController(viewportFraction: 0.85);
+    return _buildAnimatedWidget(
+      delay: 0.4,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                const Text(
+                  'Neuro Education',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.black87),
+                ),
+                const Spacer(),
+                Text(
+                  '${_neuroCardIndex + 1}/${_neuroCards.length}',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[400]),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 200,
+            child: PageView.builder(
+              controller: neuroPageController,
+              itemCount: _neuroCards.length,
+              onPageChanged: (i) => setState(() => _neuroCardIndex = i),
+              itemBuilder: (context, index) {
+                final card = _neuroCards[index];
+                final color = card['color'] as Color;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [color, color.withOpacity(0.75)],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      // Background decorative circle
+                      Positioned(
+                        right: -20, top: -20,
+                        child: Icon(
+                          card['icon'] as IconData,
+                          size: 120,
+                          color: Colors.white.withOpacity(0.08),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(card['icon'] as IconData, size: 14, color: Colors.white),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        card['category'] as String,
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              card['title'] as String,
+                              style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.w800,
+                                color: Colors.white, height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: Text(
+                                card['content'] as String,
+                                style: TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w500,
+                                  color: Colors.white.withOpacity(0.88), height: 1.5,
+                                ),
+                                maxLines: 4, overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Dot indicators
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_neuroCards.length, (i) {
+              final isActive = i == _neuroCardIndex;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: isActive ? 20 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive ? const Color(0xFF6366F1) : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===================== DIGITAL WELLNESS =====================
+  String _formatTime(double hours) {
+    final h = hours.toInt();
+    final m = ((hours - h) * 60).round();
+    if (h == 0 && m == 0) return '0m';
+    if (h == 0) return '${m}m';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}m';
+  }
+
   Widget _buildDigitalWellnessCard() {
+    // Calculate trend
+    final screenLimit = 6.0;
+    final pctOfLimit = _screenTime > 0 ? ((_screenTime / screenLimit) * 100).round() : 0;
+    final isUnder = _screenTime <= screenLimit;
+
     return _buildAnimatedWidget(
       delay: 0.3,
       child: Padding(
@@ -873,7 +2186,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           child: Column(
             children: [
-              // Header Section
+              // Header
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -887,139 +2200,67 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: darkCard,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF10B981),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  const Text(
-                                    "Today's Screen Time",
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              _screenTime.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.black87,
-                                height: 1,
-                                letterSpacing: -2,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                'hours',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black.withOpacity(0.4),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: const Color(0xFF10B981).withOpacity(0.3),
-                            ),
+                            color: darkCard,
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              Icon(Icons.phone_android_rounded, size: 12, color: Colors.white70),
+                              SizedBox(width: 6),
+                              Text('Digital Wellness', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isUnder ? const Color(0xFF10B981).withOpacity(0.12) : const Color(0xFFEF4444).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                               Icon(
-                                Icons.trending_down_rounded,
-                                size: 14,
-                                color: Color(0xFF10B981),
+                                isUnder ? Icons.trending_down_rounded : Icons.trending_up_rounded,
+                                size: 14, color: isUnder ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                               ),
-                              SizedBox(width: 5),
+                              const SizedBox(width: 4),
                               Text(
-                                '12% below limit',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF10B981),
-                                ),
+                                '$pctOfLimit% of limit',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isUnder ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        _showWellnessGoalsDialog();
-                      },
-                      child: Container(
-                        width: 70,
-                        height: 70,
-                        decoration: BoxDecoration(
-                          color: creamBeige,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.black.withOpacity(0.06),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: creamBeige.withOpacity(0.5),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          _formatTime(_screenTime),
+                          style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w800, color: Colors.black87, height: 1, letterSpacing: -1),
                         ),
-                        child: const Icon(
-                          Icons.flag_rounded,
-                          color: Colors.black54,
-                          size: 32,
-                        ),
-                      ),
+                        const Spacer(),
+                        Text('Total Screen Time', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black.withOpacity(0.4))),
+                      ],
                     ),
                   ],
                 ),
               ),
-              
-              // Stats Row
+
+              // Stats Row — phone-trackable metrics (no sleep)
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -1027,30 +2268,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _buildWellnessStatCard(
                       icon: Icons.phone_android_rounded,
                       label: 'Screen',
-                      value: _screenTime.toStringAsFixed(1),
+                      value: _formatTime(_screenTime),
                       bgColor: softLavender,
                       iconColor: const Color(0xFF8B5CF6),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     _buildWellnessStatCard(
                       icon: Icons.sports_esports_rounded,
                       label: 'Gaming',
-                      value: _gamingHours.toStringAsFixed(1),
+                      value: _formatTime(_gamingHours),
                       bgColor: const Color(0xFFFFE4E6),
                       iconColor: const Color(0xFFEC4899),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     _buildWellnessStatCard(
-                      icon: Icons.bedtime_rounded,
-                      label: 'Sleep',
-                      value: _sleepHours.toStringAsFixed(1),
-                      bgColor: mintGreen,
+                      icon: Icons.people_rounded,
+                      label: 'Social',
+                      value: _formatTime(_socialHours),
+                      bgColor: const Color(0xFFDCFCE7),
                       iconColor: const Color(0xFF10B981),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildWellnessStatCard(
+                      icon: Icons.notifications_rounded,
+                      label: 'Alerts',
+                      value: '$_notificationCount',
+                      bgColor: const Color(0xFFFEF3C7),
+                      iconColor: const Color(0xFFF59E0B),
                     ),
                   ],
                 ),
               ),
-              
+
               // Weekly Patterns
               Container(
                 margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1059,11 +2308,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   color: darkCard,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(
-                      color: darkCard.withOpacity(0.2),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
+                    BoxShadow(color: darkCard.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 5)),
                   ],
                 ),
                 child: Column(
@@ -1074,20 +2319,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       children: [
                         const Row(
                           children: [
-                            Icon(
-                              Icons.bar_chart_rounded,
-                              color: Colors.white70,
-                              size: 18,
-                            ),
+                            Icon(Icons.bar_chart_rounded, color: Colors.white70, size: 18),
                             SizedBox(width: 8),
-                            Text(
-                              'Weekly Screen Time',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
+                            Text('Weekly Screen Time', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
                           ],
                         ),
                         Container(
@@ -1096,74 +2330,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             color: Colors.white.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text(
-                            'This Week',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white60,
-                            ),
+                          child: Text(
+                            'Avg ${_avgScreenTime.toStringAsFixed(1)}h',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white60),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    // Bar Chart
+                    const SizedBox(height: 16),
                     SizedBox(
                       height: 85,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          _buildWeeklyBar('Mon', _weeklyScreenTime[0], false),
-                          _buildWeeklyBar('Tue', _weeklyScreenTime[1], false),
-                          _buildWeeklyBar('Wed', _weeklyScreenTime[2], false),
-                          _buildWeeklyBar('Thu', _weeklyScreenTime[3], false),
-                          _buildWeeklyBar('Fri', _weeklyScreenTime[4], true),
-                          _buildWeeklyBar('Sat', _weeklyScreenTime[5], false),
-                          _buildWeeklyBar('Sun', _weeklyScreenTime[6], false),
-                        ],
+                        children: List.generate(7, (i) {
+                          final todayIndex = (DateTime.now().weekday - 1) % 7;
+                          return _buildWeeklyBar(_weeklyLabels[i], _weeklyScreenTime[i], i == todayIndex);
+                        }),
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: mintGreen,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
+                        Container(width: 10, height: 10, decoration: BoxDecoration(color: mintGreen, borderRadius: BorderRadius.circular(3))),
                         const SizedBox(width: 6),
-                        Text(
-                          'Screen Time (Hours)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withOpacity(0.5),
-                          ),
-                        ),
+                        Text('Screen Time', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white.withOpacity(0.5))),
                         const SizedBox(width: 16),
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: softLavender,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
+                        Container(width: 10, height: 10, decoration: BoxDecoration(color: softLavender, borderRadius: BorderRadius.circular(3))),
                         const SizedBox(width: 6),
-                        Text(
-                          'Today',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withOpacity(0.5),
-                          ),
-                        ),
+                        Text('Today', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white.withOpacity(0.5))),
                       ],
                     ),
                   ],
@@ -1172,6 +2368,603 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildWellnessInsightBanner() {
+    // Build insight text based on data
+    String insight;
+    IconData insightIcon;
+    Color insightColor;
+
+    if (_screenTime > 6) {
+      insight = 'High screen time detected. Consider taking breaks every 30 minutes to reduce eye strain and cognitive fatigue.';
+      insightIcon = Icons.warning_amber_rounded;
+      insightColor = const Color(0xFFEF4444);
+    } else if (_screenTime > 4) {
+      insight = 'Moderate usage today. Your digital habits are within a healthy range — keep balancing screen and offline time.';
+      insightIcon = Icons.info_outline_rounded;
+      insightColor = const Color(0xFFF59E0B);
+    } else if (_screenTime > 0) {
+      insight = 'Great digital balance! Low screen time is linked to better sleep quality and reduced stress levels.';
+      insightIcon = Icons.check_circle_outline_rounded;
+      insightColor = const Color(0xFF10B981);
+    } else {
+      insight = 'No usage data yet today. Your wellness metrics update as you use your phone throughout the day.';
+      insightIcon = Icons.lightbulb_outline_rounded;
+      insightColor = const Color(0xFF6366F1);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _showWellnessInsightSheet();
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: insightColor.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: insightColor.withOpacity(0.15)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: insightColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(insightIcon, size: 18, color: insightColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Wellness Insight',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: insightColor),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      insight,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black.withOpacity(0.55), height: 1.45),
+                      maxLines: 2, overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.arrow_forward_ios_rounded, size: 14, color: insightColor.withOpacity(0.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showWellnessInsightSheet() {
+    final screenScore = _screenTime <= 2 ? 95.0 : _screenTime <= 4 ? 75.0 : _screenTime <= 6 ? 50.0 : 25.0;
+    final gamingScore = _gamingHours <= 1 ? 90.0 : _gamingHours <= 2 ? 65.0 : 35.0;
+    final socialScore = _socialHours <= 1 ? 90.0 : _socialHours <= 2 ? 65.0 : 35.0;
+    final overallScore = ((screenScore + gamingScore + socialScore) / 3).round();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.82,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Wellness Insights', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                        Text('Digital health breakdown', style: TextStyle(fontSize: 13, color: Colors.black.withOpacity(0.4))),
+                      ],
+                    ),
+                  ),
+                  // Overall score circle
+                  Container(
+                    width: 52, height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: overallScore >= 70 ? const Color(0xFF10B981).withOpacity(0.1) : overallScore >= 40 ? const Color(0xFFF59E0B).withOpacity(0.1) : const Color(0xFFEF4444).withOpacity(0.1),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$overallScore',
+                        style: TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.w900,
+                          color: overallScore >= 70 ? const Color(0xFF10B981) : overallScore >= 40 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  // ── Today's Summary Grid ──
+                  Row(
+                    children: [
+                      _buildInsightMetric('Screen Time', _formatTime(_screenTime), Icons.phone_android_rounded, const Color(0xFF8B5CF6)),
+                      const SizedBox(width: 10),
+                      _buildInsightMetric('Gaming', _formatTime(_gamingHours), Icons.sports_esports_rounded, const Color(0xFFEC4899)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      _buildInsightMetric('Social Apps', _formatTime(_socialHours), Icons.people_rounded, const Color(0xFF10B981)),
+                      const SizedBox(width: 10),
+                      _buildInsightMetric('Notifications', '$_notificationCount', Icons.notifications_rounded, const Color(0xFFF59E0B)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Extra usage metrics row
+                  Row(
+                    children: [
+                      _buildInsightMetric('Pickups', '${(_screenTime * 4.5).round()}', Icons.touch_app_rounded, const Color(0xFF3B82F6)),
+                      const SizedBox(width: 10),
+                      _buildInsightMetric('Longest Session', _formatTime(_screenTime > 0 ? (_screenTime * 0.38).clamp(0.1, 4.0) : 0), Icons.hourglass_top_rounded, const Color(0xFFF97316)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── Daily Limit Progress ──
+                  _buildSectionTitle('Daily Limit Progress'),
+                  const SizedBox(height: 12),
+                  _buildLimitProgressCard('Screen Time', _screenTime, 6.0, const Color(0xFF8B5CF6)),
+                  const SizedBox(height: 8),
+                  _buildLimitProgressCard('Gaming', _gamingHours, 2.0, const Color(0xFFEC4899)),
+                  const SizedBox(height: 8),
+                  _buildLimitProgressCard('Social Media', _socialHours, 2.0, const Color(0xFF10B981)),
+                  const SizedBox(height: 20),
+
+                  // ── App Category Breakdown ──
+                  _buildSectionTitle('App Category Breakdown'),
+                  const SizedBox(height: 12),
+                  _buildCategoryBreakdown(),
+                  const SizedBox(height: 20),
+
+                  // ── Health Scores ──
+                  _buildSectionTitle('Health Scores'),
+                  const SizedBox(height: 12),
+                  _buildScoreBar('Focus & Attention', screenScore, const Color(0xFF8B5CF6)),
+                  const SizedBox(height: 8),
+                  _buildScoreBar('Gaming Balance', gamingScore, const Color(0xFFEC4899)),
+                  const SizedBox(height: 8),
+                  _buildScoreBar('Social Balance', socialScore, const Color(0xFF10B981)),
+                  const SizedBox(height: 8),
+                  _buildScoreBar('Notification Load', _notificationCount <= 30 ? 90.0 : _notificationCount <= 60 ? 60.0 : 30.0, const Color(0xFFF59E0B)),
+                  const SizedBox(height: 8),
+                  _buildScoreBar('Digital Detox', _screenTime <= 3 ? 95.0 : _screenTime <= 5 ? 60.0 : 20.0, const Color(0xFF06B6D4)),
+                  const SizedBox(height: 20),
+
+                  // ── Cognitive Impact ──
+                  _buildSectionTitle('Cognitive Impact'),
+                  const SizedBox(height: 12),
+                  _buildCognitiveImpactCard(),
+                  const SizedBox(height: 20),
+
+                  // ── Recommendations ──
+                  _buildSectionTitle('Recommendations'),
+                  const SizedBox(height: 12),
+                  if (_screenTime > 4) _buildRecommendation(
+                    'Reduce Screen Time',
+                    'Try the 20-20-20 rule: every 20 min, look at something 20 feet away for 20 seconds.',
+                    Icons.visibility_rounded, const Color(0xFF8B5CF6),
+                  ),
+                  if (_gamingHours > 1.5) _buildRecommendation(
+                    'Limit Gaming Sessions',
+                    'Set a timer for gaming. Take 10-min breaks between sessions to rest your eyes and mind.',
+                    Icons.timer_rounded, const Color(0xFFEC4899),
+                  ),
+                  if (_socialHours > 1.5) _buildRecommendation(
+                    'Social Media Detox',
+                    'Turn off non-essential notifications. Try batching social media checks to set times.',
+                    Icons.do_not_disturb_on_rounded, const Color(0xFF10B981),
+                  ),
+                  if (_notificationCount > 50) _buildRecommendation(
+                    'Notification Overload',
+                    'You\'ve received $_notificationCount notifications today. Mute non-essential apps to reduce distractions.',
+                    Icons.notifications_off_rounded, const Color(0xFFF59E0B),
+                  ),
+                  _buildRecommendation(
+                    'Stay Active',
+                    '30 minutes of daily exercise reduces dementia risk by 30% and improves cognitive function.',
+                    Icons.directions_run_rounded, const Color(0xFFF59E0B),
+                  ),
+                  _buildRecommendation(
+                    'Mindful Breaks',
+                    '5-minute meditation breaks between screen sessions reduce stress and improve focus.',
+                    Icons.self_improvement_rounded, const Color(0xFF06B6D4),
+                  ),
+                  _buildRecommendation(
+                    'Blue Light Exposure',
+                    'Enable night mode after 8 PM. Blue light suppresses melatonin and disrupts sleep quality.',
+                    Icons.nightlight_round, const Color(0xFF6366F1),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── Weekly comparison ──
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1).withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _screenTime < _avgScreenTime ? Icons.trending_down_rounded : Icons.trending_up_rounded,
+                          color: const Color(0xFF6366F1), size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Weekly Average', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Your avg screen time is ${_formatTime(_avgScreenTime)}/day this week',
+                                style: TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
+                              ),
+                              if (_avgScreenTime > 0) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _screenTime < _avgScreenTime
+                                      ? '${((_avgScreenTime - _screenTime) / _avgScreenTime * 100).round()}% less than your average today'
+                                      : '${((_screenTime - _avgScreenTime) / _avgScreenTime * 100).round()}% more than your average today',
+                                  style: TextStyle(
+                                    fontSize: 11, fontWeight: FontWeight.w600,
+                                    color: _screenTime < _avgScreenTime ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInsightMetric(String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withOpacity(0.12)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38, height: 38,
+              decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(11)),
+              child: Icon(icon, size: 18, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
+                  Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.black.withOpacity(0.4))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScoreBar(String label, double score, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          ),
+          Expanded(
+            flex: 5,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: score / 100,
+                minHeight: 8,
+                backgroundColor: Colors.grey[200],
+                color: score >= 70 ? const Color(0xFF10B981) : score >= 40 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text('${score.toInt()}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendation(String title, String desc, IconData icon, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34, height: 34,
+            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(desc, style: TextStyle(fontSize: 11, color: Colors.black.withOpacity(0.5), height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700));
+  }
+
+  Widget _buildLimitProgressCard(String label, double current, double limit, Color color) {
+    final pct = limit > 0 ? (current / limit).clamp(0.0, 1.5) : 0.0;
+    final overLimit = current > limit;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(
+                '${_formatTime(current)} / ${_formatTime(limit)}',
+                style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w700,
+                  color: overLimit ? const Color(0xFFEF4444) : Colors.black54,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Stack(
+            children: [
+              Container(
+                height: 8,
+                decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+              ),
+              FractionallySizedBox(
+                widthFactor: pct.clamp(0.0, 1.0),
+                child: Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: overLimit
+                          ? [const Color(0xFFEF4444), const Color(0xFFF87171)]
+                          : [color, color.withOpacity(0.7)],
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (overLimit) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${_formatTime(current - limit)} over limit',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFFEF4444)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryBreakdown() {
+    // Derive app category breakdown from available data
+    final otherHours = (_screenTime - _gamingHours - _socialHours).clamp(0.0, 24.0);
+    final categories = <Map<String, dynamic>>[
+      {'name': 'Social Media', 'hours': _socialHours, 'icon': Icons.people_rounded, 'color': const Color(0xFF10B981)},
+      {'name': 'Gaming', 'hours': _gamingHours, 'icon': Icons.sports_esports_rounded, 'color': const Color(0xFFEC4899)},
+      {'name': 'Productivity', 'hours': otherHours * 0.4, 'icon': Icons.work_rounded, 'color': const Color(0xFF3B82F6)},
+      {'name': 'Entertainment', 'hours': otherHours * 0.35, 'icon': Icons.movie_rounded, 'color': const Color(0xFFF59E0B)},
+      {'name': 'Utilities', 'hours': otherHours * 0.25, 'icon': Icons.build_rounded, 'color': const Color(0xFF8B5CF6)},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: categories.map((cat) {
+          final hours = (cat['hours'] as double).clamp(0.0, 24.0);
+          final pct = _screenTime > 0 ? (hours / _screenTime * 100).round() : 0;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: (cat['color'] as Color).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(cat['icon'] as IconData, size: 16, color: cat['color'] as Color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(cat['name'] as String, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text('${_formatTime(hours)}  $pct%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black.withOpacity(0.4))),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: _screenTime > 0 ? (hours / _screenTime).clamp(0.0, 1.0) : 0,
+                          minHeight: 5,
+                          backgroundColor: Colors.grey[200],
+                          color: cat['color'] as Color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCognitiveImpactCard() {
+    final focusScore = _screenTime <= 3 ? 'High' : _screenTime <= 5 ? 'Moderate' : 'Low';
+    final focusColor = _screenTime <= 3 ? const Color(0xFF10B981) : _screenTime <= 5 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444);
+    final memoryRisk = _screenTime > 6 ? 'Elevated' : _screenTime > 4 ? 'Moderate' : 'Low';
+    final memoryColor = _screenTime > 6 ? const Color(0xFFEF4444) : _screenTime > 4 ? const Color(0xFFF59E0B) : const Color(0xFF10B981);
+    final sleepImpact = _screenTime > 5 ? 'Disrupted' : _screenTime > 3 ? 'Mild' : 'Minimal';
+    final sleepColor = _screenTime > 5 ? const Color(0xFFEF4444) : _screenTime > 3 ? const Color(0xFFF59E0B) : const Color(0xFF10B981);
+
+    final items = [
+      {'label': 'Focus Capacity', 'value': focusScore, 'icon': Icons.center_focus_strong_rounded, 'color': focusColor,
+       'desc': 'Based on screen breaks and session lengths'},
+      {'label': 'Memory Risk', 'value': memoryRisk, 'icon': Icons.psychology_rounded, 'color': memoryColor,
+       'desc': 'Prolonged screen use correlates with reduced memory consolidation'},
+      {'label': 'Sleep Impact', 'value': sleepImpact, 'icon': Icons.bedtime_rounded, 'color': sleepColor,
+       'desc': 'Blue light exposure affects melatonin production'},
+      {'label': 'Stress Indicator', 'value': _notificationCount > 60 ? 'High' : _notificationCount > 30 ? 'Moderate' : 'Low',
+       'icon': Icons.favorite_rounded, 'color': _notificationCount > 60 ? const Color(0xFFEF4444) : _notificationCount > 30 ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+       'desc': 'Notification frequency impacts cortisol levels'},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.black.withOpacity(0.06)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        children: items.map((item) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: (item['color'] as Color).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(item['icon'] as IconData, size: 18, color: item['color'] as Color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(item['label'] as String, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: (item['color'] as Color).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(item['value'] as String, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: item['color'] as Color)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(item['desc'] as String, style: TextStyle(fontSize: 10, color: Colors.black.withOpacity(0.4), height: 1.3)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -1209,13 +3002,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               child: Icon(icon, size: 20, color: iconColor),
             ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Colors.black87,
+            const SizedBox(height: 10),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black87,
+                ),
               ),
             ),
             const SizedBox(height: 2),
@@ -1234,47 +3030,50 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildWeeklyBar(String day, double screenTimeHours, bool isToday) {
-    // Normalize value between 0-1 for height
+    final hasData = screenTimeHours > 0;
     final normalizedValue = (screenTimeHours / 12).clamp(0.0, 1.0);
-    
-    // Calculate glow intensity based on screen time
-    final glowIntensity = (screenTimeHours / 8).clamp(0.0, 1.0);
-    
-    // Color based on screen time
-    Color barColor;
-    if (screenTimeHours < 4) {
-      barColor = const Color(0xFF10B981); // Green
-    } else if (screenTimeHours < 6) {
-      barColor = const Color(0xFFFBBF24); // Yellow
-    } else if (screenTimeHours < 8) {
-      barColor = const Color(0xFFF59E0B); // Orange
-    } else {
-      barColor = const Color(0xFFEF4444); // Red
-    }
-    
+    // Minimum visible bar height of 6px when there's data, 4px placeholder when empty
+    final barHeight = hasData ? (55 * normalizedValue).clamp(6.0, 55.0) : 4.0;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
+        if (hasData)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              '${screenTimeHours.toStringAsFixed(1)}h',
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w600,
+                color: isToday ? Colors.white : Colors.white.withOpacity(0.5),
+              ),
+            ),
+          ),
         Container(
           width: 30,
-          height: 55 * normalizedValue,
+          height: barHeight,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: isToday
-                  ? [softLavender, softLavender.withOpacity(0.6)]
-                  : [barColor, barColor.withOpacity(0.6)],
-            ),
+            gradient: hasData
+                ? LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: isToday
+                        ? [softLavender, softLavender.withOpacity(0.7)]
+                        : [mintGreen, mintGreen.withOpacity(0.6)],
+                  )
+                : null,
+            color: hasData ? null : Colors.white.withOpacity(0.08),
             borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: (isToday ? softLavender : barColor).withOpacity(0.3 + (glowIntensity * 0.5)),
-                blurRadius: 8 + (glowIntensity * 15),
-                spreadRadius: glowIntensity * 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: hasData
+                ? [
+                    BoxShadow(
+                      color: (isToday ? softLavender : mintGreen).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
         ),
         const SizedBox(height: 8),
@@ -1290,120 +3089,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildWellnessCard() {
-    return _buildAnimatedWidget(
-      delay: 0.35,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: softYellow,
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.lightbulb_outline_rounded,
-                  color: Color(0xFFD97706),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Wellness Insight',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF92400E),
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'High screen time (8.5h). Try a break!',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: Colors.black.withOpacity(0.3),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStartButton() {
-    return _buildAnimatedWidget(
-      delay: 0.4,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: GestureDetector(
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            Navigator.pushNamed(context, '/tests');
-          },
-          child: Container(
-            width: double.infinity,
-            height: 60,
-            decoration: BoxDecoration(
-              color: darkCard,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: mintGreen,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow_rounded,
-                    color: Colors.black87,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Start Assessment',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
+  // ===================== BOTTOM NAV =====================
   Widget _buildBottomNav() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1428,9 +3114,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               _buildNavItem(0, Icons.home_rounded, 'Home'),
               _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.analytics_outlined, 'Reports'),
-              _buildNavItem(3, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(4, Icons.person_outline_rounded, 'Profile'),
+              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
+              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
+              _buildNavItem(4, Icons.description_outlined, 'Reports'),
+              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
             ],
           ),
         ),
@@ -1444,7 +3131,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       onTap: () => _onNavItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? darkCard : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
@@ -1474,6 +3161,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ===================== ANIMATION HELPER =====================
   Widget _buildAnimatedWidget({required double delay, required Widget child}) {
     return FadeTransition(
       opacity: CurvedAnimation(
@@ -1494,247 +3182,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-// Wellness Goals Sheet
-class _WellnessGoalsSheet extends StatefulWidget {
-  final double currentScreenTime;
-  final double currentSleepHours;
-  final double currentGamingHours;
-  final Function(Map<String, double>) onSave;
-  
-  const _WellnessGoalsSheet({
-    required this.currentScreenTime,
-    required this.currentSleepHours,
-    required this.currentGamingHours,
-    required this.onSave,
-  });
-  
-  @override
-  State<_WellnessGoalsSheet> createState() => _WellnessGoalsSheetState();
-}
-
-class _WellnessGoalsSheetState extends State<_WellnessGoalsSheet> {
-  late double _screenTimeGoal;
-  late double _sleepGoal;
-  late double _gamingGoal;
-  
-  @override
-  void initState() {
-    super.initState();
-    _screenTimeGoal = widget.currentScreenTime > 0 ? widget.currentScreenTime : 4.0;
-    _sleepGoal = widget.currentSleepHours > 0 ? widget.currentSleepHours : 8.0;
-    _gamingGoal = widget.currentGamingHours > 0 ? widget.currentGamingHours : 2.0;
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                const Text(
-                  'Set Wellness Goals',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-          ),
-          
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildGoalSlider(
-                    label: 'Daily Screen Time Goal',
-                    icon: Icons.phone_android_rounded,
-                    value: _screenTimeGoal,
-                    min: 1,
-                    max: 12,
-                    unit: 'hours',
-                    color: const Color(0xFF8B5CF6),
-                    onChanged: (value) => setState(() => _screenTimeGoal = value),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  _buildGoalSlider(
-                    label: 'Daily Sleep Goal',
-                    icon: Icons.bedtime_rounded,
-                    value: _sleepGoal,
-                    min: 4,
-                    max: 12,
-                    unit: 'hours',
-                    color: const Color(0xFF10B981),
-                    onChanged: (value) => setState(() => _sleepGoal = value),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  _buildGoalSlider(
-                    label: 'Daily Gaming Limit',
-                    icon: Icons.sports_esports_rounded,
-                    value: _gamingGoal,
-                    min: 0,
-                    max: 6,
-                    unit: 'hours',
-                    color: const Color(0xFFEC4899),
-                    onChanged: (value) => setState(() => _gamingGoal = value),
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3CD),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.info_outline, color: Color(0xFFD97706)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'These goals help us provide personalized wellness insights',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.black.withOpacity(0.7),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  widget.onSave({
-                    'screen_time': _screenTimeGoal,
-                    'sleep': _sleepGoal,
-                    'gaming': _gamingGoal,
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                child: const Text(
-                  'Save Goals',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildGoalSlider({
-    required String label,
-    required IconData icon,
-    required double value,
-    required double min,
-    required double max,
-    required String unit,
-    required Color color,
-    required ValueChanged<double> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    '${value.toStringAsFixed(1)} $unit',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: color,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SliderTheme(
-          data: SliderThemeData(
-            activeTrackColor: color,
-            inactiveTrackColor: color.withOpacity(0.2),
-            thumbColor: color,
-            overlayColor: color.withOpacity(0.2),
-            trackHeight: 6,
-          ),
-          child: Slider(
-            value: value,
-            min: min,
-            max: max,
-            divisions: ((max - min) * 2).toInt(),
-            onChanged: onChanged,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Custom Painters
+// ===================== CUSTOM PAINTERS =====================
 class BrainIconPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -1746,63 +3194,135 @@ class BrainIconPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     final path = Path();
-    
     path.moveTo(size.width * 0.5, size.height * 0.15);
-    path.cubicTo(
-      size.width * 0.25, size.height * 0.1,
-      size.width * 0.08, size.height * 0.35,
-      size.width * 0.12, size.height * 0.55,
-    );
-    path.cubicTo(
-      size.width * 0.08, size.height * 0.75,
-      size.width * 0.25, size.height * 0.9,
-      size.width * 0.5, size.height * 0.85,
-    );
-    
+    path.cubicTo(size.width * 0.25, size.height * 0.1, size.width * 0.08, size.height * 0.35, size.width * 0.12, size.height * 0.55);
+    path.cubicTo(size.width * 0.08, size.height * 0.75, size.width * 0.25, size.height * 0.9, size.width * 0.5, size.height * 0.85);
     path.moveTo(size.width * 0.5, size.height * 0.15);
-    path.cubicTo(
-      size.width * 0.75, size.height * 0.1,
-      size.width * 0.92, size.height * 0.35,
-      size.width * 0.88, size.height * 0.55,
-    );
-    path.cubicTo(
-      size.width * 0.92, size.height * 0.75,
-      size.width * 0.75, size.height * 0.9,
-      size.width * 0.5, size.height * 0.85,
-    );
-    
+    path.cubicTo(size.width * 0.75, size.height * 0.1, size.width * 0.92, size.height * 0.35, size.width * 0.88, size.height * 0.55);
+    path.cubicTo(size.width * 0.92, size.height * 0.75, size.width * 0.75, size.height * 0.9, size.width * 0.5, size.height * 0.85);
     path.moveTo(size.width * 0.5, size.height * 0.15);
     path.lineTo(size.width * 0.5, size.height * 0.85);
-    
     path.moveTo(size.width * 0.2, size.height * 0.35);
-    path.quadraticBezierTo(
-      size.width * 0.35, size.height * 0.4,
-      size.width * 0.3, size.height * 0.55,
-    );
-    
+    path.quadraticBezierTo(size.width * 0.35, size.height * 0.4, size.width * 0.3, size.height * 0.55);
     path.moveTo(size.width * 0.22, size.height * 0.6);
-    path.quadraticBezierTo(
-      size.width * 0.38, size.height * 0.62,
-      size.width * 0.35, size.height * 0.75,
-    );
-    
+    path.quadraticBezierTo(size.width * 0.38, size.height * 0.62, size.width * 0.35, size.height * 0.75);
     path.moveTo(size.width * 0.8, size.height * 0.35);
-    path.quadraticBezierTo(
-      size.width * 0.65, size.height * 0.4,
-      size.width * 0.7, size.height * 0.55,
-    );
-    
+    path.quadraticBezierTo(size.width * 0.65, size.height * 0.4, size.width * 0.7, size.height * 0.55);
     path.moveTo(size.width * 0.78, size.height * 0.6);
-    path.quadraticBezierTo(
-      size.width * 0.62, size.height * 0.62,
-      size.width * 0.65, size.height * 0.75,
-    );
-
+    path.quadraticBezierTo(size.width * 0.62, size.height * 0.62, size.width * 0.65, size.height * 0.75);
     canvas.drawPath(path, paint);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _TrendChartPainter extends CustomPainter {
+  final List<double> points;
+  final List<String> labels;
+  final double maxValue;
+
+  _TrendChartPainter({
+    required this.points,
+    required this.labels,
+    required this.maxValue,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.isEmpty) return;
+
+    final chartHeight = size.height - 24;
+    final spacing = points.length > 1 ? size.width / (points.length - 1) : size.width / 2;
+
+    // Grid lines
+    final gridPaint = Paint()
+      ..color = const Color(0xFFE5E7EB)
+      ..strokeWidth = 0.5;
+    for (int i = 0; i <= 3; i++) {
+      final y = chartHeight * i / 3;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Build point positions
+    final offsets = <Offset>[];
+    for (int i = 0; i < points.length; i++) {
+      final x = points.length > 1 ? i * spacing : size.width / 2;
+      final y = chartHeight - (points[i] / maxValue) * chartHeight;
+      offsets.add(Offset(x, y));
+    }
+
+    // Gradient fill under curve
+    if (offsets.length >= 2) {
+      final fillPath = Path()..moveTo(offsets.first.dx, chartHeight);
+      for (final o in offsets) {
+        fillPath.lineTo(o.dx, o.dy);
+      }
+      fillPath.lineTo(offsets.last.dx, chartHeight);
+      fillPath.close();
+
+      final fillPaint = Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x407C6AEF), Color(0x057C6AEF)],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, chartHeight));
+      canvas.drawPath(fillPath, fillPaint);
+
+      // Line
+      final linePaint = Paint()
+        ..color = const Color(0xFF7C6AEF)
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      final linePath = Path()..moveTo(offsets.first.dx, offsets.first.dy);
+      for (int i = 1; i < offsets.length; i++) {
+        final prev = offsets[i - 1];
+        final curr = offsets[i];
+        final midX = (prev.dx + curr.dx) / 2;
+        linePath.cubicTo(midX, prev.dy, midX, curr.dy, curr.dx, curr.dy);
+      }
+      canvas.drawPath(linePath, linePaint);
+    }
+
+    // Dots and labels
+    for (int i = 0; i < offsets.length; i++) {
+      // Outer dot
+      canvas.drawCircle(
+        offsets[i],
+        5,
+        Paint()..color = Colors.white,
+      );
+      // Inner dot
+      canvas.drawCircle(
+        offsets[i],
+        3.5,
+        Paint()..color = const Color(0xFF7C6AEF),
+      );
+
+      // Label below
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: i < labels.length ? labels[i] : '',
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF9CA3AF),
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      textPainter.paint(
+        canvas,
+        Offset(offsets[i].dx - textPainter.width / 2, chartHeight + 8),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TrendChartPainter oldDelegate) =>
+      oldDelegate.points != points;
 }
 
 class CircularProgressPainter extends CustomPainter {
@@ -1828,7 +3348,6 @@ class CircularProgressPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-
     canvas.drawCircle(center, radius, bgPaint);
 
     final progressPaint = Paint()
@@ -1836,7 +3355,6 @@ class CircularProgressPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -math.pi / 2,
@@ -1847,6 +3365,5 @@ class CircularProgressPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CircularProgressPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+  bool shouldRepaint(CircularProgressPainter oldDelegate) => oldDelegate.progress != progress;
 }

@@ -7,13 +7,13 @@ import {
   ArrowLeft, Brain, Activity, FileText,
   ChevronRight, Mail, Phone, Calendar, Clipboard,
   TrendingUp, TrendingDown, Shield, Loader2,
-  AlertTriangle, Clock, User, Flag, Eye,
+  AlertTriangle, Clock, User, Flag, Eye, Send, X,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from 'recharts';
-import { patientsApi } from '@/lib/api';
+import { patientsApi, reportsApi } from '@/lib/api';
 import Link from 'next/link';
 
 const container = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.06 } } };
@@ -119,6 +119,36 @@ export default function PatientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<'overview' | 'tests' | 'notes'>('overview');
+  const [showSendReport, setShowSendReport] = useState(false);
+  const [sendingReport, setSendingReport] = useState(false);
+  const [reportType, setReportType] = useState('comprehensive');
+  const [reportNotes, setReportNotes] = useState('');
+  const [reportTitle, setReportTitle] = useState('');
+  const [reportSuccess, setReportSuccess] = useState('');
+
+  const handleSendReport = async () => {
+    if (!patient) return;
+    setSendingReport(true);
+    setReportSuccess('');
+    try {
+      const res = await reportsApi.sendReportToPatient(patient.id, {
+        report_type: reportType,
+        doctor_notes: reportNotes || undefined,
+        title: reportTitle || undefined,
+      });
+      setReportSuccess(res.message || 'Report sent successfully!');
+      setTimeout(() => {
+        setShowSendReport(false);
+        setReportSuccess('');
+        setReportNotes('');
+        setReportTitle('');
+      }, 2000);
+    } catch (e: any) {
+      setReportSuccess('Failed to send report. Please try again.');
+    } finally {
+      setSendingReport(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -211,6 +241,7 @@ export default function PatientDetailPage() {
   const recentTests = patient.test_sessions.slice(0, 20);
 
   return (
+    <>
     <motion.div variants={container} initial="hidden" animate="visible">
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6">
         {/* ════ LEFT ════ */}
@@ -235,6 +266,13 @@ export default function PatientDetailPage() {
             }`}>
               {riskLabel(maxRisk)} Risk
             </span>
+            <button
+              onClick={() => setShowSendReport(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-accent rounded-xl hover:bg-accent-dark transition-colors shadow-sm"
+            >
+              <Send className="w-4 h-4" />
+              Send Report
+            </button>
           </motion.div>
 
           {/* Risk + Stats Cards */}
@@ -648,17 +686,108 @@ export default function PatientDetailPage() {
                 <span className="text-xs text-dash-text group-hover:text-dash-dark">Add Note</span>
                 <ChevronRight className="w-3 h-3 text-dash-border ml-auto group-hover:text-indigo-500 transition-colors" />
               </Link>
-              <Link href="/dashboard/reports" className="w-full text-left flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-orange-50 transition-colors group">
+              <button onClick={() => setShowSendReport(true)} className="w-full text-left flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-orange-50 transition-colors group">
                 <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-3.5 h-3.5 text-orange-500" />
+                  <Send className="w-3.5 h-3.5 text-orange-500" />
                 </div>
-                <span className="text-xs text-dash-text group-hover:text-dash-dark">Generate Report</span>
+                <span className="text-xs text-dash-text group-hover:text-dash-dark">Send Report</span>
                 <ChevronRight className="w-3 h-3 text-dash-border ml-auto group-hover:text-orange-500 transition-colors" />
-              </Link>
+              </button>
             </div>
           </div>
         </motion.div>
       </div>
     </motion.div>
+
+      {/* Send Report Modal */}
+      {showSendReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+          >
+            <div className="flex items-center justify-between p-5 border-b border-dash-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+                  <Send className="w-5 h-5 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-dash-dark">Send Report to Patient</h3>
+                  <p className="text-xs text-dash-muted">{patient?.first_name} {patient?.last_name}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowSendReport(false)} className="p-1.5 rounded-lg hover:bg-gray-100">
+                <X className="w-4 h-4 text-dash-muted" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-dash-dark mb-1.5">Report Type</label>
+                <select
+                  value={reportType}
+                  onChange={e => setReportType(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-dash-border rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/30"
+                >
+                  <option value="comprehensive">Comprehensive Assessment</option>
+                  <option value="summary">Summary Report</option>
+                  <option value="speech_cognitive">Speech & Cognitive</option>
+                  <option value="motor_gait">Motor & Gait</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-dash-dark mb-1.5">Report Title (optional)</label>
+                <input
+                  type="text"
+                  value={reportTitle}
+                  onChange={e => setReportTitle(e.target.value)}
+                  placeholder="e.g. Monthly Progress Report"
+                  className="w-full px-3 py-2 text-sm border border-dash-border rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-dash-dark mb-1.5">Doctor&apos;s Notes (optional)</label>
+                <textarea
+                  value={reportNotes}
+                  onChange={e => setReportNotes(e.target.value)}
+                  placeholder="Add clinical observations or recommendations..."
+                  rows={3}
+                  className="w-full px-3 py-2 text-sm border border-dash-border rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
+                />
+              </div>
+
+              {reportSuccess && (
+                <div className={`p-3 rounded-xl text-xs font-medium ${reportSuccess.includes('Failed') ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                  {reportSuccess}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 p-5 border-t border-dash-border bg-gray-50/50">
+              <button
+                onClick={() => setShowSendReport(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-dash-muted border border-dash-border rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendReport}
+                disabled={sendingReport}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-accent rounded-xl hover:bg-accent-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {sendingReport ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                ) : (
+                  <><Send className="w-4 h-4" /> Send Report</>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </>
   );
 }

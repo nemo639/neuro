@@ -8,10 +8,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiService {
 
   static String get baseUrl {
-  // ngrok public tunnel → forwards to localhost:8000
-  // Change this URL each time you restart ngrok (free plan gives new URL)
-  const ngrokUrl = 'https://phenological-briana-frondescent.ngrok-free.dev';
-  return ngrokUrl;
+  // ngrok tunnel → forwards to localhost:8000
+  // Update URL when ngrok restarts (free plan gives new URL)
+  const url = 'https://phenological-briana-frondescent.ngrok-free.dev';
+  return url;
 }
 
   static const String apiVersion = '/api/v1';
@@ -658,6 +658,88 @@ static const _storage = FlutterSecureStorage();
       return {'success': false, 'error': 'Connection failed: $e'};
     }
   }
+  /// Submit wellness data (screen time, gaming, etc.) collected from device
+  static Future<Map<String, dynamic>> submitWellnessData({
+    required double screenTimeHours,
+    double? gamingHours,
+    int? stressLevel,
+    int? physicalActivityMinutes,
+    String? notes,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'screen_time_hours': screenTimeHours,
+      };
+      if (gamingHours != null) body['gaming_hours'] = gamingHours;
+      if (stressLevel != null) body['stress_level'] = stressLevel;
+      if (physicalActivityMinutes != null) body['physical_activity_minutes'] = physicalActivityMinutes;
+      if (notes != null) body['notes'] = notes;
+
+      final response = await http.post(
+        Uri.parse('$baseUrl$apiVersion/wellness/data'),
+        headers: _headers,
+        body: jsonEncode(body),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
+  // ============== NOTIFICATION ENDPOINTS ==============
+
+  /// Get user notifications/alerts
+  static Future<Map<String, dynamic>> getNotifications({int limit = 20}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl$apiVersion/notifications?limit=$limit'),
+        headers: _headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
+  /// Mark notification as read
+  static Future<Map<String, dynamic>> markNotificationRead(int notificationId) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl$apiVersion/notifications/$notificationId/read'),
+        headers: _headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
+  /// Mark all notifications as read
+  static Future<Map<String, dynamic>> markAllNotificationsRead() async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl$apiVersion/notifications/read-all'),
+        headers: _headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
+  /// Delete a notification
+  static Future<Map<String, dynamic>> deleteNotification(int notificationId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl$apiVersion/notifications/$notificationId'),
+        headers: _headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
   // ============== REPORT ENDPOINTS ==============
 
   /// List reports
@@ -750,11 +832,18 @@ static const _storage = FlutterSecureStorage();
 
       request.headers['Authorization'] = 'Bearer $_accessToken';
 
+      // Determine content type from extension
+      final ext = fileName.split('.').last.toLowerCase();
+      final mimeType = ext == 'png' ? 'image/png'
+          : ext == 'webp' ? 'image/webp'
+          : 'image/jpeg';
+
       request.files.add(
         http.MultipartFile.fromBytes(
           'file',
           bytes,
           filename: fileName,
+          contentType: MediaType.parse(mimeType),
         ),
       );
 
@@ -1827,8 +1916,174 @@ static Future<Map<String, dynamic>> revokePermission({
     return {'success': false, 'error': e.toString()};
   }
 }
- 
 
-  
+  // ============== NEURO CHAT ==============
+
+  // ── Conversation Management ──
+
+  static Future<Map<String, dynamic>> getConversations() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl$apiVersion/chat/conversations'),
+        headers: _headers,
+      );
+      return await _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createConversation({String title = 'New Chat'}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl$apiVersion/chat/conversations'),
+        headers: _headers,
+        body: jsonEncode({'title': title}),
+      );
+      return await _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> renameConversation({
+    required String conversationId,
+    required String title,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl$apiVersion/chat/conversations/$conversationId/rename'),
+        headers: _headers,
+        body: jsonEncode({'title': title}),
+      );
+      return await _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> deleteConversation({
+    required String conversationId,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl$apiVersion/chat/conversations/$conversationId'),
+        headers: _headers,
+      );
+      return await _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  // ── Chat Messages ──
+
+  static Future<Map<String, dynamic>> getChatHistory({
+    required String conversationId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl$apiVersion/chat/history?conversation_id=$conversationId'),
+        headers: _headers,
+      );
+      return await _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> sendChatMessage({
+    required String message,
+    String? conversationId,
+  }) async {
+    try {
+      final body = {
+        'message': message,
+        if (conversationId != null) 'conversation_id': conversationId,
+      };
+      final response = await http.post(
+        Uri.parse('$baseUrl$apiVersion/chat/send'),
+        headers: _headers,
+        body: jsonEncode(body),
+      );
+      return await _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> clearAllChats() async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl$apiVersion/chat/clear'),
+        headers: _headers,
+      );
+      return await _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  // ============== SYMPTOM TRACKER ENDPOINTS ==============
+
+  /// Log daily symptoms
+  static Future<Map<String, dynamic>> logSymptoms({
+    int memoryIssues = 0,
+    int confusion = 0,
+    int tremors = 0,
+    int balanceIssues = 0,
+    int speechDifficulty = 0,
+    int sleepDisturbance = 0,
+    int moodChanges = 0,
+    int fatigue = 0,
+    String? notes,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl$apiVersion/symptoms/log'),
+        headers: _headers,
+        body: jsonEncode({
+          'memory_issues': memoryIssues,
+          'confusion': confusion,
+          'tremors': tremors,
+          'balance_issues': balanceIssues,
+          'speech_difficulty': speechDifficulty,
+          'sleep_disturbance': sleepDisturbance,
+          'mood_changes': moodChanges,
+          'fatigue': fatigue,
+          if (notes != null) 'notes': notes,
+        }),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
+  /// Get today's symptoms
+  static Future<Map<String, dynamic>> getTodaySymptoms() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl$apiVersion/symptoms/today'),
+        headers: _headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
+  /// Get symptom history
+  static Future<Map<String, dynamic>> getSymptomHistory({int days = 30}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl$apiVersion/symptoms/history?days=$days'),
+        headers: _headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'error': 'Connection failed: $e'};
+    }
+  }
+
 }
-

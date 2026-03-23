@@ -12,7 +12,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   late AnimationController _pageController;
-  int _selectedNavIndex = 4;
+  int _selectedNavIndex = 5;
 
   bool _isLoading = true;
   Map<String, dynamic>? _userData;
@@ -31,6 +31,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   int _totalTestsCompleted = 0;
   int _testsThisWeek = 0;
   int _streak = 0;
+  double _adRisk = 0;
+  double _pdRisk = 0;
+  String? _lastAssessment;
+  String _adStage = 'Not assessed';
+  String _pdStage = 'Not assessed';
 
   @override
   void initState() {
@@ -74,6 +79,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           _totalTestsCompleted = dash['total_tests_completed'] ?? 0;
           _testsThisWeek = dash['tests_this_week'] ?? 0;
           _streak = dash['streak'] ?? dash['wellness_streak'] ?? 0;
+          _adRisk = (dash['ad_risk_score'] ?? 0).toDouble();
+          _pdRisk = (dash['pd_risk_score'] ?? 0).toDouble();
+          _adStage = dash['ad_stage'] ?? 'Not assessed';
+          _pdStage = dash['pd_stage'] ?? 'Not assessed';
+          _lastAssessment = dash['last_assessment_date']?.toString();
         }
       });
     }
@@ -95,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   void _onNavItemTapped(int index) {
     HapticFeedback.selectionClick();
-    
+
     switch (index) {
       case 0:
         Navigator.pushReplacementNamed(context, '/home');
@@ -104,12 +114,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         Navigator.pushNamed(context, '/tests');
         break;
       case 2:
-        Navigator.pushNamed(context, '/reports');
-        break;
-      case 3:
         Navigator.pushNamed(context, '/XAI');
         break;
+      case 3:
+        Navigator.pushNamed(context, '/neuro-chat');
+        break;
       case 4:
+        Navigator.pushNamed(context, '/reports');
+        break;
+      case 5:
         setState(() => _selectedNavIndex = index);
         break;
     }
@@ -139,6 +152,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               _buildProfileAvatar(),
               const SizedBox(height: 24),
               _buildStatsRow(),
+              const SizedBox(height: 24),
+              _buildHealthSummaryCard(),
+              const SizedBox(height: 24),
+              _buildAchievementsCard(),
+              const SizedBox(height: 24),
+              _buildPersonalInfoCard(),
               const SizedBox(height: 24),
               _buildPremiumCard(),
               const SizedBox(height: 24),
@@ -204,7 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   borderRadius: BorderRadius.circular(28),
                   child: (profileImagePath != null && profileImagePath.toString().isNotEmpty)
                       ? Image.network(
-                          "${ApiService.baseUrl}/$profileImagePath",
+                          "${ApiService.baseUrl}/uploads/$profileImagePath",
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Center(
@@ -377,6 +396,307 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       width: 1,
       height: 60,
       color: Colors.black.withOpacity(0.08),
+    );
+  }
+
+  Widget _buildHealthSummaryCard() {
+    Color _riskColor(double risk) {
+      if (risk < 25) return const Color(0xFF10B981);
+      if (risk < 50) return const Color(0xFFF59E0B);
+      if (risk < 75) return const Color(0xFFF97316);
+      return const Color(0xFFEF4444);
+    }
+
+    String _formatLastAssessment() {
+      if (_lastAssessment == null) return 'No assessments yet';
+      try {
+        final date = DateTime.parse(_lastAssessment!);
+        final diff = DateTime.now().difference(date).inDays;
+        if (diff == 0) return 'Today';
+        if (diff == 1) return 'Yesterday';
+        if (diff < 7) return '$diff days ago';
+        return '${date.day}/${date.month}/${date.year}';
+      } catch (_) {
+        return 'N/A';
+      }
+    }
+
+    return _buildAnimatedWidget(
+      delay: 0.18,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.black.withOpacity(0.06)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Health Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.black87)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildRiskIndicator("Alzheimer's Risk", _adRisk, _riskColor(_adRisk), _adStage),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildRiskIndicator("Parkinson's Risk", _pdRisk, _riskColor(_pdRisk), _pdStage),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6366F1).withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.schedule_rounded, size: 18, color: Color(0xFF6366F1)),
+                    const SizedBox(width: 10),
+                    Text('Last Assessment: ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black.withOpacity(0.5))),
+                    Text(_formatLastAssessment(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF6366F1))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: mintGreen.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.science_rounded, size: 18, color: Color(0xFF10B981)),
+                    const SizedBox(width: 10),
+                    Text('Tests This Week: ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black.withOpacity(0.5))),
+                    Text('$_testsThisWeek', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF10B981))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRiskIndicator(String label, double risk, Color color, String stage) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black.withOpacity(0.5))),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text('${risk.toInt()}%', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: color)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                child: Text(stage, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: color)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (risk / 100).clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: Colors.grey[200],
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementsCard() {
+    final badges = <Map<String, dynamic>>[];
+
+    // Streak-based badges
+    if (_streak >= 3) badges.add({'icon': Icons.local_fire_department_rounded, 'title': '3-Day Streak', 'color': const Color(0xFFF59E0B), 'unlocked': true});
+    if (_streak >= 7) badges.add({'icon': Icons.whatshot_rounded, 'title': '7-Day Streak', 'color': const Color(0xFFF97316), 'unlocked': true});
+    if (_streak >= 30) badges.add({'icon': Icons.emoji_events_rounded, 'title': '30-Day Streak', 'color': const Color(0xFFEF4444), 'unlocked': true});
+
+    // Test-based badges
+    if (_totalTestsCompleted >= 1) badges.add({'icon': Icons.play_circle_rounded, 'title': 'First Test', 'color': const Color(0xFF3B82F6), 'unlocked': true});
+    if (_totalTestsCompleted >= 10) badges.add({'icon': Icons.stars_rounded, 'title': '10 Tests Done', 'color': const Color(0xFF8B5CF6), 'unlocked': true});
+    if (_totalTestsCompleted >= 50) badges.add({'icon': Icons.workspace_premium_rounded, 'title': '50 Tests', 'color': const Color(0xFFEC4899), 'unlocked': true});
+
+    // Locked upcoming badges
+    if (_streak < 7) badges.add({'icon': Icons.whatshot_rounded, 'title': '7-Day Streak', 'color': Colors.grey, 'unlocked': false});
+    if (_streak < 30) badges.add({'icon': Icons.emoji_events_rounded, 'title': '30-Day Streak', 'color': Colors.grey, 'unlocked': false});
+    if (_totalTestsCompleted < 10) badges.add({'icon': Icons.stars_rounded, 'title': '10 Tests Done', 'color': Colors.grey, 'unlocked': false});
+    if (_totalTestsCompleted < 50) badges.add({'icon': Icons.workspace_premium_rounded, 'title': '50 Tests', 'color': Colors.grey, 'unlocked': false});
+
+    final unlockedCount = badges.where((b) => b['unlocked'] == true).length;
+
+    return _buildAnimatedWidget(
+      delay: 0.22,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.black.withOpacity(0.06)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Achievements', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.black87)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text('$unlockedCount unlocked', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFF59E0B))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: badges.map((badge) {
+                  final unlocked = badge['unlocked'] as bool;
+                  final color = badge['color'] as Color;
+                  return Container(
+                    width: (MediaQuery.of(context).size.width - 80) / 3,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: unlocked ? color.withOpacity(0.08) : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: unlocked ? color.withOpacity(0.15) : Colors.transparent),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(badge['icon'] as IconData, size: 26, color: unlocked ? color : Colors.grey[350]),
+                        const SizedBox(height: 6),
+                        Text(
+                          badge['title'] as String,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: unlocked ? Colors.black87 : Colors.grey[400]),
+                        ),
+                        if (!unlocked) ...[
+                          const SizedBox(height: 2),
+                          Icon(Icons.lock_rounded, size: 10, color: Colors.grey[400]),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoCard() {
+    final dob = _userData?['date_of_birth']?.toString();
+    final gender = _userData?['gender']?.toString() ?? 'Not set';
+    final phone = _userData?['phone']?.toString() ?? 'Not set';
+    final age = _userData?['age'];
+
+    String formattedDob = 'Not set';
+    if (dob != null && dob.isNotEmpty) {
+      try {
+        final date = DateTime.parse(dob);
+        formattedDob = '${date.day}/${date.month}/${date.year}';
+      } catch (_) {
+        formattedDob = dob;
+      }
+    }
+
+    return _buildAnimatedWidget(
+      delay: 0.25,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.black.withOpacity(0.06)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Personal Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.black87)),
+              const SizedBox(height: 16),
+              _buildInfoRow(Icons.cake_rounded, 'Date of Birth', formattedDob, const Color(0xFFEC4899)),
+              const SizedBox(height: 12),
+              if (age != null) ...[
+                _buildInfoRow(Icons.person_rounded, 'Age', '$age years', const Color(0xFF8B5CF6)),
+                const SizedBox(height: 12),
+              ],
+              _buildInfoRow(Icons.wc_rounded, 'Gender', gender.isNotEmpty ? gender[0].toUpperCase() + gender.substring(1) : 'Not set', const Color(0xFF3B82F6)),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.phone_rounded, 'Phone', phone, const Color(0xFF10B981)),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.email_rounded, 'Email', _userData?['email'] ?? 'N/A', const Color(0xFFF59E0B)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: color),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.black.withOpacity(0.4))),
+              const SizedBox(height: 2),
+              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1547,9 +1867,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             children: [
               _buildNavItem(0, Icons.home_rounded, 'Home'),
               _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.analytics_outlined, 'Reports'),
-              _buildNavItem(3, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(4, Icons.person_outline_rounded, 'Profile'),
+              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
+              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
+              _buildNavItem(4, Icons.description_outlined, 'Reports'),
+              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
             ],
           ),
         ),
@@ -1563,7 +1884,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       onTap: () => _onNavItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? darkCard : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
