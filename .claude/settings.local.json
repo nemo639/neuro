@@ -120,7 +120,8 @@
       "Bash(powershell -Command \"Stop-Process -Id \\(Get-NetTCPConnection -LocalPort 3002\\).OwningProcess -Force\")",
       "Bash(flutter build:*)",
       "Bash(ls -la \"C:\\\\Users\\\\naeem\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--neuroverse\\\\1e77bf5a-7391-49ff-ab42-f5cb6907d518\\\\tasks\"\" 2>/dev/null || echo \"dir not found \")",
-      "Bash(dart run:*)"
+      "Bash(dart run:*)",
+      "Bash(npx next:*)"
     ]
   }
 }

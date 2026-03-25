@@ -363,7 +363,7 @@ void _showCompleteDialog() {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.pan_tool_rounded,
+              Icons.gesture_rounded,
               color: Color(0xFFF97316),
               size: 26,
             ),

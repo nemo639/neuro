@@ -723,13 +723,13 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
             ],
           ),
         ),
-        // Next target hint
+        // Next target hint (hidden — user must find it)
         if (_currentTarget < _circleLabels.length)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Text(
-              'Find: ${_circleLabels[_currentTarget]}',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color),
+              'Tap the next in sequence',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[500]),
             ),
           ),
         Expanded(
@@ -942,28 +942,23 @@ class TMTCanvasPainter extends CustomPainter {
     for (int i = 0; i < circlePositions.length; i++) {
       final pos = circlePositions[i];
       final isCompleted = i < currentTarget;
-      final isCurrent = i == currentTarget;
       final label = i < circleLabels.length ? circleLabels[i] : '';
 
       // Circle fill
       final fillPaint = Paint();
       if (isCompleted) {
         fillPaint.color = accentColor.withOpacity(0.2);
-      } else if (isCurrent) {
-        fillPaint.color = accentColor.withOpacity(0.1);
       } else {
         fillPaint.color = Colors.white;
       }
       canvas.drawCircle(pos, circleRadius, fillPaint);
 
-      // Circle border
+      // Circle border — no highlight on current target so user must find it
       final borderPaint = Paint()
         ..color = isCompleted
             ? accentColor.withOpacity(0.5)
-            : isCurrent
-                ? accentColor
-                : Colors.grey.withOpacity(0.4)
-        ..strokeWidth = isCurrent ? 3 : 1.5
+            : Colors.grey.withOpacity(0.4)
+        ..strokeWidth = 1.5
         ..style = PaintingStyle.stroke;
       canvas.drawCircle(pos, circleRadius, borderPaint);
 
@@ -988,15 +983,15 @@ class TMTCanvasPainter extends CustomPainter {
         );
       }
 
-      // Label text
+      // Label text — uniform style so user finds the target themselves
       if (!isCompleted) {
         final textPainter = TextPainter(
           text: TextSpan(
             text: label,
             style: TextStyle(
-              color: isCurrent ? accentColor : Colors.grey[700],
-              fontSize: isCurrent ? 14 : 12,
-              fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+              color: Colors.grey[700],
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
           textDirection: TextDirection.ltr,

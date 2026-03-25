@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -1017,14 +1018,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
           ),
           child: Center(
             child: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(mintGreen),
-                    ),
-                  )
+                ? const LoadingBars(color: Colors.white, height: 20)
                 : const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -1068,11 +1062,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
                 borderRadius: BorderRadius.circular(12),
               ),
               child: isResending
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                  ? LoadingBars(color: blueAccent, height: 16, barCount: 5)
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1158,14 +1148,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
               ),
             ),
             const SizedBox(height: 20),
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(greenAccent),
-              ),
-            ),
+            LoadingBars(color: greenAccent, height: 20),
           ],
         ),
       ),

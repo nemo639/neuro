@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class CognitiveMemoryTestScreen extends StatefulWidget {
   const CognitiveMemoryTestScreen({super.key});
@@ -255,11 +256,7 @@ void _showCompleteDialog() {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: _isSubmitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                )
+              ? const LoadingBars(color: Colors.white, height: 18, barCount: 5)
               : const Text('Get Results', style: TextStyle(color: Colors.white)),
         ),
       ],
@@ -406,7 +403,7 @@ void _showCompleteDialog() {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.psychology_rounded,
+              Icons.extension_rounded,
               color: Color(0xFF8B5CF6),
               size: 26,
             ),

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -44,6 +45,186 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
   
   DateTime? selectedDate;
   String? selectedGender;
+
+  // Country code for phone
+  String _selectedCountryCode = '+92';
+  String _selectedCountryFlag = '🇵🇰';
+
+  final List<Map<String, String>> _countryCodes = [
+    {'flag': '🇵🇰', 'code': '+92', 'name': 'Pakistan'},
+    {'flag': '🇦🇫', 'code': '+93', 'name': 'Afghanistan'},
+    {'flag': '🇦🇱', 'code': '+355', 'name': 'Albania'},
+    {'flag': '🇩🇿', 'code': '+213', 'name': 'Algeria'},
+    {'flag': '🇦🇩', 'code': '+376', 'name': 'Andorra'},
+    {'flag': '🇦🇴', 'code': '+244', 'name': 'Angola'},
+    {'flag': '🇦🇬', 'code': '+1268', 'name': 'Antigua & Barbuda'},
+    {'flag': '🇦🇷', 'code': '+54', 'name': 'Argentina'},
+    {'flag': '🇦🇲', 'code': '+374', 'name': 'Armenia'},
+    {'flag': '🇦🇺', 'code': '+61', 'name': 'Australia'},
+    {'flag': '🇦🇹', 'code': '+43', 'name': 'Austria'},
+    {'flag': '🇦🇿', 'code': '+994', 'name': 'Azerbaijan'},
+    {'flag': '🇧🇸', 'code': '+1242', 'name': 'Bahamas'},
+    {'flag': '🇧🇭', 'code': '+973', 'name': 'Bahrain'},
+    {'flag': '🇧🇩', 'code': '+880', 'name': 'Bangladesh'},
+    {'flag': '🇧🇧', 'code': '+1246', 'name': 'Barbados'},
+    {'flag': '🇧🇾', 'code': '+375', 'name': 'Belarus'},
+    {'flag': '🇧🇪', 'code': '+32', 'name': 'Belgium'},
+    {'flag': '🇧🇿', 'code': '+501', 'name': 'Belize'},
+    {'flag': '🇧🇯', 'code': '+229', 'name': 'Benin'},
+    {'flag': '🇧🇹', 'code': '+975', 'name': 'Bhutan'},
+    {'flag': '🇧🇴', 'code': '+591', 'name': 'Bolivia'},
+    {'flag': '🇧🇦', 'code': '+387', 'name': 'Bosnia & Herzegovina'},
+    {'flag': '🇧🇼', 'code': '+267', 'name': 'Botswana'},
+    {'flag': '🇧🇷', 'code': '+55', 'name': 'Brazil'},
+    {'flag': '🇧🇳', 'code': '+673', 'name': 'Brunei'},
+    {'flag': '🇧🇬', 'code': '+359', 'name': 'Bulgaria'},
+    {'flag': '🇧🇫', 'code': '+226', 'name': 'Burkina Faso'},
+    {'flag': '🇧🇮', 'code': '+257', 'name': 'Burundi'},
+    {'flag': '🇰🇭', 'code': '+855', 'name': 'Cambodia'},
+    {'flag': '🇨🇲', 'code': '+237', 'name': 'Cameroon'},
+    {'flag': '🇨🇦', 'code': '+1', 'name': 'Canada'},
+    {'flag': '🇨🇻', 'code': '+238', 'name': 'Cape Verde'},
+    {'flag': '🇨🇫', 'code': '+236', 'name': 'Central African Republic'},
+    {'flag': '🇹🇩', 'code': '+235', 'name': 'Chad'},
+    {'flag': '🇨🇱', 'code': '+56', 'name': 'Chile'},
+    {'flag': '🇨🇳', 'code': '+86', 'name': 'China'},
+    {'flag': '🇨🇴', 'code': '+57', 'name': 'Colombia'},
+    {'flag': '🇰🇲', 'code': '+269', 'name': 'Comoros'},
+    {'flag': '🇨🇬', 'code': '+242', 'name': 'Congo'},
+    {'flag': '🇨🇷', 'code': '+506', 'name': 'Costa Rica'},
+    {'flag': '🇭🇷', 'code': '+385', 'name': 'Croatia'},
+    {'flag': '🇨🇺', 'code': '+53', 'name': 'Cuba'},
+    {'flag': '🇨🇾', 'code': '+357', 'name': 'Cyprus'},
+    {'flag': '🇨🇿', 'code': '+420', 'name': 'Czech Republic'},
+    {'flag': '🇩🇰', 'code': '+45', 'name': 'Denmark'},
+    {'flag': '🇩🇯', 'code': '+253', 'name': 'Djibouti'},
+    {'flag': '🇩🇴', 'code': '+1809', 'name': 'Dominican Republic'},
+    {'flag': '🇪🇨', 'code': '+593', 'name': 'Ecuador'},
+    {'flag': '🇪🇬', 'code': '+20', 'name': 'Egypt'},
+    {'flag': '🇸🇻', 'code': '+503', 'name': 'El Salvador'},
+    {'flag': '🇬🇶', 'code': '+240', 'name': 'Equatorial Guinea'},
+    {'flag': '🇪🇷', 'code': '+291', 'name': 'Eritrea'},
+    {'flag': '🇪🇪', 'code': '+372', 'name': 'Estonia'},
+    {'flag': '🇪🇹', 'code': '+251', 'name': 'Ethiopia'},
+    {'flag': '🇫🇯', 'code': '+679', 'name': 'Fiji'},
+    {'flag': '🇫🇮', 'code': '+358', 'name': 'Finland'},
+    {'flag': '🇫🇷', 'code': '+33', 'name': 'France'},
+    {'flag': '🇬🇦', 'code': '+241', 'name': 'Gabon'},
+    {'flag': '🇬🇲', 'code': '+220', 'name': 'Gambia'},
+    {'flag': '🇬🇪', 'code': '+995', 'name': 'Georgia'},
+    {'flag': '🇩🇪', 'code': '+49', 'name': 'Germany'},
+    {'flag': '🇬🇭', 'code': '+233', 'name': 'Ghana'},
+    {'flag': '🇬🇷', 'code': '+30', 'name': 'Greece'},
+    {'flag': '🇬🇩', 'code': '+1473', 'name': 'Grenada'},
+    {'flag': '🇬🇹', 'code': '+502', 'name': 'Guatemala'},
+    {'flag': '🇬🇳', 'code': '+224', 'name': 'Guinea'},
+    {'flag': '🇬🇾', 'code': '+592', 'name': 'Guyana'},
+    {'flag': '🇭🇹', 'code': '+509', 'name': 'Haiti'},
+    {'flag': '🇭🇳', 'code': '+504', 'name': 'Honduras'},
+    {'flag': '🇭🇰', 'code': '+852', 'name': 'Hong Kong'},
+    {'flag': '🇭🇺', 'code': '+36', 'name': 'Hungary'},
+    {'flag': '🇮🇸', 'code': '+354', 'name': 'Iceland'},
+    {'flag': '🇮🇳', 'code': '+91', 'name': 'India'},
+    {'flag': '🇮🇩', 'code': '+62', 'name': 'Indonesia'},
+    {'flag': '🇮🇷', 'code': '+98', 'name': 'Iran'},
+    {'flag': '🇮🇶', 'code': '+964', 'name': 'Iraq'},
+    {'flag': '🇮🇪', 'code': '+353', 'name': 'Ireland'},
+    {'flag': '🇮🇱', 'code': '+972', 'name': 'Israel'},
+    {'flag': '🇮🇹', 'code': '+39', 'name': 'Italy'},
+    {'flag': '🇯🇲', 'code': '+1876', 'name': 'Jamaica'},
+    {'flag': '🇯🇵', 'code': '+81', 'name': 'Japan'},
+    {'flag': '🇯🇴', 'code': '+962', 'name': 'Jordan'},
+    {'flag': '🇰🇿', 'code': '+7', 'name': 'Kazakhstan'},
+    {'flag': '🇰🇪', 'code': '+254', 'name': 'Kenya'},
+    {'flag': '🇰🇼', 'code': '+965', 'name': 'Kuwait'},
+    {'flag': '🇰🇬', 'code': '+996', 'name': 'Kyrgyzstan'},
+    {'flag': '🇱🇦', 'code': '+856', 'name': 'Laos'},
+    {'flag': '🇱🇻', 'code': '+371', 'name': 'Latvia'},
+    {'flag': '🇱🇧', 'code': '+961', 'name': 'Lebanon'},
+    {'flag': '🇱🇸', 'code': '+266', 'name': 'Lesotho'},
+    {'flag': '🇱🇷', 'code': '+231', 'name': 'Liberia'},
+    {'flag': '🇱🇾', 'code': '+218', 'name': 'Libya'},
+    {'flag': '🇱🇮', 'code': '+423', 'name': 'Liechtenstein'},
+    {'flag': '🇱🇹', 'code': '+370', 'name': 'Lithuania'},
+    {'flag': '🇱🇺', 'code': '+352', 'name': 'Luxembourg'},
+    {'flag': '🇲🇴', 'code': '+853', 'name': 'Macau'},
+    {'flag': '🇲🇬', 'code': '+261', 'name': 'Madagascar'},
+    {'flag': '🇲🇼', 'code': '+265', 'name': 'Malawi'},
+    {'flag': '🇲🇾', 'code': '+60', 'name': 'Malaysia'},
+    {'flag': '🇲🇻', 'code': '+960', 'name': 'Maldives'},
+    {'flag': '🇲🇱', 'code': '+223', 'name': 'Mali'},
+    {'flag': '🇲🇹', 'code': '+356', 'name': 'Malta'},
+    {'flag': '🇲🇷', 'code': '+222', 'name': 'Mauritania'},
+    {'flag': '🇲🇺', 'code': '+230', 'name': 'Mauritius'},
+    {'flag': '🇲🇽', 'code': '+52', 'name': 'Mexico'},
+    {'flag': '🇲🇩', 'code': '+373', 'name': 'Moldova'},
+    {'flag': '🇲🇨', 'code': '+377', 'name': 'Monaco'},
+    {'flag': '🇲🇳', 'code': '+976', 'name': 'Mongolia'},
+    {'flag': '🇲🇪', 'code': '+382', 'name': 'Montenegro'},
+    {'flag': '🇲🇦', 'code': '+212', 'name': 'Morocco'},
+    {'flag': '🇲🇿', 'code': '+258', 'name': 'Mozambique'},
+    {'flag': '🇲🇲', 'code': '+95', 'name': 'Myanmar'},
+    {'flag': '🇳🇦', 'code': '+264', 'name': 'Namibia'},
+    {'flag': '🇳🇵', 'code': '+977', 'name': 'Nepal'},
+    {'flag': '🇳🇱', 'code': '+31', 'name': 'Netherlands'},
+    {'flag': '🇳🇿', 'code': '+64', 'name': 'New Zealand'},
+    {'flag': '🇳🇮', 'code': '+505', 'name': 'Nicaragua'},
+    {'flag': '🇳🇪', 'code': '+227', 'name': 'Niger'},
+    {'flag': '🇳🇬', 'code': '+234', 'name': 'Nigeria'},
+    {'flag': '🇰🇵', 'code': '+850', 'name': 'North Korea'},
+    {'flag': '🇲🇰', 'code': '+389', 'name': 'North Macedonia'},
+    {'flag': '🇳🇴', 'code': '+47', 'name': 'Norway'},
+    {'flag': '🇴🇲', 'code': '+968', 'name': 'Oman'},
+    {'flag': '🇵🇦', 'code': '+507', 'name': 'Panama'},
+    {'flag': '🇵🇬', 'code': '+675', 'name': 'Papua New Guinea'},
+    {'flag': '🇵🇾', 'code': '+595', 'name': 'Paraguay'},
+    {'flag': '🇵🇪', 'code': '+51', 'name': 'Peru'},
+    {'flag': '🇵🇭', 'code': '+63', 'name': 'Philippines'},
+    {'flag': '🇵🇱', 'code': '+48', 'name': 'Poland'},
+    {'flag': '🇵🇹', 'code': '+351', 'name': 'Portugal'},
+    {'flag': '🇶🇦', 'code': '+974', 'name': 'Qatar'},
+    {'flag': '🇷🇴', 'code': '+40', 'name': 'Romania'},
+    {'flag': '🇷🇺', 'code': '+7', 'name': 'Russia'},
+    {'flag': '🇷🇼', 'code': '+250', 'name': 'Rwanda'},
+    {'flag': '🇸🇦', 'code': '+966', 'name': 'Saudi Arabia'},
+    {'flag': '🇸🇳', 'code': '+221', 'name': 'Senegal'},
+    {'flag': '🇷🇸', 'code': '+381', 'name': 'Serbia'},
+    {'flag': '🇸🇬', 'code': '+65', 'name': 'Singapore'},
+    {'flag': '🇸🇰', 'code': '+421', 'name': 'Slovakia'},
+    {'flag': '🇸🇮', 'code': '+386', 'name': 'Slovenia'},
+    {'flag': '🇸🇴', 'code': '+252', 'name': 'Somalia'},
+    {'flag': '🇿🇦', 'code': '+27', 'name': 'South Africa'},
+    {'flag': '🇰🇷', 'code': '+82', 'name': 'South Korea'},
+    {'flag': '🇸🇸', 'code': '+211', 'name': 'South Sudan'},
+    {'flag': '🇪🇸', 'code': '+34', 'name': 'Spain'},
+    {'flag': '🇱🇰', 'code': '+94', 'name': 'Sri Lanka'},
+    {'flag': '🇸🇩', 'code': '+249', 'name': 'Sudan'},
+    {'flag': '🇸🇷', 'code': '+597', 'name': 'Suriname'},
+    {'flag': '🇸🇪', 'code': '+46', 'name': 'Sweden'},
+    {'flag': '🇨🇭', 'code': '+41', 'name': 'Switzerland'},
+    {'flag': '🇸🇾', 'code': '+963', 'name': 'Syria'},
+    {'flag': '🇹🇼', 'code': '+886', 'name': 'Taiwan'},
+    {'flag': '🇹🇯', 'code': '+992', 'name': 'Tajikistan'},
+    {'flag': '🇹🇿', 'code': '+255', 'name': 'Tanzania'},
+    {'flag': '🇹🇭', 'code': '+66', 'name': 'Thailand'},
+    {'flag': '🇹🇬', 'code': '+228', 'name': 'Togo'},
+    {'flag': '🇹🇹', 'code': '+1868', 'name': 'Trinidad & Tobago'},
+    {'flag': '🇹🇳', 'code': '+216', 'name': 'Tunisia'},
+    {'flag': '🇹🇷', 'code': '+90', 'name': 'Turkey'},
+    {'flag': '🇹🇲', 'code': '+993', 'name': 'Turkmenistan'},
+    {'flag': '🇺🇬', 'code': '+256', 'name': 'Uganda'},
+    {'flag': '🇺🇦', 'code': '+380', 'name': 'Ukraine'},
+    {'flag': '🇦🇪', 'code': '+971', 'name': 'UAE'},
+    {'flag': '🇬🇧', 'code': '+44', 'name': 'United Kingdom'},
+    {'flag': '🇺🇸', 'code': '+1', 'name': 'United States'},
+    {'flag': '🇺🇾', 'code': '+598', 'name': 'Uruguay'},
+    {'flag': '🇺🇿', 'code': '+998', 'name': 'Uzbekistan'},
+    {'flag': '🇻🇪', 'code': '+58', 'name': 'Venezuela'},
+    {'flag': '🇻🇳', 'code': '+84', 'name': 'Vietnam'},
+    {'flag': '🇾🇪', 'code': '+967', 'name': 'Yemen'},
+    {'flag': '🇿🇲', 'code': '+260', 'name': 'Zambia'},
+    {'flag': '🇿🇼', 'code': '+263', 'name': 'Zimbabwe'},
+  ];
   
   int passwordStrength = 0;
   String passwordStrengthText = '';
@@ -662,7 +843,7 @@ bool _validateEmailSimple(String email) {
       password: passwordController.text,
       firstName: firstNameController.text.trim(),
       lastName: lastNameController.text.trim(),
-      phone: phoneController.text.trim(),
+      phone: '$_selectedCountryCode${phoneController.text.trim()}',
       dateOfBirth: dateOfBirth,
       gender: selectedGender?.toLowerCase(),
     );
@@ -702,7 +883,7 @@ bool _validateEmailSimple(String email) {
       context: context,
       initialDate: selectedDate ?? DateTime(2000, 1, 1),
       firstDate: DateTime(1920),
-      lastDate: DateTime.now().subtract(const Duration(days: 365 * 13)), // Min 13 years old
+      lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -986,19 +1167,8 @@ bool _validateEmailSimple(String email) {
             ),
             const SizedBox(height: 18),
             
-            // Phone Number
-            _buildInputField(
-              label: "Phone Number",
-              hint: "+92 300 1234567",
-              icon: Icons.phone_outlined,
-              controller: phoneController,
-              focusNode: phoneFocus,
-              errorText: phoneError,
-              keyboardType: TextInputType.phone,
-              onChanged: (v) {
-                if (phoneError != null) _validatePhone(v);
-              },
-            ),
+            // Phone Number with Country Code
+            _buildPhoneField(),
             const SizedBox(height: 18),
             
             // Date of Birth
@@ -1288,6 +1458,139 @@ bool _validateEmailSimple(String email) {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPhoneField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Phone Number",
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.black.withOpacity(0.5),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: phoneError != null
+                  ? redAccent.withOpacity(0.5)
+                  : Colors.black.withOpacity(0.06),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Country Code Dropdown
+              GestureDetector(
+                onTap: _showCountryPicker,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(color: Colors.black.withOpacity(0.06)),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _selectedCountryFlag,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _selectedCountryCode,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 18,
+                        color: Colors.black.withOpacity(0.4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Phone Input
+              Expanded(
+                child: TextField(
+                  controller: phoneController,
+                  focusNode: phoneFocus,
+                  keyboardType: TextInputType.phone,
+                  onChanged: (v) {
+                    if (phoneError != null) _validatePhone(v);
+                  },
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "300 1234567",
+                    hintStyle: TextStyle(
+                      color: Colors.black.withOpacity(0.25),
+                      fontSize: 14,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (phoneError != null) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.error_outline_rounded, size: 14, color: redAccent),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  phoneError!,
+                  style: TextStyle(color: redAccent, fontSize: 11, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showCountryPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return _CountryPickerSheet(
+          countryCodes: _countryCodes,
+          selectedCode: _selectedCountryCode,
+          selectedFlag: _selectedCountryFlag,
+          onSelected: (code, flag) {
+            setState(() {
+              _selectedCountryCode = code;
+              _selectedCountryFlag = flag;
+            });
+          },
+        );
+      },
     );
   }
 
@@ -1982,14 +2285,7 @@ bool _validateEmailSimple(String email) {
         ),
         child: Center(
           child: isLoading
-              ? SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(mintGreen),
-                  ),
-                )
+              ? const LoadingBars(color: Colors.white, height: 20)
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -2211,4 +2507,125 @@ class GoogleLogoPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _CountryPickerSheet extends StatefulWidget {
+  final List<Map<String, String>> countryCodes;
+  final String selectedCode;
+  final String selectedFlag;
+  final Function(String code, String flag) onSelected;
+
+  const _CountryPickerSheet({
+    required this.countryCodes,
+    required this.selectedCode,
+    required this.selectedFlag,
+    required this.onSelected,
+  });
+
+  @override
+  State<_CountryPickerSheet> createState() => _CountryPickerSheetState();
+}
+
+class _CountryPickerSheetState extends State<_CountryPickerSheet> {
+  String _search = '';
+
+  List<Map<String, String>> get _filtered {
+    if (_search.isEmpty) return widget.countryCodes;
+    final q = _search.toLowerCase();
+    return widget.countryCodes.where((c) =>
+      c['name']!.toLowerCase().contains(q) ||
+      c['code']!.contains(q)
+    ).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      maxChildSize: 0.9,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Select Country",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                onChanged: (v) => setState(() => _search = v),
+                decoration: InputDecoration(
+                  hintText: "Search country...",
+                  hintStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
+                  prefixIcon: Icon(Icons.search_rounded, color: Colors.black.withOpacity(0.4)),
+                  filled: true,
+                  fillColor: const Color(0xFFF5F5F5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: _filtered.length,
+                itemBuilder: (context, index) {
+                  final country = _filtered[index];
+                  final isSelected = country['code'] == widget.selectedCode &&
+                      country['flag'] == widget.selectedFlag;
+                  return ListTile(
+                    leading: Text(
+                      country['flag']!,
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                    title: Text(
+                      country['name']!,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    trailing: Text(
+                      country['code']!,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? const Color(0xFF10B981) : Colors.black54,
+                      ),
+                    ),
+                    selected: isSelected,
+                    selectedTileColor: const Color(0xFF10B981).withOpacity(0.08),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    onTap: () {
+                      widget.onSelected(country['code']!, country['flag']!);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }

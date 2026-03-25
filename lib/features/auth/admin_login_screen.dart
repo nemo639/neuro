@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -576,14 +577,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with TickerProvider
           ),
           child: Center(
             child: isLoading
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(primaryPurple),
-                    ),
-                  )
+                ? const LoadingBars(color: Colors.white, height: 20)
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

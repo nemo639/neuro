@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class NeuroChatScreen extends StatefulWidget {
   const NeuroChatScreen({super.key});
@@ -359,13 +360,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SizedBox(
-                              width: 32, height: 32,
-                              child: CircularProgressIndicator(
-                                color: darkCard,
-                                strokeWidth: 2.5,
-                              ),
-                            ),
+                            LoadingDots(color: darkCard, size: 10),
                             const SizedBox(height: 12),
                             Text('Loading conversation...',
                               style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),

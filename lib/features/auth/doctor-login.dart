@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class DoctorLoginScreen extends StatefulWidget {
   const DoctorLoginScreen({super.key});
@@ -715,14 +716,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> with TickerProvid
           ),
           child: Center(
             child: _isLoading
-                ? SizedBox(
-                    width: 26,
-                    height: 26,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(primaryTeal),
-                    ),
-                  )
+                ? const LoadingBars(color: Colors.white, height: 20)
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -1015,11 +1009,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
                   ),
                   child: Center(
                     child: _isLoading
-                        ? SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(color: primaryTeal, strokeWidth: 2.5),
-                          )
+                        ? const LoadingBars(color: Colors.white, height: 20)
                         : const Text(
                             'Send Verification Code',
                             style: TextStyle(
@@ -1384,11 +1374,7 @@ class _ResetPasswordSheetState extends State<_ResetPasswordSheet> {
                 ),
                 child: Center(
                   child: _isLoading
-                      ? SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(color: primaryTeal, strokeWidth: 2.5),
-                        )
+                      ? const LoadingBars(color: Colors.white, height: 20)
                       : const Text(
                           'Reset Password',
                           style: TextStyle(

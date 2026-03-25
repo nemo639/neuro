@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   ChevronDown,
+  MessageSquareText,
 } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -30,6 +31,7 @@ const navItems = [
   { href: '/dashboard/users', label: 'Users', icon: Users },
   { href: '/dashboard/doctors', label: 'Doctors', icon: Stethoscope },
   { href: '/dashboard/tickets', label: 'Tickets', icon: TicketCheck },
+  { href: '/dashboard/feedback', label: 'Feedback', icon: MessageSquareText },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 // Test phases
 enum WordRecallPhase { instructions, learning, distraction, immediateRecall, delayedRecall, recognition, completed }
@@ -893,7 +894,7 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
               color: tealAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.psychology_rounded, color: tealAccent, size: 40),
+            child: const Icon(Icons.extension_rounded, color: tealAccent, size: 40),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -1021,7 +1022,7 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
 
   Widget _buildLearningPhase() {
     if (_currentWordIndex >= _currentWordList.length) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: LoadingBars(color: Colors.grey[600]!, height: 24));
     }
 
     return Column(
@@ -1404,7 +1405,7 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
 
   Widget _buildRecognitionPhase() {
     if (_currentRecognitionIndex >= _recognitionItems.length) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: LoadingBars(color: Colors.grey[600]!, height: 24));
     }
 
     final item = _recognitionItems[_currentRecognitionIndex];

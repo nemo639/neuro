@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/shimmer_loading.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -133,8 +135,54 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
-        body: const Center(
-          child: CircularProgressIndicator(),
+        body: SafeArea(
+          child: ShimmerLoading(
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  // Profile avatar
+                  const SkeletonCircle(size: 90),
+                  const SizedBox(height: 16),
+                  const SkeletonLine(width: 150, height: 20),
+                  const SizedBox(height: 8),
+                  const SkeletonLine(width: 200, height: 14),
+                  const SizedBox(height: 24),
+                  // Stats row
+                  Row(children: const [
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 70, borderRadius: 16)),
+                    SizedBox(width: 12),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 70, borderRadius: 16)),
+                    SizedBox(width: 12),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 70, borderRadius: 16)),
+                  ]),
+                  const SizedBox(height: 24),
+                  // Premium card
+                  const SkeletonBox(width: double.infinity, height: 120, borderRadius: 20),
+                  const SizedBox(height: 24),
+                  // Achievements
+                  const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 130, height: 18)),
+                  const SizedBox(height: 12),
+                  Row(children: const [
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 90, borderRadius: 14)),
+                    SizedBox(width: 8),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 90, borderRadius: 14)),
+                    SizedBox(width: 8),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 90, borderRadius: 14)),
+                  ]),
+                  const SizedBox(height: 24),
+                  // Menu items
+                  const SkeletonListTile(),
+                  const SkeletonListTile(),
+                  const SkeletonListTile(),
+                  const SkeletonListTile(),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     }
@@ -153,18 +201,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               const SizedBox(height: 24),
               _buildStatsRow(),
               const SizedBox(height: 24),
-              _buildHealthSummaryCard(),
+              _buildPremiumCard(),
               const SizedBox(height: 24),
               _buildAchievementsCard(),
-              const SizedBox(height: 24),
-              _buildPersonalInfoCard(),
-              const SizedBox(height: 24),
-              _buildPremiumCard(),
               const SizedBox(height: 24),
               _buildSettingsMenu(),
               const SizedBox(height: 20),
               _buildSignOutButton(),
-              const SizedBox(height: 100),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -203,79 +247,35 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       delay: 0.1,
       child: Column(
         children: [
-          Stack(
-            children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: darkCard,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: darkCard.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: (profileImagePath != null && profileImagePath.toString().isNotEmpty)
-                      ? Image.network(
-                          "${ApiService.baseUrl}/uploads/$profileImagePath",
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                initial,
-                                style: const TextStyle(
-                                  fontSize: 42,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                      : Center(
-                          child: Text(
-                            initial,
-                            style: const TextStyle(
-                              fontSize: 42,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: darkCard,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: (profileImagePath != null && profileImagePath.toString().isNotEmpty)
+                ? Image.network(
+                    "${ApiService.baseUrl}/uploads/$profileImagePath",
+                    fit: BoxFit.cover,
+                    width: 100,
+                    height: 100,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Text(
+                          initial,
+                          style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700, color: Colors.white),
                         ),
-                ),
-              ),
-              Positioned(
-                bottom: -4,
-                right: -4,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: (_userData?['is_verified'] ?? false) ? blueAccent : Colors.grey,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: bgColor, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: blueAccent.withOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                      );
+                    },
+                  )
+                : Center(
+                    child: Text(
+                      initial,
+                      style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.verified_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-              ),
-            ],
           ),
           const SizedBox(height: 16),
           Text(
@@ -399,154 +399,33 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildHealthSummaryCard() {
-    Color _riskColor(double risk) {
-      if (risk < 25) return const Color(0xFF10B981);
-      if (risk < 50) return const Color(0xFFF59E0B);
-      if (risk < 75) return const Color(0xFFF97316);
-      return const Color(0xFFEF4444);
-    }
-
-    String _formatLastAssessment() {
-      if (_lastAssessment == null) return 'No assessments yet';
-      try {
-        final date = DateTime.parse(_lastAssessment!);
-        final diff = DateTime.now().difference(date).inDays;
-        if (diff == 0) return 'Today';
-        if (diff == 1) return 'Yesterday';
-        if (diff < 7) return '$diff days ago';
-        return '${date.day}/${date.month}/${date.year}';
-      } catch (_) {
-        return 'N/A';
-      }
-    }
-
-    return _buildAnimatedWidget(
-      delay: 0.18,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.black.withOpacity(0.06)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Health Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.black87)),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildRiskIndicator("Alzheimer's Risk", _adRisk, _riskColor(_adRisk), _adStage),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildRiskIndicator("Parkinson's Risk", _pdRisk, _riskColor(_pdRisk), _pdStage),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.schedule_rounded, size: 18, color: Color(0xFF6366F1)),
-                    const SizedBox(width: 10),
-                    Text('Last Assessment: ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black.withOpacity(0.5))),
-                    Text(_formatLastAssessment(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF6366F1))),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: mintGreen.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.science_rounded, size: 18, color: Color(0xFF10B981)),
-                    const SizedBox(width: 10),
-                    Text('Tests This Week: ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black.withOpacity(0.5))),
-                    Text('$_testsThisWeek', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF10B981))),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRiskIndicator(String label, double risk, Color color, String stage) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black.withOpacity(0.5))),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text('${risk.toInt()}%', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: color)),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-                child: Text(stage, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: color)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: (risk / 100).clamp(0.0, 1.0),
-              minHeight: 6,
-              backgroundColor: Colors.grey[200],
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAchievementsCard() {
     final badges = <Map<String, dynamic>>[];
 
-    // Streak-based badges
-    if (_streak >= 3) badges.add({'icon': Icons.local_fire_department_rounded, 'title': '3-Day Streak', 'color': const Color(0xFFF59E0B), 'unlocked': true});
-    if (_streak >= 7) badges.add({'icon': Icons.whatshot_rounded, 'title': '7-Day Streak', 'color': const Color(0xFFF97316), 'unlocked': true});
-    if (_streak >= 30) badges.add({'icon': Icons.emoji_events_rounded, 'title': '30-Day Streak', 'color': const Color(0xFFEF4444), 'unlocked': true});
+    // All possible badges — unlocked ones first, then locked
+    // Streak badges
+    badges.add({'icon': Icons.local_fire_department_rounded, 'title': '3-Day Streak', 'color': const Color(0xFFF59E0B), 'unlocked': _streak >= 3});
+    badges.add({'icon': Icons.whatshot_rounded, 'title': '7-Day Streak', 'color': const Color(0xFFF97316), 'unlocked': _streak >= 7});
+    badges.add({'icon': Icons.bolt_rounded, 'title': '14-Day Streak', 'color': const Color(0xFFEF4444), 'unlocked': _streak >= 14});
+    badges.add({'icon': Icons.emoji_events_rounded, 'title': '30-Day Streak', 'color': const Color(0xFFDC2626), 'unlocked': _streak >= 30});
+    badges.add({'icon': Icons.military_tech_rounded, 'title': '100-Day Streak', 'color': const Color(0xFFB91C1C), 'unlocked': _streak >= 100});
 
-    // Test-based badges
-    if (_totalTestsCompleted >= 1) badges.add({'icon': Icons.play_circle_rounded, 'title': 'First Test', 'color': const Color(0xFF3B82F6), 'unlocked': true});
-    if (_totalTestsCompleted >= 10) badges.add({'icon': Icons.stars_rounded, 'title': '10 Tests Done', 'color': const Color(0xFF8B5CF6), 'unlocked': true});
-    if (_totalTestsCompleted >= 50) badges.add({'icon': Icons.workspace_premium_rounded, 'title': '50 Tests', 'color': const Color(0xFFEC4899), 'unlocked': true});
+    // Test-count badges
+    badges.add({'icon': Icons.play_circle_rounded, 'title': 'First Test', 'color': const Color(0xFF3B82F6), 'unlocked': _totalTestsCompleted >= 1});
+    badges.add({'icon': Icons.stars_rounded, 'title': '10 Tests', 'color': const Color(0xFF8B5CF6), 'unlocked': _totalTestsCompleted >= 10});
+    badges.add({'icon': Icons.workspace_premium_rounded, 'title': '25 Tests', 'color': const Color(0xFFEC4899), 'unlocked': _totalTestsCompleted >= 25});
+    badges.add({'icon': Icons.diamond_rounded, 'title': '50 Tests', 'color': const Color(0xFF6366F1), 'unlocked': _totalTestsCompleted >= 50});
 
-    // Locked upcoming badges
-    if (_streak < 7) badges.add({'icon': Icons.whatshot_rounded, 'title': '7-Day Streak', 'color': Colors.grey, 'unlocked': false});
-    if (_streak < 30) badges.add({'icon': Icons.emoji_events_rounded, 'title': '30-Day Streak', 'color': Colors.grey, 'unlocked': false});
-    if (_totalTestsCompleted < 10) badges.add({'icon': Icons.stars_rounded, 'title': '10 Tests Done', 'color': Colors.grey, 'unlocked': false});
-    if (_totalTestsCompleted < 50) badges.add({'icon': Icons.workspace_premium_rounded, 'title': '50 Tests', 'color': Colors.grey, 'unlocked': false});
+    // Weekly activity badges
+    badges.add({'icon': Icons.calendar_today_rounded, 'title': 'Weekly Active', 'color': const Color(0xFF10B981), 'unlocked': _testsThisWeek >= 3});
+    badges.add({'icon': Icons.speed_rounded, 'title': 'Fast Learner', 'color': const Color(0xFF06B6D4), 'unlocked': _totalTestsCompleted >= 5 && _testsThisWeek >= 2});
+    badges.add({'icon': Icons.shield_rounded, 'title': 'Health Guard', 'color': const Color(0xFF14B8A6), 'unlocked': _streak >= 7 && _totalTestsCompleted >= 10});
+
+    // Sort: unlocked first, then locked
+    badges.sort((a, b) {
+      if (a['unlocked'] == b['unlocked']) return 0;
+      return (a['unlocked'] as bool) ? -1 : 1;
+    });
 
     final unlockedCount = badges.where((b) => b['unlocked'] == true).length;
 
@@ -582,37 +461,45 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 ],
               ),
               const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: badges.map((badge) {
-                  final unlocked = badge['unlocked'] as bool;
-                  final color = badge['color'] as Color;
-                  return Container(
-                    width: (MediaQuery.of(context).size.width - 80) / 3,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: unlocked ? color.withOpacity(0.08) : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: unlocked ? color.withOpacity(0.15) : Colors.transparent),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(badge['icon'] as IconData, size: 26, color: unlocked ? color : Colors.grey[350]),
-                        const SizedBox(height: 6),
-                        Text(
-                          badge['title'] as String,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: unlocked ? Colors.black87 : Colors.grey[400]),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const spacing = 8.0;
+                  final badgeWidth = ((constraints.maxWidth - spacing * 2) / 3).floorToDouble();
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: badges.map((badge) {
+                      final unlocked = badge['unlocked'] as bool;
+                      final color = badge['color'] as Color;
+                      return SizedBox(
+                        width: badgeWidth,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: unlocked ? color.withOpacity(0.08) : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: unlocked ? color.withOpacity(0.15) : Colors.transparent),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(badge['icon'] as IconData, size: 26, color: unlocked ? color : Colors.grey[350]),
+                              const SizedBox(height: 6),
+                              Text(
+                                badge['title'] as String,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: unlocked ? Colors.black87 : Colors.grey[400]),
+                              ),
+                              if (!unlocked) ...[
+                                const SizedBox(height: 2),
+                                Icon(Icons.lock_rounded, size: 10, color: Colors.grey[400]),
+                              ],
+                            ],
+                          ),
                         ),
-                        if (!unlocked) ...[
-                          const SizedBox(height: 2),
-                          Icon(Icons.lock_rounded, size: 10, color: Colors.grey[400]),
-                        ],
-                      ],
-                    ),
+                      );
+                    }).toList(),
                   );
-                }).toList(),
+                },
               ),
             ],
           ),
@@ -621,86 +508,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildPersonalInfoCard() {
-    final dob = _userData?['date_of_birth']?.toString();
-    final gender = _userData?['gender']?.toString() ?? 'Not set';
-    final phone = _userData?['phone']?.toString() ?? 'Not set';
-    final age = _userData?['age'];
-
-    String formattedDob = 'Not set';
-    if (dob != null && dob.isNotEmpty) {
-      try {
-        final date = DateTime.parse(dob);
-        formattedDob = '${date.day}/${date.month}/${date.year}';
-      } catch (_) {
-        formattedDob = dob;
-      }
-    }
-
-    return _buildAnimatedWidget(
-      delay: 0.25,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.black.withOpacity(0.06)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Personal Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.black87)),
-              const SizedBox(height: 16),
-              _buildInfoRow(Icons.cake_rounded, 'Date of Birth', formattedDob, const Color(0xFFEC4899)),
-              const SizedBox(height: 12),
-              if (age != null) ...[
-                _buildInfoRow(Icons.person_rounded, 'Age', '$age years', const Color(0xFF8B5CF6)),
-                const SizedBox(height: 12),
-              ],
-              _buildInfoRow(Icons.wc_rounded, 'Gender', gender.isNotEmpty ? gender[0].toUpperCase() + gender.substring(1) : 'Not set', const Color(0xFF3B82F6)),
-              const SizedBox(height: 12),
-              _buildInfoRow(Icons.phone_rounded, 'Phone', phone, const Color(0xFF10B981)),
-              const SizedBox(height: 12),
-              _buildInfoRow(Icons.email_rounded, 'Email', _userData?['email'] ?? 'N/A', const Color(0xFFF59E0B)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 18, color: color),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.black.withOpacity(0.4))),
-              const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  // Premium is not active until a real payment system is integrated
+  bool _isPremiumActive = false;
 
   Widget _buildPremiumCard() {
+    final isActive = _isPremiumActive;
+    final statusText = isActive ? 'Active' : 'Not Active';
+    final subtitleText = isActive
+        ? 'Unlimited access to all features'
+        : 'Upgrade to unlock all premium features';
+    final buttonText = isActive ? 'Manage Subscription' : 'Upgrade to Premium';
+
     return _buildAnimatedWidget(
       delay: 0.2,
       child: Padding(
@@ -733,16 +551,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           color: mintGreen,
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: const Icon(
-                          Icons.workspace_premium_rounded,
+                        child: Icon(
+                          isActive ? Icons.workspace_premium_rounded : Icons.lock_open_rounded,
                           color: Colors.black87,
                           size: 24,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
-                        'Premium Member',
-                        style: TextStyle(
+                      Text(
+                        isActive ? 'Premium Member' : 'Free Plan',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -756,9 +574,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       color: mintGreen,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'Active',
-                      style: TextStyle(
+                    child: Text(
+                      statusText,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: Colors.black87,
@@ -769,13 +587,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               ),
               const SizedBox(height: 12),
               Text(
-                'Unlimited access to all features',
+                subtitleText,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: Colors.white.withOpacity(0.6),
                 ),
               ),
+              if (!isActive) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _buildPremiumPerk(Icons.analytics_rounded, 'Advanced XAI'),
+                    const SizedBox(width: 12),
+                    _buildPremiumPerk(Icons.picture_as_pdf_rounded, 'PDF Reports'),
+                    const SizedBox(width: 12),
+                    _buildPremiumPerk(Icons.all_inclusive_rounded, 'Unlimited'),
+                  ],
+                ),
+              ],
               const SizedBox(height: 18),
               GestureDetector(
                 onTap: () {
@@ -788,16 +618,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: isActive ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                    ),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      'Manage Subscription',
-                      style: TextStyle(
+                      buttonText,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -810,6 +638,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPremiumPerk(IconData icon, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: Colors.white38),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.45), fontWeight: FontWeight.w500)),
+      ],
     );
   }
 
@@ -1056,14 +895,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       barrierDismissible: false,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: const Padding(
-          padding: EdgeInsets.all(24),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 20),
-              Text('Clearing cache...'),
+              LoadingBars(color: darkCard, height: 22),
+              const SizedBox(width: 20),
+              const Text('Clearing cache...'),
             ],
           ),
         ),
@@ -1947,7 +1786,6 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
   static const Color darkCard = Color(0xFF1A1A1A);
   static const Color blueAccent = Color(0xFF3B82F6);
   static const Color mintGreen = Color(0xFFB8E8D1);
-  static const Color softLavender = Color(0xFFE8DFF0);
 
   final TextEditingController _cardNumberController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -1956,6 +1794,7 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
 
   String _cardType = 'unknown';
   int _selectedPlan = 1; // 0 = monthly, 1 = yearly
+  bool _showComingSoon = false;
 
   @override
   void dispose() {
@@ -2086,102 +1925,12 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
     return buffer.toString();
   }
 
-  void _showPurchaseDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: mintGreen,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Icon(
-                  Icons.favorite_rounded,
-                  color: Colors.black87,
-                  size: 40,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Thank You! 🙏',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Please pray for us and our project!\n\nWe are working hard to bring you the best experience. Premium features will be launching in the coming months.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black.withOpacity(0.6),
-                  height: 1.6,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: softLavender.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.rocket_launch_rounded, color: Color(0xFF8B5CF6)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Stay tuned for updates!',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black.withOpacity(0.7),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: darkCard,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'Got it!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  void _handlePurchase() {
+    HapticFeedback.mediumImpact();
+    setState(() => _showComingSoon = true);
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _showComingSoon = false);
+    });
   }
 
   @override
@@ -2395,21 +2144,16 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    _showPurchaseDialog();
-                  },
+                  onTap: _handlePurchase,
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-                      ),
+                      color: darkCard,
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: blueAccent.withOpacity(0.4),
+                          color: darkCard.withOpacity(0.3),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),
@@ -2433,24 +2177,24 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // Security Note
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.verified_user_rounded, size: 16, color: Colors.black.withOpacity(0.4)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Secured by 256-bit SSL encryption',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.black.withOpacity(0.4),
-                      ),
+              // Coming Soon inline message
+              AnimatedOpacity(
+                opacity: _showComingSoon ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'Payment gateway will be available soon. Stay tuned!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFEF4444),
+                      height: 1.4,
                     ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 30),
@@ -2701,8 +2445,8 @@ class _FAQsScreenState extends State<FAQsScreen> {
       'answer': 'Cognitive tests evaluate memory, attention, processing speed, and executive function through interactive games and puzzles. Tasks include word recall, pattern recognition, and problem-solving exercises.'
     },
     {
-      'question': 'What does Gait Analysis measure?',
-      'answer': 'Gait analysis uses your phone\'s sensors to measure walking patterns including step length, walking speed, balance, and rhythm. Changes in gait can be early indicators of neurological conditions.'
+      'question': 'What does Facial Analysis measure?',
+      'answer': 'Facial analysis uses your phone\'s camera and ML Kit to detect facial landmarks, measure asymmetry, micro-expressions, and muscle movement patterns. Changes in facial expressions can be early indicators of neurological conditions.'
     },
     {
       'question': 'What do the risk scores mean?',
@@ -3252,7 +2996,7 @@ class UserGuideScreen extends StatelessWidget {
         ],
       },
       {
-        'icon': Icons.psychology_rounded,
+        'icon': Icons.extension_rounded,
         'title': 'Cognitive Tests',
         'color': const Color(0xFFF97316),
         'steps': [
@@ -3263,14 +3007,14 @@ class UserGuideScreen extends StatelessWidget {
         ],
       },
       {
-        'icon': Icons.directions_walk_rounded,
-        'title': 'Gait Analysis',
+        'icon': Icons.face_retouching_natural_rounded,
+        'title': 'Facial Analysis',
         'color': const Color(0xFFEF4444),
         'steps': [
-          'Place phone in pocket or hold at waist',
-          'Walk in clear straight path',
-          'Walk at normal comfortable pace',
-          'Avoid holding objects while walking',
+          'Ensure good lighting on your face',
+          'Position face in the camera frame',
+          'Keep a neutral expression initially',
+          'Follow on-screen prompts carefully',
         ],
       },
       {
@@ -3780,11 +3524,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (_isSubmitting)
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
+                    const LoadingBars(color: Colors.white, height: 18, barCount: 5)
                   else
                     const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                   const SizedBox(width: 10),
@@ -3803,7 +3543,19 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
 
   Widget _buildHistoryTab() {
     if (_isLoadingHistory) {
-      return const Center(child: CircularProgressIndicator());
+      return ShimmerLoading(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: const [
+              SkeletonListTile(),
+              SkeletonListTile(),
+              SkeletonListTile(),
+              SkeletonListTile(),
+            ],
+          ),
+        ),
+      );
     }
 
     if (_feedbackHistory.isEmpty) {

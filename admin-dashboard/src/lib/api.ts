@@ -206,6 +206,37 @@ export const analyticsApi = {
 
 // ==================== SETTINGS API ====================
 
+// ==================== FEEDBACK API ====================
+
+export const feedbackApi = {
+  getAll: async (params?: {
+    page?: number;
+    per_page?: number;
+    category?: string;
+    status?: string;
+  }) => {
+    const response = await api.get('/feedback/admin/all', { params });
+    return response.data;
+  },
+
+  getStats: async () => {
+    const response = await api.get('/feedback/admin/stats');
+    return response.data;
+  },
+
+  update: async (feedbackId: number, data: { status?: string; admin_notes?: string }) => {
+    const response = await api.patch(`/feedback/admin/${feedbackId}`, data);
+    return response.data;
+  },
+
+  delete: async (feedbackId: number) => {
+    const response = await api.delete(`/feedback/admin/${feedbackId}`);
+    return response.data;
+  },
+};
+
+// ==================== SETTINGS API ====================
+
 export const settingsApi = {
   getProfile: async () => {
     const response = await api.get('/admin/settings/profile');

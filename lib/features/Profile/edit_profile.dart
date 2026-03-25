@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/shimmer_loading.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
@@ -240,8 +242,54 @@ String _monthName(int month) {
   if (_isLoadingData) {
     return Scaffold(
       backgroundColor: bgColor,
-      body: const Center(
-        child: CircularProgressIndicator(),
+      body: SafeArea(
+        child: ShimmerLoading(
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                // Back button + title
+                Row(children: const [
+                  SkeletonBox(width: 44, height: 44, borderRadius: 14),
+                  SizedBox(width: 16),
+                  SkeletonLine(width: 130, height: 20),
+                ]),
+                const SizedBox(height: 30),
+                // Avatar
+                const SkeletonCircle(size: 100),
+                const SizedBox(height: 10),
+                const SkeletonLine(width: 100, height: 12),
+                const SizedBox(height: 30),
+                // Input fields
+                const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 80, height: 12)),
+                const SizedBox(height: 8),
+                const SkeletonBox(width: double.infinity, height: 52, borderRadius: 14),
+                const SizedBox(height: 20),
+                const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 80, height: 12)),
+                const SizedBox(height: 8),
+                const SkeletonBox(width: double.infinity, height: 52, borderRadius: 14),
+                const SizedBox(height: 20),
+                const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 80, height: 12)),
+                const SizedBox(height: 8),
+                const SkeletonBox(width: double.infinity, height: 52, borderRadius: 14),
+                const SizedBox(height: 20),
+                const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 80, height: 12)),
+                const SizedBox(height: 8),
+                const SkeletonBox(width: double.infinity, height: 52, borderRadius: 14),
+                const SizedBox(height: 30),
+                // Info cards
+                const SkeletonBox(width: double.infinity, height: 60, borderRadius: 14),
+                const SizedBox(height: 12),
+                const SkeletonBox(width: double.infinity, height: 60, borderRadius: 14),
+                const SizedBox(height: 30),
+                // Save button
+                const SkeletonBox(width: double.infinity, height: 56, borderRadius: 16),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -844,14 +892,7 @@ String _monthName(int month) {
           ),
           child: Center(
             child: _isLoading
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(mintGreen),
-                    ),
-                  )
+                ? const LoadingBars(color: Colors.white, height: 20)
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

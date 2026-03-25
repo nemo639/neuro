@@ -559,7 +559,7 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
   Widget _buildDrawingToolbar() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -567,37 +567,42 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
       ),
       child: Row(
         children: [
-          ..._penColors.map((c) => GestureDetector(
-            onTap: () => setState(() => _selectedColor = c),
-            child: Container(
-              width: 24, height: 24,
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              decoration: BoxDecoration(
-                color: c, shape: BoxShape.circle,
-                border: Border.all(
-                  color: _selectedColor == c ? Colors.black87 : Colors.transparent, width: 2.5,
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: _penColors.map((c) => GestureDetector(
+                onTap: () => setState(() => _selectedColor = c),
+                child: Container(
+                  width: 22, height: 22,
+                  decoration: BoxDecoration(
+                    color: c, shape: BoxShape.circle,
+                    border: Border.all(
+                      color: _selectedColor == c ? Colors.black87 : Colors.transparent, width: 2.5,
+                    ),
+                  ),
                 ),
-              ),
+              )).toList(),
             ),
-          )),
-          const SizedBox(width: 8),
-          Container(width: 1, height: 24, color: Colors.grey[300]),
-          const SizedBox(width: 8),
-          ..._penThicknesses.map((t) => GestureDetector(
-            onTap: () => setState(() => _selectedThickness = t),
-            child: Container(
-              width: 28, height: 28,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: _selectedThickness == t ? Colors.grey[200] : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
+          ),
+          Container(width: 1, height: 24, color: Colors.grey[300], margin: const EdgeInsets.symmetric(horizontal: 4)),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: _penThicknesses.map((t) => GestureDetector(
+              onTap: () => setState(() => _selectedThickness = t),
+              child: Container(
+                width: 26, height: 26,
+                margin: const EdgeInsets.symmetric(horizontal: 1),
+                decoration: BoxDecoration(
+                  color: _selectedThickness == t ? Colors.grey[200] : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(child: Container(
+                  width: t + 2, height: t + 2,
+                  decoration: BoxDecoration(color: _selectedColor, shape: BoxShape.circle),
+                )),
               ),
-              child: Center(child: Container(
-                width: t + 2, height: t + 2,
-                decoration: BoxDecoration(color: _selectedColor, shape: BoxShape.circle),
-              )),
-            ),
-          )),
+            )).toList(),
+          ),
         ],
       ),
     );
@@ -695,7 +700,30 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
+              Expanded(
+                child: GestureDetector(
+                  onTap: _allStrokes.isNotEmpty ? () {
+                    setState(() => _allStrokes.removeLast());
+                  } : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.undo_rounded, color: _allStrokes.isNotEmpty ? Colors.grey[600] : Colors.grey[400], size: 20),
+                        const SizedBox(width: 6),
+                        Text('Undo', style: TextStyle(color: _allStrokes.isNotEmpty ? Colors.grey[600] : Colors.grey[400], fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 flex: 2,
                 child: GestureDetector(

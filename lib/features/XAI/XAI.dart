@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/shimmer_loading.dart';
 
 class XAIScreen extends StatefulWidget {
   const XAIScreen({super.key});
@@ -509,7 +510,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
       // Motor Module
       AnalysisModule(
         name: 'Motor',
-        icon: Icons.pan_tool_rounded,
+        icon: Icons.gesture_rounded,
         color: orangeAccent,
         bgColor: const Color(0xFFFFF7ED),
         saliencyTitle: 'Drawing Saliency Map',
@@ -679,7 +680,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
       // Cognitive Module
       AnalysisModule(
         name: 'Cognitive',
-        icon: Icons.psychology_rounded,
+        icon: Icons.extension_rounded,
         color: purpleAccent,
         bgColor: const Color(0xFFF3E8FF),
         saliencyTitle: 'Cognitive Feature Saliency',
@@ -1085,7 +1086,58 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
-        body: const Center(child: CircularProgressIndicator()),
+        body: SafeArea(
+          child: ShimmerLoading(
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  // Header
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
+                    SkeletonLine(width: 160, height: 22),
+                    SkeletonCircle(size: 40),
+                  ]),
+                  const SizedBox(height: 8),
+                  const SkeletonLine(width: 240, height: 14),
+                  const SizedBox(height: 24),
+                  // Module tabs
+                  Row(children: const [
+                    SkeletonBox(width: 90, height: 36, borderRadius: 18),
+                    SizedBox(width: 10),
+                    SkeletonBox(width: 90, height: 36, borderRadius: 18),
+                    SizedBox(width: 10),
+                    SkeletonBox(width: 90, height: 36, borderRadius: 18),
+                  ]),
+                  const SizedBox(height: 24),
+                  // Result summary card
+                  const SkeletonBox(width: double.infinity, height: 160, borderRadius: 20),
+                  const SizedBox(height: 24),
+                  // XAI method tabs
+                  const SkeletonLine(width: 140, height: 18),
+                  const SizedBox(height: 12),
+                  Row(children: const [
+                    SkeletonBox(width: 70, height: 32, borderRadius: 16),
+                    SizedBox(width: 8),
+                    SkeletonBox(width: 70, height: 32, borderRadius: 16),
+                    SizedBox(width: 8),
+                    SkeletonBox(width: 70, height: 32, borderRadius: 16),
+                    SizedBox(width: 8),
+                    SkeletonBox(width: 70, height: 32, borderRadius: 16),
+                  ]),
+                  const SizedBox(height: 24),
+                  // Explanation card
+                  const SkeletonBox(width: double.infinity, height: 200, borderRadius: 20),
+                  const SizedBox(height: 16),
+                  const SkeletonBox(width: double.infinity, height: 140, borderRadius: 16),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ),
       );
     }
 

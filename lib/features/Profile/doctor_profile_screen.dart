@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/shimmer_loading.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key});
@@ -156,8 +158,45 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> with SingleTi
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
-        body: Center(
-          child: CircularProgressIndicator(color: primaryTeal),
+        body: SafeArea(
+          child: ShimmerLoading(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      SkeletonBox(width: 40, height: 40, borderRadius: 12),
+                      SkeletonBox(width: 120, height: 20, borderRadius: 8),
+                      SkeletonBox(width: 40, height: 40, borderRadius: 12),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  SkeletonCircle(size: 100),
+                  const SizedBox(height: 12),
+                  SkeletonLine(width: 160),
+                  const SizedBox(height: 8),
+                  SkeletonLine(width: 120, height: 12),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(3, (_) =>
+                      SkeletonBox(width: 90, height: 60, borderRadius: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SkeletonCard(height: 100),
+                  const SizedBox(height: 24),
+                  ...List.generate(4, (_) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SkeletonCard(height: 56),
+                  )),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     }

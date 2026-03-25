@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:neuroverse/core/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -47,7 +49,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _userInitial = 'U';
   String _userName = '';
   int _streak = 0;
-
+  int _totalTestsCompleted = 0;
+  int _testsThisWeek = 0;
 
   // Health tips pool (10 total, 7 shown each session with 4 shuffled + 3 fixed)
   static final List<Map<String, dynamic>> _allHealthTips = [
@@ -201,6 +204,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               return bDate.compareTo(aDate);
             });
           _riskTrend = _dashboardData?['risk_trend'] ?? [];
+          _totalTestsCompleted = (_dashboardData?['total_tests_completed'] ?? 0) as int;
+          _testsThisWeek = (_dashboardData?['tests_this_week'] ?? 0) as int;
         }
 
         if (wellnessResult['success']) {
@@ -235,27 +240,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       await NotificationService.showNewAlerts(notifs);
     }
 
-    // Auto-collect device usage and submit to backend
-    _collectAndSubmitDeviceUsage();
+    // Auto-collect device usage and submit to backend, then refresh wellness
+    await _collectAndSubmitDeviceUsage();
 
     // Check streak milestones and fire notification
     _checkStreakMilestone();
   }
 
   Future<void> _checkStreakMilestone() async {
-    if (_streak <= 0) return;
-    final milestones = [3, 7, 14, 21, 30, 50, 100];
-    if (milestones.contains(_streak)) {
-      final emoji = _streak >= 30 ? '🏆' : _streak >= 14 ? '🔥' : '⭐';
-      await NotificationService.show(
-        id: 9000 + _streak,
-        title: '$emoji $_streak-Day Streak Unlocked!',
-        body: _streak >= 30
-            ? 'Incredible! $_streak days of consistent health tracking. You\'re a wellness champion!'
-            : _streak >= 14
-                ? 'Amazing consistency! $_streak days in a row. Keep up the great work!'
-                : 'Nice! $_streak-day streak! Consistent tracking helps detect early signs.',
-      );
+    // --- Achievement badge unlock notifications (only for newly unlocked) ---
+    final prefs = await SharedPreferences.getInstance();
+    final notifiedBadges = prefs.getStringList('notified_badges') ?? [];
+
+    final badges = <Map<String, dynamic>>[
+      {'id': 'first_test', 'title': 'First Test', 'unlocked': _totalTestsCompleted >= 1, 'icon': '🎯'},
+      {'id': 'tests_10', 'title': '10 Tests', 'unlocked': _totalTestsCompleted >= 10, 'icon': '⭐'},
+      {'id': 'tests_25', 'title': '25 Tests', 'unlocked': _totalTestsCompleted >= 25, 'icon': '🏅'},
+      {'id': 'tests_50', 'title': '50 Tests', 'unlocked': _totalTestsCompleted >= 50, 'icon': '💎'},
+      {'id': 'weekly_active', 'title': 'Weekly Active', 'unlocked': _testsThisWeek >= 3, 'icon': '📅'},
+      {'id': 'fast_learner', 'title': 'Fast Learner', 'unlocked': _totalTestsCompleted >= 5 && _testsThisWeek >= 2, 'icon': '⚡'},
+      {'id': 'health_guard', 'title': 'Health Guard', 'unlocked': _streak >= 7 && _totalTestsCompleted >= 10, 'icon': '🛡️'},
+      {'id': 'streak_3', 'title': '3-Day Streak', 'unlocked': _streak >= 3, 'icon': '🔥'},
+      {'id': 'streak_7', 'title': '7-Day Streak', 'unlocked': _streak >= 7, 'icon': '🔥'},
+      {'id': 'streak_14', 'title': '14-Day Streak', 'unlocked': _streak >= 14, 'icon': '⚡'},
+      {'id': 'streak_30', 'title': '30-Day Streak', 'unlocked': _streak >= 30, 'icon': '🏆'},
+      {'id': 'streak_100', 'title': '100-Day Streak', 'unlocked': _streak >= 100, 'icon': '🏆'},
+    ];
+
+    final newlyUnlocked = <String>[];
+    for (final badge in badges) {
+      final id = badge['id'] as String;
+      if (badge['unlocked'] == true && !notifiedBadges.contains(id)) {
+        newlyUnlocked.add(id);
+        await NotificationService.show(
+          id: 8000 + id.hashCode.abs() % 999,
+          title: '${badge['icon']} Badge Unlocked: ${badge['title']}!',
+          body: 'Congratulations! You\'ve earned the "${badge['title']}" achievement badge. Keep it up!',
+        );
+      }
+    }
+
+    if (newlyUnlocked.isNotEmpty) {
+      await prefs.setStringList('notified_badges', [...notifiedBadges, ...newlyUnlocked]);
     }
   }
 
@@ -296,6 +322,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             _socialHours = socialMinutes / 60.0;
             _notificationCount = notifs;
           });
+        }
+
+        // Refresh wellness dashboard so weekly chart & averages update
+        final refreshed = await ApiService.getWellnessDashboard();
+        if (mounted && refreshed['success']) {
+          final rData = refreshed['data'];
+          setState(() {
+            _wellnessData = rData;
+            _avgScreenTime = (rData?['avg_screen_time'] ?? 0).toDouble();
+            _streak = (rData?['logging_streak'] ?? 0) as int;
+          });
+          // Also refresh weekly chart
+          final hist = await ApiService.getWellnessHistory(days: 7, limit: 7);
+          if (mounted && hist['success']) {
+            setState(() => _buildWeeklyChartData(hist['data']));
+          }
         }
         return;
       }
@@ -441,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return {
           'title': 'Cognitive',
           'subtitle': 'Memory & TMT',
-          'icon': Icons.psychology_alt_rounded,
+          'icon': Icons.extension_rounded,
           'bgColor': softLavender.withOpacity(0.6),
         };
       case 'gait':
@@ -488,7 +530,81 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
-        body: const Center(child: CircularProgressIndicator()),
+        body: SafeArea(
+          child: ShimmerLoading(
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(children: const [
+                        SkeletonCircle(size: 44),
+                        SizedBox(width: 12),
+                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          SkeletonLine(width: 100, height: 12),
+                          SizedBox(height: 6),
+                          SkeletonLine(width: 140, height: 16),
+                        ]),
+                      ]),
+                      const SkeletonCircle(size: 44),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Welcome
+                  const SkeletonLine(width: 200, height: 22),
+                  const SizedBox(height: 8),
+                  const SkeletonLine(width: 260, height: 14),
+                  const SizedBox(height: 24),
+                  // Risk card
+                  const SkeletonBox(width: double.infinity, height: 180, borderRadius: 24),
+                  const SizedBox(height: 16),
+                  // Stats row
+                  Row(children: const [
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 90, borderRadius: 18)),
+                    SizedBox(width: 12),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 90, borderRadius: 18)),
+                    SizedBox(width: 12),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 90, borderRadius: 18)),
+                  ]),
+                  const SizedBox(height: 24),
+                  // Recent tests
+                  const SkeletonLine(width: 130, height: 18),
+                  const SizedBox(height: 12),
+                  Row(children: const [
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 100, borderRadius: 16)),
+                    SizedBox(width: 12),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 100, borderRadius: 16)),
+                  ]),
+                  const SizedBox(height: 24),
+                  // Quick actions
+                  const SkeletonLine(width: 130, height: 18),
+                  const SizedBox(height: 12),
+                  Row(children: const [
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 80, borderRadius: 16)),
+                    SizedBox(width: 12),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 80, borderRadius: 16)),
+                  ]),
+                  const SizedBox(height: 12),
+                  Row(children: const [
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 80, borderRadius: 16)),
+                    SizedBox(width: 12),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 80, borderRadius: 16)),
+                  ]),
+                  const SizedBox(height: 24),
+                  // Wellness card
+                  const SkeletonBox(width: double.infinity, height: 140, borderRadius: 20),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ),
       );
     }
 
@@ -666,18 +782,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: Colors.black.withOpacity(0.08), width: 2),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: (_profileImagePath != null && _profileImagePath!.isNotEmpty)
-                        ? Image.network(
-                            '${ApiService.baseUrl}/uploads/$_profileImagePath',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: (_profileImagePath != null && _profileImagePath!.isNotEmpty)
+                          ? Image.network(
+                              '${ApiService.baseUrl}/uploads/$_profileImagePath',
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Center(
+                                child: Text(_userInitial, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                              ),
+                            )
+                          : Center(
                               child: Text(_userInitial, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
                             ),
-                          )
-                        : Center(
-                            child: Text(_userInitial, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-                          ),
+                    ),
                   ),
                 ),
               ],
@@ -1955,7 +2075,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     {
       'title': 'Early Signs of Alzheimer\'s',
       'content': 'Memory loss that disrupts daily life, challenges in planning, difficulty completing familiar tasks, confusion with time or place, and trouble understanding visual images.',
-      'icon': Icons.psychology_rounded,
+      'icon': Icons.extension_rounded,
       'color': const Color(0xFF8B5CF6),
       'category': 'Alzheimer\'s',
     },
@@ -2904,7 +3024,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final items = [
       {'label': 'Focus Capacity', 'value': focusScore, 'icon': Icons.center_focus_strong_rounded, 'color': focusColor,
        'desc': 'Based on screen breaks and session lengths'},
-      {'label': 'Memory Risk', 'value': memoryRisk, 'icon': Icons.psychology_rounded, 'color': memoryColor,
+      {'label': 'Memory Risk', 'value': memoryRisk, 'icon': Icons.extension_rounded, 'color': memoryColor,
        'desc': 'Prolonged screen use correlates with reduced memory consolidation'},
       {'label': 'Sleep Impact', 'value': sleepImpact, 'icon': Icons.bedtime_rounded, 'color': sleepColor,
        'desc': 'Blue light exposure affects melatonin production'},
@@ -3163,19 +3283,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ===================== ANIMATION HELPER =====================
   Widget _buildAnimatedWidget({required double delay, required Widget child}) {
+    // After entry animation completes, skip animation wrappers for scroll performance
+    if (_pageController.isCompleted) return child;
+
+    final curve = Interval(delay, math.min(delay + 0.3, 1.0), curve: Curves.easeOut);
     return FadeTransition(
-      opacity: CurvedAnimation(
-        parent: _pageController,
-        curve: Interval(delay, math.min(delay + 0.3, 1.0), curve: Curves.easeOut),
-      ),
+      opacity: CurvedAnimation(parent: _pageController, curve: curve),
       child: SlideTransition(
         position: Tween<Offset>(
           begin: const Offset(0, 0.15),
           end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: _pageController,
-          curve: Interval(delay, math.min(delay + 0.3, 1.0), curve: Curves.easeOut),
-        )),
+        ).animate(CurvedAnimation(parent: _pageController, curve: curve)),
         child: child,
       ),
     );

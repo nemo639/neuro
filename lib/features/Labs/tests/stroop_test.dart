@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // Test phases
-enum StroopPhase { instructions, practice, test, completed }
+enum StroopPhase { instructions, practice, practiceComplete, test, completed }
 
 class StroopTestScreen extends StatefulWidget {
   const StroopTestScreen({super.key});
@@ -246,8 +246,11 @@ class _StroopTestScreenState extends State<StroopTestScreen>
       
       if (_currentTrial >= maxTrials) {
         if (_isPractice) {
-          // Move to actual test
-          _startTest();
+          // Show transition screen before actual test
+          setState(() {
+            _currentPhase = StroopPhase.practiceComplete;
+            _showingStimulus = false;
+          });
         } else {
           // Test complete
           setState(() {
@@ -451,6 +454,8 @@ class _StroopTestScreenState extends State<StroopTestScreen>
         return 'Read instructions carefully';
       case StroopPhase.practice:
         return 'Practice round';
+      case StroopPhase.practiceComplete:
+        return 'Practice complete!';
       case StroopPhase.test:
         return 'Tap the INK COLOR, not the word';
       case StroopPhase.completed:
@@ -462,6 +467,8 @@ class _StroopTestScreenState extends State<StroopTestScreen>
     double progress = 0;
     if (_currentPhase == StroopPhase.practice) {
       progress = _currentTrial / _practiceTrials * 0.15;
+    } else if (_currentPhase == StroopPhase.practiceComplete) {
+      progress = 0.15;
     } else if (_currentPhase == StroopPhase.test) {
       progress = 0.15 + (_currentTrial / _testTrials * 0.85);
     } else if (_currentPhase == StroopPhase.completed) {
@@ -514,9 +521,65 @@ class _StroopTestScreenState extends State<StroopTestScreen>
       case StroopPhase.practice:
       case StroopPhase.test:
         return _buildTestPhase();
+      case StroopPhase.practiceComplete:
+        return _buildPracticeCompletePhase();
       case StroopPhase.completed:
         return _buildCompletedPhase();
     }
+  }
+
+  Widget _buildPracticeCompletePhase() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_rounded, color: Color(0xFF10B981), size: 40),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Practice Complete!',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Great job! You\'re now familiar with the test.\nThe actual test will begin next — your responses will be recorded.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.black.withOpacity(0.5), height: 1.5),
+            ),
+            const SizedBox(height: 32),
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                _startTest();
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Start Test',
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildInstructionsPhase() {
@@ -794,22 +857,22 @@ class _StroopTestScreenState extends State<StroopTestScreen>
 
   Widget _buildColorButtons() {
     final isActive = _showingStimulus && !_showingFeedback;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_shuffledColors.length, (index) {
-        final colorName = _shuffledColors[index];
-        final color = _colors[colorName]!;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(_shuffledColors.length, (index) {
+          final colorName = _shuffledColors[index];
+          final color = _colors[colorName]!;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: AnimatedOpacity(
+          return AnimatedOpacity(
             opacity: isActive ? 1.0 : 0.5,
             duration: const Duration(milliseconds: 200),
             child: GestureDetector(
               onTap: isActive ? () => _handleResponse(colorName) : null,
               child: Container(
-                width: 72,
-                height: 72,
+                width: 68,
+                height: 68,
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.circular(16),
@@ -833,9 +896,9 @@ class _StroopTestScreenState extends State<StroopTestScreen>
                 ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 

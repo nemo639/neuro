@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/shimmer_loading.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 import 'package:image_picker/image_picker.dart';
 
 class DoctorEditProfileScreen extends StatefulWidget {
@@ -439,8 +441,37 @@ class _DoctorEditProfileScreenState extends State<DoctorEditProfileScreen> with 
     if (_isLoadingData) {
       return Scaffold(
         backgroundColor: bgColor,
-        body: Center(
-          child: CircularProgressIndicator(color: primaryTeal),
+        body: SafeArea(
+          child: ShimmerLoading(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      SkeletonBox(width: 40, height: 40, borderRadius: 12),
+                      const SizedBox(width: 16),
+                      SkeletonLine(width: 140),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  SkeletonCircle(size: 100),
+                  const SizedBox(height: 30),
+                  ...List.generate(4, (_) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: SkeletonBox(width: double.infinity, height: 56, borderRadius: 12),
+                  )),
+                  const SizedBox(height: 8),
+                  SkeletonCard(height: 80),
+                  const SizedBox(height: 16),
+                  SkeletonCard(height: 80),
+                  const SizedBox(height: 24),
+                  SkeletonBox(width: double.infinity, height: 56, borderRadius: 16),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     }
@@ -1157,14 +1188,7 @@ class _DoctorEditProfileScreenState extends State<DoctorEditProfileScreen> with 
             ),
             child: Center(
               child: _isLoading
-                  ? SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(primaryTeal),
-                      ),
-                    )
+                  ? const LoadingBars(color: Colors.white, height: 20)
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

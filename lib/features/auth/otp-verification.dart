@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String email;
@@ -264,14 +265,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     SnackBar(
       content: Row(
         children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ),
+          const LoadingBars(color: Colors.white, height: 16),
           const SizedBox(width: 12),
           const Text(
             'Sending new code...',
@@ -721,14 +715,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               ),
               child: Center(
                 child: _isLoading
-                    ? SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(mintGreen),
-                        ),
-                      )
+                    ? const LoadingBars(color: Colors.white, height: 20)
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -945,14 +932,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               ),
             ),
             const SizedBox(height: 20),
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(greenAccent),
-              ),
-            ),
+            LoadingBars(color: greenAccent, height: 20),
           ],
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:neuroverse/features/auth/register.dart';
 import 'package:neuroverse/features/auth/forgot_password_screen.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -486,15 +487,15 @@ bool _validateEmailSimple(String email) {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 50),
+                    const SizedBox(height: 20),
                     _buildLogo(),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
                     _buildWelcomeHeader(),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
                     _buildLoginForm(),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
                     _buildSocialSection(),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -968,14 +969,7 @@ bool _validateEmailSimple(String email) {
         ),
         child: Center(
           child: isLoading
-              ? SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(mintGreen),
-                  ),
-                )
+              ? const LoadingBars(color: Colors.white, height: 20)
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -1048,9 +1042,9 @@ bool _validateEmailSimple(String email) {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         // Social Buttons
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1061,21 +1055,21 @@ bool _validateEmailSimple(String email) {
             ),
             const SizedBox(width: 16),
             _buildSocialButton(
-              child: _buildAppleLogo(),
+              child: const Icon(Icons.apple_rounded, color: Colors.white, size: 28),
               backgroundColor: Colors.black,
               onTap: () => _handleSocialLogin('Apple'),
             ),
             const SizedBox(width: 16),
             _buildSocialButton(
-              child: _buildFacebookLogo(),
+              child: const Text('f', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800, fontFamily: 'Arial')),
               backgroundColor: const Color(0xFF1877F2),
               onTap: () => _handleSocialLogin('Facebook'),
             ),
           ],
         ),
-        
+
         const SizedBox(height: 32),
-        
+
         // Sign Up Link
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1118,113 +1112,7 @@ bool _validateEmailSimple(String email) {
             ),
           ],
         ),
-        
-        // ==================== DOCTOR & ADMIN SIGN-IN ====================
-        const SizedBox(height: 28),
-        
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                height: 1,
-                color: Colors.black.withOpacity(0.08),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Healthcare Professional?',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black.withOpacity(0.4),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Container(
-                height: 1,
-                color: Colors.black.withOpacity(0.08),
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 20),
-        
-        Row(
-          children: [
-            Expanded(
-              child: _buildProfessionalButton(
-                icon: Icons.medical_services_rounded,
-                label: 'Sign in as Doctor',
-                color: const Color(0xFF0D9488),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.pushNamed(context, '/doctor-login');
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildProfessionalButton(
-                icon: Icons.admin_panel_settings_rounded,
-                label: 'Continue as Admin',
-                color: const Color(0xFF7C3AED),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.pushNamed(context, '/admin-login');
-                },
-              ),
-            ),
-          ],
-        ),
       ],
-    ),
-  );
-}
-
-// Helper method for professional buttons
-Widget _buildProfessionalButton({
-  required IconData icon,
-  required String label,
-  required Color color,
-  required VoidCallback onTap,
-}) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
     ),
   );
 }
@@ -1266,27 +1154,7 @@ Widget _buildProfessionalButton({
   Widget _buildGoogleLogo() {
     return CustomPaint(
       size: const Size(24, 24),
-      painter: GoogleLogoPainter(),
-    );
-  }
-
-  Widget _buildAppleLogo() {
-    return const Icon(
-      Icons.apple_rounded,
-      color: Colors.white,
-      size: 28,
-    );
-  }
-
-  Widget _buildFacebookLogo() {
-    return const Text(
-      'f',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 28,
-        fontWeight: FontWeight.w800,
-        fontFamily: 'Arial',
-      ),
+      painter: _GoogleLogoPainter(),
     );
   }
 
@@ -1294,7 +1162,7 @@ Widget _buildProfessionalButton({
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Continue with $provider',
+          '$provider sign-in coming soon',
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: darkCard,
@@ -1304,6 +1172,7 @@ Widget _buildProfessionalButton({
       ),
     );
   }
+
 
   Widget _buildAnimatedWidget({required double delay, required Widget child}) {
     return FadeTransition(
@@ -1373,83 +1242,27 @@ class BrainLogoPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class GoogleLogoPainter extends CustomPainter {
+class _GoogleLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-    
-    // Blue arc (top right)
-    final bluePaint = Paint()
-      ..color = const Color(0xFF4285F4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius - 2),
-      -math.pi / 4,
-      -math.pi / 2,
-      false,
-      bluePaint,
-    );
-    
-    // Green arc (bottom right)
-    final greenPaint = Paint()
-      ..color = const Color(0xFF34A853)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius - 2),
-      math.pi / 4,
-      math.pi / 2,
-      false,
-      greenPaint,
-    );
-    
-    // Yellow arc (bottom left)
-    final yellowPaint = Paint()
-      ..color = const Color(0xFFFBBC05)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius - 2),
-      math.pi * 3 / 4,
-      math.pi / 2,
-      false,
-      yellowPaint,
-    );
-    
-    // Red arc (top left)
-    final redPaint = Paint()
-      ..color = const Color(0xFFEA4335)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius - 2),
-      -math.pi * 3 / 4,
-      -math.pi / 2,
-      false,
-      redPaint,
-    );
-    
-    // Blue horizontal line
-    canvas.drawLine(
-      Offset(center.dx, center.dy),
-      Offset(center.dx + radius - 2, center.dy),
-      bluePaint..strokeWidth = 4,
-    );
+
+    final bluePaint = Paint()..color = const Color(0xFF4285F4)..style = PaintingStyle.stroke..strokeWidth = 4..strokeCap = StrokeCap.round;
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius - 2), -math.pi / 4, -math.pi / 2, false, bluePaint);
+
+    final greenPaint = Paint()..color = const Color(0xFF34A853)..style = PaintingStyle.stroke..strokeWidth = 4..strokeCap = StrokeCap.round;
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius - 2), math.pi / 4, math.pi / 2, false, greenPaint);
+
+    final yellowPaint = Paint()..color = const Color(0xFFFBBC05)..style = PaintingStyle.stroke..strokeWidth = 4..strokeCap = StrokeCap.round;
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius - 2), math.pi * 3 / 4, math.pi / 2, false, yellowPaint);
+
+    final redPaint = Paint()..color = const Color(0xFFEA4335)..style = PaintingStyle.stroke..strokeWidth = 4..strokeCap = StrokeCap.round;
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius - 2), -math.pi * 3 / 4, -math.pi / 2, false, redPaint);
+
+    canvas.drawLine(Offset(center.dx, center.dy), Offset(center.dx + radius - 2, center.dy), bluePaint..strokeWidth = 4);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-
-  
 }
-

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/shimmer_loading.dart';
 
 class TestsScreen extends StatefulWidget {
   const TestsScreen({super.key});
@@ -58,7 +59,7 @@ Map<String, int> _categoryCompletedTests = {};
     TestCategory(
       title: 'Cognitive & Memory',
       description: 'Mental agility and memory assessment',
-      icon: Icons.hub_rounded,
+      icon: Icons.extension_rounded,
       color: Color(0xFF8B5CF6),
       bgColor: Color(0xFFF3E8FF),
       route: '/test/cognitive-memory',
@@ -72,7 +73,7 @@ Map<String, int> _categoryCompletedTests = {};
     TestCategory(
       title: 'Motor Functions',
       description: 'Movement and coordination tests',
-      icon: Icons.pan_tool_rounded,
+      icon: Icons.gesture_rounded,
       color: Color(0xFFF97316),
       bgColor: Color(0xFFFFF7ED),
       route: '/test/motor-functions',
@@ -187,12 +188,53 @@ Map<String, int> _categoryCompletedTests = {};
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );}
+      return Scaffold(
+        backgroundColor: bgColor,
+        body: SafeArea(
+          child: ShimmerLoading(
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  // Header
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
+                    SkeletonLine(width: 120, height: 22),
+                    SkeletonCircle(size: 40),
+                  ]),
+                  const SizedBox(height: 8),
+                  const SkeletonLine(width: 220, height: 14),
+                  const SizedBox(height: 24),
+                  // Progress card
+                  const SkeletonBox(width: double.infinity, height: 100, borderRadius: 20),
+                  const SizedBox(height: 24),
+                  // Category tabs
+                  Row(children: const [
+                    SkeletonBox(width: 80, height: 36, borderRadius: 18),
+                    SizedBox(width: 10),
+                    SkeletonBox(width: 80, height: 36, borderRadius: 18),
+                    SizedBox(width: 10),
+                    SkeletonBox(width: 80, height: 36, borderRadius: 18),
+                  ]),
+                  const SizedBox(height: 24),
+                  // Test cards
+                  const SkeletonBox(width: double.infinity, height: 90, borderRadius: 16),
+                  const SizedBox(height: 12),
+                  const SkeletonBox(width: double.infinity, height: 90, borderRadius: 16),
+                  const SizedBox(height: 12),
+                  const SkeletonBox(width: double.infinity, height: 90, borderRadius: 16),
+                  const SizedBox(height: 12),
+                  const SkeletonBox(width: double.infinity, height: 90, borderRadius: 16),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(

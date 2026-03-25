@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -221,10 +222,45 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
-        body: const Center(child: CircularProgressIndicator()),
+        body: SafeArea(
+          child: ShimmerLoading(
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  // Header
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
+                    SkeletonLine(width: 120, height: 22),
+                    SkeletonCircle(size: 40),
+                  ]),
+                  const SizedBox(height: 8),
+                  const SkeletonLine(width: 200, height: 14),
+                  const SizedBox(height: 24),
+                  // Stats row
+                  Row(children: const [
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 80, borderRadius: 16)),
+                    SizedBox(width: 12),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: 80, borderRadius: 16)),
+                  ]),
+                  const SizedBox(height: 24),
+                  // Report list
+                  const SkeletonListTile(),
+                  const SkeletonListTile(),
+                  const SkeletonListTile(),
+                  const SkeletonListTile(),
+                  const SkeletonListTile(),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ),
       );
     }
-    
+
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
@@ -1136,7 +1172,20 @@ class _GenerateReportSheetState extends State<_GenerateReportSheet> {
           // Sessions List
           Expanded(
             child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? ShimmerLoading(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: const [
+                        SizedBox(height: 12),
+                        SkeletonListTile(),
+                        SkeletonListTile(),
+                        SkeletonListTile(),
+                        SkeletonListTile(),
+                      ],
+                    ),
+                  ),
+                )
               : _errorMessage != null
                 ? Center(
                     child: Padding(

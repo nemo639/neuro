@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 enum FacialPhase { instructions, resting, blinking, smiling, expressions, completed }
@@ -894,7 +895,7 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
         else
           Container(
             color: Colors.grey[900],
-            child: const Center(child: CircularProgressIndicator(color: pinkAccent)),
+            child: const Center(child: LoadingBars(color: pinkAccent, height: 28)),
           ),
 
         // Face guide oval

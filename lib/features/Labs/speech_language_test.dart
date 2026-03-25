@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/loading_bars.dart';
 
 class SpeechLanguageTestScreen extends StatefulWidget {
   const SpeechLanguageTestScreen({super.key});
@@ -293,7 +294,7 @@ void _showCompleteDialog() {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: _isSubmitting
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              ? const LoadingBars(color: Colors.white, height: 18, barCount: 5)
               : const Text('Get Results', style: TextStyle(color: Colors.white)),
         ),
       ],
