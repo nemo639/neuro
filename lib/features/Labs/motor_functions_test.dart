@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/responsive.dart';
 
 class MotorFunctionsTestScreen extends StatefulWidget {
   const MotorFunctionsTestScreen({super.key});
@@ -224,6 +225,7 @@ void _showCompleteDialog() {
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return WillPopScope(
     onWillPop: () async {
       if (_sessionId != null && completedCount == 0) {
@@ -239,17 +241,17 @@ void _showCompleteDialog() {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
-              _buildHeader(),
-              const SizedBox(height: 24),
-              _buildAboutCard(),
-              const SizedBox(height: 20),
-              _buildProgressCard(),
-              const SizedBox(height: 24),
-              _buildBeforeYouStartCard(),
-              const SizedBox(height: 24),
-              _buildTestComponentsSection(),
-              const SizedBox(height: 30),
+              SizedBox(height: r.h(20)),
+              _buildHeader(r),
+              SizedBox(height: r.h(24)),
+              _buildAboutCard(r),
+              SizedBox(height: r.h(20)),
+              _buildProgressCard(r),
+              SizedBox(height: r.h(24)),
+              _buildBeforeYouStartCard(r),
+              SizedBox(height: r.h(24)),
+              _buildTestComponentsSection(r),
+              SizedBox(height: r.h(30)),
             ],
           ),
         ),
@@ -258,11 +260,11 @@ void _showCompleteDialog() {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
   return _buildAnimatedWidget(
     delay: 0.0,
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20)),
       child: Row(
         children: [
           GestureDetector(
@@ -274,7 +276,7 @@ void _showCompleteDialog() {
                   builder: (ctx) => AlertDialog(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     title: const Text('Exit Test?', style: TextStyle(fontWeight: FontWeight.w700)),
-                    content: const Text('You haven’t completed any tests yet. Progress will be lost.'),
+                    content: const Text("You haven't completed any tests yet. Progress will be lost."),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
@@ -296,56 +298,56 @@ void _showCompleteDialog() {
               }
             },
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.w(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Motor Functions',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: r.sp(22),
                     fontWeight: FontWeight.w800,
                     color: Colors.black87,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const Text(
+                Text(
                   'Assessment',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: r.sp(22),
                     fontWeight: FontWeight.w800,
                     color: Colors.black87,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: r.h(4)),
                 Row(
                   children: [
                     Icon(
                       Icons.schedule_rounded,
-                      size: 14,
+                      size: r.dp(14),
                       color: Colors.black.withOpacity(0.5),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: r.w(4)),
                     Text(
                       '8-10 minutes',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: r.sp(13),
                         fontWeight: FontWeight.w500,
                         color: Colors.black.withOpacity(0.5),
                       ),
@@ -356,16 +358,16 @@ void _showCompleteDialog() {
             ),
           ),
           Container(
-            width: 50,
-            height: 50,
+            width: r.dp(50),
+            height: r.dp(50),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF7ED),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.w(16)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.gesture_rounded,
-              color: Color(0xFFF97316),
-              size: 26,
+              color: const Color(0xFFF97316),
+              size: r.dp(26),
             ),
           ),
         ],
@@ -375,16 +377,16 @@ void _showCompleteDialog() {
 }
 
 
-  Widget _buildAboutCard() {
+  Widget _buildAboutCard(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.1,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(r.w(20)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(r.w(22)),
             border: Border.all(color: Colors.black.withOpacity(0.06)),
             boxShadow: [
               BoxShadow(
@@ -398,36 +400,36 @@ void _showCompleteDialog() {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: r.dp(44),
+                height: r.dp(44),
                 decoration: BoxDecoration(
                   color: orangeAccent.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(r.w(14)),
                 ),
                 child: Icon(
                   Icons.info_outline_rounded,
                   color: orangeAccent,
-                  size: 22,
+                  size: r.dp(22),
                 ),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: r.w(14)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'About This Test',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: r.sp(16),
                         fontWeight: FontWeight.w700,
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: r.h(8)),
                     Text(
                       'Movement and coordination assessment to detect motor symptoms including tremor, bradykinesia, and fine motor control difficulties associated with neurological conditions.',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: r.sp(13),
                         fontWeight: FontWeight.w500,
                         color: Colors.black.withOpacity(0.6),
                         height: 1.5,
@@ -443,18 +445,18 @@ void _showCompleteDialog() {
     );
   }
 
-  Widget _buildProgressCard() {
+  Widget _buildProgressCard(Responsive r) {
     double progress = completedCount / totalCount;
-    
+
     return _buildAnimatedWidget(
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(r.w(20)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(r.w(22)),
             border: Border.all(color: Colors.black.withOpacity(0.06)),
             boxShadow: [
               BoxShadow(
@@ -470,24 +472,24 @@ void _showCompleteDialog() {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Progress',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: r.sp(16),
                       fontWeight: FontWeight.w700,
                       color: Colors.black87,
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(r.w(12)),
                     ),
                     child: Text(
                       '$completedCount/$totalCount completed',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: r.sp(12),
                         fontWeight: FontWeight.w700,
                         color: orangeAccent,
                       ),
@@ -495,12 +497,12 @@ void _showCompleteDialog() {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               Container(
-                height: 10,
+                height: r.h(10),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(r.w(10)),
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -509,7 +511,7 @@ void _showCompleteDialog() {
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 500),
                           width: constraints.maxWidth * progress,
-                          height: 10,
+                          height: r.h(10),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -517,7 +519,7 @@ void _showCompleteDialog() {
                                 orangeAccent,
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(r.w(10)),
                           ),
                         ),
                       ],
@@ -532,7 +534,7 @@ void _showCompleteDialog() {
     );
   }
 
-  Widget _buildBeforeYouStartCard() {
+  Widget _buildBeforeYouStartCard(Responsive r) {
     final tips = [
       'Place your device on a stable, flat surface',
       'Use your finger to draw on the screen',
@@ -543,12 +545,12 @@ void _showCompleteDialog() {
     return _buildAnimatedWidget(
       delay: 0.2,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(r.w(20)),
           decoration: BoxDecoration(
             color: darkCard,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(r.w(22)),
             boxShadow: [
               BoxShadow(
                 color: darkCard.withOpacity(0.3),
@@ -563,50 +565,50 @@ void _showCompleteDialog() {
               Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: r.dp(36),
+                    height: r.dp(36),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFED7AA),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(r.w(10)),
                     ),
                     child: Icon(
                       Icons.lightbulb_outline_rounded,
                       color: orangeAccent,
-                      size: 20,
+                      size: r.dp(20),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  const Text(
+                  SizedBox(width: r.w(12)),
+                  Text(
                     'Before You Start',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: r.sp(16),
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               ...tips.map((tip) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.only(bottom: r.h(12)),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 6,
-                      height: 6,
-                      margin: const EdgeInsets.only(top: 6),
+                      width: r.dp(6),
+                      height: r.dp(6),
+                      margin: EdgeInsets.only(top: r.h(6)),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFED7AA),
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: r.w(12)),
                     Expanded(
                       child: Text(
                         tip,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: r.sp(13),
                           fontWeight: FontWeight.w500,
                           color: Colors.white.withOpacity(0.8),
                           height: 1.4,
@@ -623,45 +625,45 @@ void _showCompleteDialog() {
     );
   }
 
-  Widget _buildTestComponentsSection() {
+  Widget _buildTestComponentsSection(Responsive r) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildAnimatedWidget(
           delay: 0.25,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: const Text(
+            padding: EdgeInsets.symmetric(horizontal: r.w(20)),
+            child: Text(
               'Test Components',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: r.sp(20),
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: r.h(16)),
         ...testComponents.asMap().entries.map((entry) {
           int index = entry.key;
           TestComponent test = entry.value;
           return _buildAnimatedWidget(
             delay: 0.3 + (index * 0.05),
-            child: _buildTestComponentCard(test),
+            child: _buildTestComponentCard(r, test),
           );
         }).toList(),
       ],
     );
   }
 
-  Widget _buildTestComponentCard(TestComponent test) {
+  Widget _buildTestComponentCard(Responsive r, TestComponent test) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(6)),
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(r.w(18)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(r.w(20)),
           border: Border.all(color: Colors.black.withOpacity(0.06)),
           boxShadow: [
             BoxShadow(
@@ -676,21 +678,21 @@ void _showCompleteDialog() {
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: r.dp(48),
+                  height: r.dp(48),
                   decoration: BoxDecoration(
-                    color: test.isCompleted 
+                    color: test.isCompleted
                         ? greenAccent.withOpacity(0.15)
                         : orangeAccent.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(r.w(14)),
                   ),
                   child: Icon(
                     test.isCompleted ? Icons.check_circle_rounded : test.icon,
                     color: test.isCompleted ? greenAccent : orangeAccent,
-                    size: 24,
+                    size: r.dp(24),
                   ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: r.w(14)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,22 +702,22 @@ void _showCompleteDialog() {
                         children: [
                           Text(
                             test.name,
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: r.sp(16),
                               fontWeight: FontWeight.w700,
                               color: Colors.black87,
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(5)),
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(r.w(8)),
                             ),
                             child: Text(
                               test.duration,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: r.sp(11),
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black.withOpacity(0.5),
                               ),
@@ -723,11 +725,11 @@ void _showCompleteDialog() {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: r.h(4)),
                       Text(
                         test.description,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: r.sp(13),
                           fontWeight: FontWeight.w500,
                           color: Colors.black.withOpacity(0.5),
                         ),
@@ -737,14 +739,14 @@ void _showCompleteDialog() {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: r.h(14)),
             if (test.isCompleted)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(vertical: r.h(12)),
                 decoration: BoxDecoration(
                   color: greenAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(r.w(14)),
                   border: Border.all(
                     color: greenAccent.withOpacity(0.3),
                   ),
@@ -755,13 +757,13 @@ void _showCompleteDialog() {
                     Icon(
                       Icons.check_circle_rounded,
                       color: greenAccent,
-                      size: 18,
+                      size: r.dp(18),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: r.w(8)),
                     Text(
                       'Completed',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: r.sp(14),
                         fontWeight: FontWeight.w700,
                         color: greenAccent,
                       ),
@@ -773,7 +775,7 @@ void _showCompleteDialog() {
               GestureDetector(
                onTap: () async {
     HapticFeedback.mediumImpact();
-    
+
     String routeName = '';
     if (test.name == 'Resting Tremor') {
       routeName = '/test/resting-tremor-test';
@@ -802,10 +804,10 @@ void _showCompleteDialog() {
   },
   child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: r.h(14)),
                   decoration: BoxDecoration(
                     color: orangeAccent,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(r.w(14)),
                     boxShadow: [
                       BoxShadow(
                         color: orangeAccent.withOpacity(0.4),
@@ -814,19 +816,19 @@ void _showCompleteDialog() {
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.play_arrow_rounded,
                         color: Colors.white,
-                        size: 20,
+                        size: r.dp(20),
                       ),
-                      SizedBox(width: 8),
+                      SizedBox(width: r.w(8)),
                       Text(
                         'Start Test',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: r.sp(14),
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/loading_bars.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import '../../../core/responsive.dart';
 
 enum FacialPhase { instructions, resting, blinking, smiling, expressions, completed }
 
@@ -536,7 +537,7 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
 
   void _startPhaseTimer(VoidCallback onComplete) {
     _testTimer?.cancel();
-    _testTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _testTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -630,55 +631,56 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
   // ------------------------------------------------------------------ //
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
-            if (_isRecording) _buildRecordingBar(),
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
+            if (_isRecording) _buildRecordingBar(r),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44, height: 44,
+              width: r.w(44), height: r.h(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Facial Analysis', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                Text(_getPhaseText(), style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                Text('Facial Analysis', style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800)),
+                Text(_getPhaseText(), style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600])),
               ],
             ),
           ),
-          _buildPhaseIndicator(),
+          _buildPhaseIndicator(r),
         ],
       ),
     );
   }
 
-  Widget _buildPhaseIndicator() {
+  Widget _buildPhaseIndicator(Responsive r) {
     Color color;
     String text;
     IconData icon;
@@ -699,13 +701,13 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+      padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(6)),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(r.dp(20))),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 14),
-          const SizedBox(width: 4),
-          Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          Icon(icon, color: color, size: r.dp(14)),
+          SizedBox(width: r.w(4)),
+          Text(text, style: TextStyle(color: color, fontSize: r.sp(11), fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -722,7 +724,7 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0;
     final total = _restingDuration + _blinkingDuration + _smilingDuration + _expressionsDuration;
     switch (_currentPhase) {
@@ -742,102 +744,102 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
-      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(3)),
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
+      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(r.dp(3))),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
         widthFactor: progress.clamp(0.0, 1.0),
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [pinkAccent, orangeAccent]),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.dp(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 4))],
+        borderRadius: BorderRadius.circular(r.dp(24)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: r.dp(20), offset: Offset(r.w(0), r.h(4)))],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: _buildPhaseContent(),
+        borderRadius: BorderRadius.circular(r.dp(24)),
+        child: _buildPhaseContent(r),
       ),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
-      case FacialPhase.instructions: return _buildInstructionsPhase();
-      case FacialPhase.resting: return _buildCameraPhase(_buildRestingOverlay());
-      case FacialPhase.blinking: return _buildCameraPhase(_buildBlinkingOverlay());
-      case FacialPhase.smiling: return _buildCameraPhase(_buildSmilingOverlay());
-      case FacialPhase.expressions: return _buildCameraPhase(_buildExpressionsOverlay());
-      case FacialPhase.completed: return _buildCompletedPhase();
+      case FacialPhase.instructions: return _buildInstructionsPhase(r);
+      case FacialPhase.resting: return _buildCameraPhase(r, _buildRestingOverlay(r));
+      case FacialPhase.blinking: return _buildCameraPhase(r, _buildBlinkingOverlay(r));
+      case FacialPhase.smiling: return _buildCameraPhase(r, _buildSmilingOverlay(r));
+      case FacialPhase.expressions: return _buildCameraPhase(r, _buildExpressionsOverlay(r));
+      case FacialPhase.completed: return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.dp(20)),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80, height: 80,
+            width: r.w(80), height: r.h(80),
             decoration: BoxDecoration(color: pinkAccent.withOpacity(0.1), shape: BoxShape.circle),
-            child: const Icon(Icons.face_retouching_natural_rounded, color: pinkAccent, size: 40),
+            child: Icon(Icons.face_retouching_natural_rounded, color: pinkAccent, size: r.dp(40)),
           ),
-          const SizedBox(height: 20),
-          const Text('Facial Analysis', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          Text('AI-powered facial movement analysis', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
+          Text('Facial Analysis', style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w800)),
+          SizedBox(height: r.h(8)),
+          Text('AI-powered facial movement analysis', style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600])),
+          SizedBox(height: r.h(20)),
           Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: softLavender.withOpacity(0.3), borderRadius: BorderRadius.circular(14)),
+            padding: EdgeInsets.all(r.dp(14)),
+            decoration: BoxDecoration(color: softLavender.withOpacity(0.3), borderRadius: BorderRadius.circular(r.dp(14))),
             child: Column(
               children: [
-                _buildPhasePreview(Icons.sentiment_neutral_rounded, 'Resting Face', '${_restingDuration}s', cyanAccent),
-                const SizedBox(height: 10),
-                _buildPhasePreview(Icons.remove_red_eye_rounded, 'Natural Blinking', '${_blinkingDuration}s', blueAccent),
-                const SizedBox(height: 10),
-                _buildPhasePreview(Icons.sentiment_very_satisfied_rounded, 'Smile Task', '${_smilingDuration}s', orangeAccent),
-                const SizedBox(height: 10),
-                _buildPhasePreview(Icons.theater_comedy_rounded, 'Expression Series', '${_expressionsDuration}s', pinkAccent),
+                _buildPhasePreview(r, Icons.sentiment_neutral_rounded, 'Resting Face', '${_restingDuration}s', cyanAccent),
+                SizedBox(height: r.h(10)),
+                _buildPhasePreview(r, Icons.remove_red_eye_rounded, 'Natural Blinking', '${_blinkingDuration}s', blueAccent),
+                SizedBox(height: r.h(10)),
+                _buildPhasePreview(r, Icons.sentiment_very_satisfied_rounded, 'Smile Task', '${_smilingDuration}s', orangeAccent),
+                SizedBox(height: r.h(10)),
+                _buildPhasePreview(r, Icons.theater_comedy_rounded, 'Expression Series', '${_expressionsDuration}s', pinkAccent),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Tips
-          _buildTipBox(Icons.lightbulb_outline_rounded, 'Good lighting — face a window or lamp', blueAccent),
-          const SizedBox(height: 8),
-          _buildTipBox(Icons.straighten_rounded, 'Hold phone at arm\'s length, face centered', orangeAccent),
-          const SizedBox(height: 8),
-          _buildTipBox(Icons.remove_red_eye_outlined, 'Remove glasses if possible for better detection', pinkAccent),
-          const SizedBox(height: 24),
+          _buildTipBox(r, Icons.lightbulb_outline_rounded, 'Good lighting — face a window or lamp', blueAccent),
+          SizedBox(height: r.h(8)),
+          _buildTipBox(r, Icons.straighten_rounded, 'Hold phone at arm\'s length, face centered', orangeAccent),
+          SizedBox(height: r.h(8)),
+          _buildTipBox(r, Icons.remove_red_eye_outlined, 'Remove glasses if possible for better detection', pinkAccent),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _startResting,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: pinkAccent,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: pinkAccent.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8))],
+                borderRadius: BorderRadius.circular(r.dp(16)),
+                boxShadow: [BoxShadow(color: pinkAccent.withOpacity(0.4), blurRadius: r.dp(20), offset: Offset(r.w(0), r.h(8)))],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.videocam_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
-                  Text('Start Camera', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.videocam_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
+                  Text('Start Camera', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -847,37 +849,37 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
     );
   }
 
-  Widget _buildTipBox(IconData icon, String text, Color color) {
+  Widget _buildTipBox(Responsive r, IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+      padding: EdgeInsets.all(r.dp(10)),
+      decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(r.dp(10))),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: TextStyle(fontSize: 12, color: Colors.grey[700]))),
+          Icon(icon, color: color, size: r.dp(18)),
+          SizedBox(width: r.w(10)),
+          Expanded(child: Text(text, style: TextStyle(fontSize: r.sp(12), color: Colors.grey[700]))),
         ],
       ),
     );
   }
 
-  Widget _buildPhasePreview(IconData icon, String title, String duration, Color color) {
+  Widget _buildPhasePreview(Responsive r, IconData icon, String title, String duration, Color color) {
     return Row(
       children: [
         Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: color, size: 18),
+          width: r.w(36), height: r.h(36),
+          decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(r.dp(10))),
+          child: Icon(icon, color: color, size: r.dp(18)),
         ),
-        const SizedBox(width: 12),
-        Expanded(child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-        Text(duration, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+        SizedBox(width: r.w(12)),
+        Expanded(child: Text(title, style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w600))),
+        Text(duration, style: TextStyle(fontSize: r.sp(12), color: Colors.grey[500])),
       ],
     );
   }
 
   // ---- Camera phase with real preview ----
-  Widget _buildCameraPhase(Widget overlay) {
+  Widget _buildCameraPhase(Responsive r, Widget overlay) {
     return Stack(
       children: [
         // Real camera preview
@@ -895,19 +897,19 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
         else
           Container(
             color: Colors.grey[900],
-            child: const Center(child: LoadingBars(color: pinkAccent, height: 28)),
+            child: Center(child: LoadingBars(color: pinkAccent, height: r.h(28))),
           ),
 
         // Face guide oval
         Center(
           child: Container(
-            width: 200, height: 260,
+            width: r.w(200), height: r.h(260),
             decoration: BoxDecoration(
               border: Border.all(
                 color: _faceDetected ? greenAccent.withOpacity(0.8) : redAccent.withOpacity(0.6),
-                width: 2.5,
+                width: r.w(2.5),
               ),
-              borderRadius: BorderRadius.circular(100),
+              borderRadius: BorderRadius.circular(r.dp(100)),
             ),
           ),
         ),
@@ -919,21 +921,21 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
             left: 16,
             right: 16,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: r.w(14), vertical: r.h(8)),
               decoration: BoxDecoration(
                 color: (_faceDetected ? orangeAccent : redAccent).withOpacity(0.9),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(r.dp(12)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(_faceDetected ? Icons.info_outline : Icons.warning_rounded,
-                      color: Colors.white, size: 16),
-                  const SizedBox(width: 8),
+                      color: Colors.white, size: r.dp(16)),
+                  SizedBox(width: r.w(8)),
                   Flexible(
                     child: Text(_faceGuidance,
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                        style: TextStyle(color: Colors.white, fontSize: r.sp(12), fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -946,58 +948,58 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
     );
   }
 
-  Widget _buildRestingOverlay() {
+  Widget _buildRestingOverlay(Responsive r) {
     return Positioned(
       bottom: 16, left: 16, right: 16,
       child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: Colors.black.withOpacity(0.75), borderRadius: BorderRadius.circular(14)),
+        padding: EdgeInsets.all(r.dp(14)),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.75), borderRadius: BorderRadius.circular(r.dp(14))),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.sentiment_neutral_rounded, color: cyanAccent, size: 28),
-            const SizedBox(height: 6),
-            const Text('Keep a neutral expression', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-            Text('${_timeRemaining}s remaining', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+            Icon(Icons.sentiment_neutral_rounded, color: cyanAccent, size: r.dp(28)),
+            SizedBox(height: r.h(6)),
+            Text('Keep a neutral expression', style: TextStyle(color: Colors.white, fontSize: r.sp(14), fontWeight: FontWeight.w600)),
+            Text('${_timeRemaining}s remaining', style: TextStyle(color: Colors.grey[400], fontSize: r.sp(12))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBlinkingOverlay() {
+  Widget _buildBlinkingOverlay(Responsive r) {
     return Positioned(
       bottom: 16, left: 16, right: 16,
       child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: Colors.black.withOpacity(0.75), borderRadius: BorderRadius.circular(14)),
+        padding: EdgeInsets.all(r.dp(14)),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.75), borderRadius: BorderRadius.circular(r.dp(14))),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.remove_red_eye_rounded, color: blueAccent, size: 24),
-                const SizedBox(width: 10),
-                Text('$_blinkCount', style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700)),
-                const Text(' blinks', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                Icon(Icons.remove_red_eye_rounded, color: blueAccent, size: r.dp(24)),
+                SizedBox(width: r.w(10)),
+                Text('$_blinkCount', style: TextStyle(color: Colors.white, fontSize: r.sp(28), fontWeight: FontWeight.w700)),
+                Text(' blinks', style: TextStyle(color: Colors.white70, fontSize: r.sp(14))),
               ],
             ),
-            const SizedBox(height: 4),
-            const Text('Blink naturally — don\'t force it', style: TextStyle(color: Colors.white, fontSize: 13)),
-            Text('${_timeRemaining}s remaining', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+            SizedBox(height: r.h(4)),
+            Text('Blink naturally — don\'t force it', style: TextStyle(color: Colors.white, fontSize: r.sp(13))),
+            Text('${_timeRemaining}s remaining', style: TextStyle(color: Colors.grey[400], fontSize: r.sp(12))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSmilingOverlay() {
+  Widget _buildSmilingOverlay(Responsive r) {
     return Positioned(
       bottom: 16, left: 16, right: 16,
       child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: Colors.black.withOpacity(0.75), borderRadius: BorderRadius.circular(14)),
+        padding: EdgeInsets.all(r.dp(14)),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.75), borderRadius: BorderRadius.circular(r.dp(14))),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1005,59 +1007,59 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
               animation: _pulseController,
               builder: (context, child) {
                 return Icon(Icons.sentiment_very_satisfied_rounded,
-                    color: orangeAccent, size: 36 + (_pulseController.value * 8));
+                    color: orangeAccent, size: r.dp(36) + (_pulseController.value * 8));
               },
             ),
-            const SizedBox(height: 6),
-            const Text('SMILE!', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+            SizedBox(height: r.h(6)),
+            Text('SMILE!', style: TextStyle(color: Colors.white, fontSize: r.sp(22), fontWeight: FontWeight.w800)),
             if (_smileDetected)
-              const Text('Smile detected!', style: TextStyle(color: greenAccent, fontSize: 12, fontWeight: FontWeight.w600)),
-            Text('${_timeRemaining}s remaining', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              Text('Smile detected!', style: TextStyle(color: greenAccent, fontSize: r.sp(12), fontWeight: FontWeight.w600)),
+            Text('${_timeRemaining}s remaining', style: TextStyle(color: Colors.grey[400], fontSize: r.sp(12))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildExpressionsOverlay() {
+  Widget _buildExpressionsOverlay(Responsive r) {
     final currentTask = _expressionTasks[_currentExpressionIndex];
     return Positioned(
       bottom: 16, left: 16, right: 16,
       child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: Colors.black.withOpacity(0.75), borderRadius: BorderRadius.circular(14)),
+        padding: EdgeInsets.all(r.dp(14)),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.75), borderRadius: BorderRadius.circular(r.dp(14))),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(currentTask['icon'] as IconData, color: pinkAccent, size: 36),
-            const SizedBox(height: 6),
+            Icon(currentTask['icon'] as IconData, color: pinkAccent, size: r.dp(36)),
+            SizedBox(height: r.h(6)),
             Text(currentTask['name'] as String,
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
+                style: TextStyle(color: Colors.white, fontSize: r.sp(18), fontWeight: FontWeight.w700)),
+            SizedBox(height: r.h(8)),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(_expressionTasks.length, (index) {
                 final done = index < _currentExpressionIndex;
                 final current = index == _currentExpressionIndex;
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: current ? 24 : 12, height: 8,
+                  margin: EdgeInsets.symmetric(horizontal: r.w(3)),
+                  width: current ? 24 : 12, height: r.h(8),
                   decoration: BoxDecoration(
                     color: done ? greenAccent : (current ? pinkAccent : Colors.grey[600]),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(r.dp(4)),
                   ),
                 );
               }),
             ),
-            const SizedBox(height: 6),
-            Text('${_timeRemaining}s remaining', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+            SizedBox(height: r.h(6)),
+            Text('${_timeRemaining}s remaining', style: TextStyle(color: Colors.grey[400], fontSize: r.sp(12))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     final data = _getTestData();
     final scores = data['overall_scores'] as Map<String, dynamic>;
     final combined = (scores['combined_score'] as double);
@@ -1068,19 +1070,19 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
     final hypomimia = (_expressionResults['hypomimia_score'] ?? 0).toDouble();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.dp(20)),
       child: Column(
         children: [
-          const SizedBox(height: 6),
+          SizedBox(height: r.h(6)),
 
           // Animated score ring
           SizedBox(
-            width: 140, height: 140,
+            width: r.w(140), height: r.h(140),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 130, height: 130,
+                  width: r.w(130), height: r.h(130),
                   child: TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0, end: combined / 100),
                     duration: const Duration(milliseconds: 1200),
@@ -1106,43 +1108,43 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
                       curve: Curves.easeOutCubic,
                       builder: (context, value, _) {
                         return Text('${value.toStringAsFixed(0)}%',
-                            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800));
+                            style: TextStyle(fontSize: r.sp(32), fontWeight: FontWeight.w800));
                       },
                     ),
-                    Text('Overall', style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+                    Text('Overall', style: TextStyle(fontSize: r.sp(11), color: Colors.grey[500], fontWeight: FontWeight.w500)),
                   ],
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 14),
-          const Text('Analysis Complete', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
+          SizedBox(height: r.h(14)),
+          Text('Analysis Complete', style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800)),
+          SizedBox(height: r.h(4)),
           Text('4 phases · $_framesCaptured frames analyzed',
-              style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+              style: TextStyle(fontSize: r.sp(12), color: Colors.grey[500])),
 
-          const SizedBox(height: 18),
+          SizedBox(height: r.h(18)),
 
           // Score cards row
           Row(
             children: [
-              Expanded(child: _buildScoreCard('Blink', scores['blink_score'], blueAccent, Icons.remove_red_eye_rounded)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildScoreCard('Smile', scores['smile_score'], orangeAccent, Icons.sentiment_satisfied_rounded)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildScoreCard('Expression', scores['expression_score'], pinkAccent, Icons.theater_comedy_rounded)),
+              Expanded(child: _buildScoreCard(r, 'Blink', scores['blink_score'], blueAccent, Icons.remove_red_eye_rounded)),
+              SizedBox(width: r.w(8)),
+              Expanded(child: _buildScoreCard(r, 'Smile', scores['smile_score'], orangeAccent, Icons.sentiment_satisfied_rounded)),
+              SizedBox(width: r.w(8)),
+              Expanded(child: _buildScoreCard(r, 'Expression', scores['expression_score'], pinkAccent, Icons.theater_comedy_rounded)),
             ],
           ),
 
-          const SizedBox(height: 14),
+          SizedBox(height: r.h(14)),
 
           // Detailed metrics card
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(r.dp(16)),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
               border: Border.all(color: Colors.grey.shade200),
             ),
             child: Column(
@@ -1150,50 +1152,50 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.analytics_rounded, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 6),
-                    Text('Detailed Metrics', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[700])),
+                    Icon(Icons.analytics_rounded, size: r.dp(16), color: Colors.grey[600]),
+                    SizedBox(width: r.w(6)),
+                    Text('Detailed Metrics', style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w700, color: Colors.grey[700])),
                   ],
                 ),
-                const SizedBox(height: 12),
-                _buildMetricRow('Blink Rate', '${blinkRate.toStringAsFixed(1)}/min',
+                SizedBox(height: r.h(12)),
+                _buildMetricRow(r, 'Blink Rate', '${blinkRate.toStringAsFixed(1)}/min',
                     blinkRate >= 12 && blinkRate <= 25 ? greenAccent : orangeAccent,
                     blinkRate >= 12 && blinkRate <= 25 ? 'Normal' : 'Atypical'),
-                _buildMetricRow('Smile Symmetry', '${smileSymmetry.toStringAsFixed(0)}%',
+                _buildMetricRow(r, 'Smile Symmetry', '${smileSymmetry.toStringAsFixed(0)}%',
                     smileSymmetry > 85 ? greenAccent : orangeAccent,
                     smileSymmetry > 85 ? 'Symmetric' : 'Asymmetric'),
-                _buildMetricRow('Smile Velocity', '${(smileVelocity * 100).toStringAsFixed(0)}%',
+                _buildMetricRow(r, 'Smile Velocity', '${(smileVelocity * 100).toStringAsFixed(0)}%',
                     smileVelocity > 0.5 ? greenAccent : orangeAccent,
                     smileVelocity > 0.5 ? 'Fast onset' : 'Slow onset'),
-                _buildMetricRow('Expression Range', '${expressionRange.toStringAsFixed(0)}%',
+                _buildMetricRow(r, 'Expression Range', '${expressionRange.toStringAsFixed(0)}%',
                     expressionRange > 60 ? greenAccent : orangeAccent,
                     expressionRange > 60 ? 'Wide range' : 'Limited'),
-                _buildMetricRow('Hypomimia', '${hypomimia.toStringAsFixed(0)}%',
+                _buildMetricRow(r, 'Hypomimia', '${hypomimia.toStringAsFixed(0)}%',
                     hypomimia < 40 ? greenAccent : redAccent,
                     hypomimia < 40 ? 'Low risk' : 'Elevated'),
               ],
             ),
           ),
 
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
 
           // Get Results button
           GestureDetector(
             onTap: _completeTest,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: EdgeInsets.symmetric(vertical: r.h(16)),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(colors: [pinkAccent, Color(0xFFDB2777)]),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: pinkAccent.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 6))],
+                borderRadius: BorderRadius.circular(r.dp(16)),
+                boxShadow: [BoxShadow(color: pinkAccent.withValues(alpha: 0.35), blurRadius: r.dp(16), offset: Offset(r.w(0), r.h(6)))],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 10),
-                  Text('Complete Test', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                  Icon(Icons.check_circle_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(10)),
+                  Text('Complete Test', style: TextStyle(color: Colors.white, fontSize: r.sp(16), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -1203,64 +1205,64 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
     );
   }
 
-  Widget _buildScoreCard(String title, double score, Color color, IconData icon) {
+  Widget _buildScoreCard(Responsive r, String title, double score, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      padding: EdgeInsets.symmetric(vertical: r.h(14), horizontal: r.w(8)),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(r.dp(16)),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
           Container(
-            width: 36, height: 36,
+            width: r.w(36), height: r.h(36),
             decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(icon, color: color, size: r.dp(18)),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: score),
             duration: const Duration(milliseconds: 1000),
             curve: Curves.easeOutCubic,
             builder: (context, value, _) {
               return Text('${value.toStringAsFixed(0)}%',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: color));
+                  style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800, color: color));
             },
           ),
-          Text(title, style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+          Text(title, style: TextStyle(fontSize: r.sp(11), color: Colors.grey[600], fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  Widget _buildMetricRow(String label, String value, Color statusColor, String statusText) {
+  Widget _buildMetricRow(Responsive r, String label, String value, Color statusColor, String statusText) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: r.h(10)),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[700]))),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-          const SizedBox(width: 10),
+          Expanded(child: Text(label, style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700]))),
+          Text(value, style: TextStyle(fontSize: r.sp(14), fontWeight: FontWeight.w700)),
+          SizedBox(width: r.w(10)),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(3)),
             decoration: BoxDecoration(
               color: statusColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(r.dp(6)),
             ),
             child: Text(statusText,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor)),
+                style: TextStyle(fontSize: r.sp(10), fontWeight: FontWeight.w600, color: statusColor)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecordingBar() {
+  Widget _buildRecordingBar(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: darkCard, borderRadius: BorderRadius.circular(18)),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(14)),
+      decoration: BoxDecoration(color: darkCard, borderRadius: BorderRadius.circular(r.dp(18))),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -1270,7 +1272,7 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
                 animation: _recordingController,
                 builder: (context, child) {
                   return Container(
-                    width: 12, height: 12,
+                    width: r.w(12), height: r.h(12),
                     decoration: BoxDecoration(
                       color: redAccent.withOpacity(0.5 + _recordingController.value * 0.5),
                       shape: BoxShape.circle,
@@ -1278,27 +1280,27 @@ class _FacialAnalysisTestScreenState extends State<FacialAnalysisTestScreen>
                   );
                 },
               ),
-              const SizedBox(width: 8),
-              const Text('REC', style: TextStyle(color: redAccent, fontSize: 12, fontWeight: FontWeight.w700)),
+              SizedBox(width: r.w(8)),
+              Text('REC', style: TextStyle(color: redAccent, fontSize: r.sp(12), fontWeight: FontWeight.w700)),
             ],
           ),
-          Container(width: 1, height: 36, color: Colors.white.withOpacity(0.1)),
-          _buildMiniMetric('FACE', _faceDetected ? 'YES' : 'NO', _faceDetected ? greenAccent : redAccent),
-          Container(width: 1, height: 36, color: Colors.white.withOpacity(0.1)),
-          _buildMiniMetric('FRAMES', '$_framesCaptured', blueAccent),
-          Container(width: 1, height: 36, color: Colors.white.withOpacity(0.1)),
-          _buildMiniMetric('TIME', '${_timeRemaining}s', orangeAccent),
+          Container(width: r.w(1), height: r.h(36), color: Colors.white.withOpacity(0.1)),
+          _buildMiniMetric(r, 'FACE', _faceDetected ? 'YES' : 'NO', _faceDetected ? greenAccent : redAccent),
+          Container(width: r.w(1), height: r.h(36), color: Colors.white.withOpacity(0.1)),
+          _buildMiniMetric(r, 'FRAMES', '$_framesCaptured', blueAccent),
+          Container(width: r.w(1), height: r.h(36), color: Colors.white.withOpacity(0.1)),
+          _buildMiniMetric(r, 'TIME', '${_timeRemaining}s', orangeAccent),
         ],
       ),
     );
   }
 
-  Widget _buildMiniMetric(String label, String value, Color color) {
+  Widget _buildMiniMetric(Responsive r, String label, String value, Color color) {
     return Column(
       children: [
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 4),
-        Text(value, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700)),
+        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: r.sp(10), fontWeight: FontWeight.w600)),
+        SizedBox(height: r.h(4)),
+        Text(value, style: TextStyle(color: color, fontSize: r.sp(14), fontWeight: FontWeight.w700)),
       ],
     );
   }

@@ -4,7 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:neuroverse/features/auth/register.dart';
 import 'package:neuroverse/features/auth/forgot_password_screen.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:neuroverse/core/loading_bars.dart';
+import 'package:neuroverse/core/responsive.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -65,6 +68,33 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         statusBarIconBrightness: Brightness.dark,
       ),
     );
+
+    _loadRememberedCredentials();
+  }
+
+  Future<void> _loadRememberedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getBool('user_remember_me') ?? false;
+    if (saved) {
+      setState(() {
+        rememberMe = true;
+        emailController.text = prefs.getString('user_saved_email') ?? '';
+        passwordController.text = prefs.getString('user_saved_password') ?? '';
+      });
+    }
+  }
+
+  Future<void> _saveOrClearCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (rememberMe) {
+      await prefs.setBool('user_remember_me', true);
+      await prefs.setString('user_saved_email', emailController.text.trim());
+      await prefs.setString('user_saved_password', passwordController.text);
+    } else {
+      await prefs.remove('user_remember_me');
+      await prefs.remove('user_saved_email');
+      await prefs.remove('user_saved_password');
+    }
   }
 
   @override
@@ -453,6 +483,7 @@ bool _validateEmailSimple(String email) {
     
     if (mounted) {
       if (result['success']) {
+        await _saveOrClearCredentials();
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         // Show error
@@ -471,31 +502,32 @@ bool _validateEmailSimple(String email) {
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
         children: [
           // Animated Background Elements
-          _buildAnimatedBackground(),
-          
+          _buildAnimatedBackground(r),
+
           // Main Content
           SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: r.w(24)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20),
-                    _buildLogo(),
-                    const SizedBox(height: 24),
-                    _buildWelcomeHeader(),
-                    const SizedBox(height: 24),
-                    _buildLoginForm(),
-                    const SizedBox(height: 20),
-                    _buildSocialSection(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: r.h(20)),
+                    _buildLogo(r),
+                    SizedBox(height: r.h(24)),
+                    _buildWelcomeHeader(r),
+                    SizedBox(height: r.h(24)),
+                    _buildLoginForm(r),
+                    SizedBox(height: r.h(20)),
+                    _buildSocialSection(r),
+                    SizedBox(height: r.h(16)),
                   ],
                 ),
               ),
@@ -506,26 +538,26 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildAnimatedBackground() {
+  Widget _buildAnimatedBackground(Responsive r) {
     return Stack(
       children: [
         // Top right blob
         Positioned(
-          top: -120,
-          right: -80,
+          top: r.h(-120),
+          right: r.w(-80),
           child: AnimatedBuilder(
             animation: _floatingController,
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(
-                  math.sin(_floatingController.value * math.pi) * 20,
-                  _floatingController.value * 40,
+                  math.sin(_floatingController.value * math.pi) * r.w(20),
+                  _floatingController.value * r.h(40),
                 ),
                 child: Transform.rotate(
                   angle: _floatingController.value * 0.3,
                   child: Container(
-                    width: 300,
-                    height: 300,
+                    width: r.dp(300),
+                    height: r.dp(300),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
@@ -541,22 +573,22 @@ bool _validateEmailSimple(String email) {
             },
           ),
         ),
-        
+
         // Bottom left blob
         Positioned(
-          bottom: -100,
-          left: -80,
+          bottom: r.h(-100),
+          left: r.w(-80),
           child: AnimatedBuilder(
             animation: _floatingController,
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(
-                  -math.cos(_floatingController.value * math.pi) * 25,
-                  -_floatingController.value * 50,
+                  -math.cos(_floatingController.value * math.pi) * r.w(25),
+                  -_floatingController.value * r.h(50),
                 ),
                 child: Container(
-                  width: 280,
-                  height: 280,
+                  width: r.dp(280),
+                  height: r.dp(280),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -571,22 +603,22 @@ bool _validateEmailSimple(String email) {
             },
           ),
         ),
-        
+
         // Center accent blob
         Positioned(
           top: MediaQuery.of(context).size.height * 0.4,
-          right: -50,
+          right: r.w(-50),
           child: AnimatedBuilder(
             animation: _floatingController,
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(
-                  math.sin(_floatingController.value * math.pi * 2) * 15,
-                  math.cos(_floatingController.value * math.pi) * 20,
+                  math.sin(_floatingController.value * math.pi * 2) * r.w(15),
+                  math.cos(_floatingController.value * math.pi) * r.h(20),
                 ),
                 child: Container(
-                  width: 150,
-                  height: 150,
+                  width: r.dp(150),
+                  height: r.dp(150),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -605,21 +637,22 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildLogo() {
+  Widget _buildLogo(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Center(
         child: Container(
-          width: 80,
-          height: 80,
+          width: r.dp(72),
+          height: r.dp(72),
           decoration: BoxDecoration(
-            color: darkCard,
-            borderRadius: BorderRadius.circular(24),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(r.w(20)),
+            border: Border.all(color: Colors.black.withOpacity(0.08)),
             boxShadow: [
               BoxShadow(
-                color: darkCard.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: r.dp(16),
+                offset: Offset(0, r.h(6)),
               ),
             ],
           ),
@@ -631,22 +664,22 @@ bool _validateEmailSimple(String email) {
                 animation: _pulseController,
                 builder: (context, child) {
                   return Container(
-                    width: 60 + (_pulseController.value * 10),
-                    height: 60 + (_pulseController.value * 10),
+                    width: r.dp(48) + (_pulseController.value * r.dp(8)),
+                    height: r.dp(48) + (_pulseController.value * r.dp(8)),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: mintGreen.withOpacity(0.3 - _pulseController.value * 0.2),
-                        width: 2,
+                        color: const Color(0xFF10B981).withOpacity(0.25 - _pulseController.value * 0.2),
+                        width: 1.5,
                       ),
                     ),
                   );
                 },
               ),
-              // Brain icon
+              // Brain icon (matching home header style)
               CustomPaint(
-                size: const Size(40, 40),
-                painter: BrainLogoPainter(),
+                size: Size(r.dp(36), r.dp(36)),
+                painter: _LoginBrainIconPainter(),
               ),
             ],
           ),
@@ -655,7 +688,7 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildWelcomeHeader() {
+  Widget _buildWelcomeHeader(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.1,
       child: Column(
@@ -663,35 +696,35 @@ bool _validateEmailSimple(String email) {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 "Welcome Back",
                 style: TextStyle(
-                  fontSize: 32,
+                  fontSize: r.sp(32),
                   color: Colors.black87,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -1,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               AnimatedBuilder(
                 animation: _pulseController,
                 builder: (context, child) {
                   return Transform.scale(
                     scale: 1.0 + (_pulseController.value * 0.1),
-                    child: const Text(
+                    child: Text(
                       "",
-                      style: TextStyle(fontSize: 32),
+                      style: TextStyle(fontSize: r.sp(32)),
                     ),
                   );
                 },
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             "Sign in to continue your brain health journey",
             style: TextStyle(
-              fontSize: 15,
+              fontSize: r.sp(15),
               color: Colors.black.withOpacity(0.5),
               fontWeight: FontWeight.w500,
             ),
@@ -703,14 +736,14 @@ bool _validateEmailSimple(String email) {
 
     
 
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.2,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(r.w(24)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(r.w(28)),
           border: Border.all(color: Colors.black.withOpacity(0.06)),
           boxShadow: [
             BoxShadow(
@@ -725,6 +758,7 @@ bool _validateEmailSimple(String email) {
           children: [
             // Email Field
             _buildInputField(
+              r: r,
               label: "Email Address",
               hint: "your.email@example.com",
               icon: Icons.email_outlined,
@@ -739,11 +773,12 @@ bool _validateEmailSimple(String email) {
                 FocusScope.of(context).requestFocus(passwordFocus);
               },
             ),
-            
-            const SizedBox(height: 20),
-            
+
+            SizedBox(height: r.h(20)),
+
             // Password Field
             _buildInputField(
+              r: r,
               label: "Password",
               hint: "Enter your password",
               icon: Icons.lock_outline_rounded,
@@ -756,9 +791,9 @@ bool _validateEmailSimple(String email) {
               },
               onSubmitted: (_) => _handleSignIn(),
             ),
-            
-            const SizedBox(height: 16),
-            
+
+            SizedBox(height: r.h(16)),
+
             // Remember Me & Forgot Password Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -773,25 +808,25 @@ bool _validateEmailSimple(String email) {
                     children: [
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        width: 22,
-                        height: 22,
+                        width: r.dp(22),
+                        height: r.dp(22),
                         decoration: BoxDecoration(
                           color: rememberMe ? darkCard : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(r.w(6)),
                           border: Border.all(
                             color: rememberMe ? darkCard : Colors.black.withOpacity(0.2),
                             width: 2,
                           ),
                         ),
                         child: rememberMe
-                            ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                            ? Icon(Icons.check_rounded, size: r.dp(14), color: Colors.white)
                             : null,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: r.w(8)),
                       Text(
                         "Remember me",
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: r.sp(13),
                           fontWeight: FontWeight.w500,
                           color: Colors.black.withOpacity(0.6),
                         ),
@@ -799,7 +834,7 @@ bool _validateEmailSimple(String email) {
                     ],
                   ),
                 ),
-                
+
                 // Forgot Password
                 GestureDetector(
                   onTap: () {
@@ -812,7 +847,7 @@ bool _validateEmailSimple(String email) {
                   child: Text(
                     "Forgot Password?",
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: r.sp(13),
                       fontWeight: FontWeight.w700,
                       color: blueAccent,
                     ),
@@ -820,11 +855,11 @@ bool _validateEmailSimple(String email) {
                 ),
               ],
             ),
-            
-            const SizedBox(height: 28),
-            
+
+            SizedBox(height: r.h(28)),
+
             // Sign In Button
-            _buildSignInButton(),
+            _buildSignInButton(r),
           ],
         ),
       ),
@@ -832,6 +867,7 @@ bool _validateEmailSimple(String email) {
   }
 
   Widget _buildInputField({
+    required Responsive r,
     required String label,
     required String hint,
     required IconData icon,
@@ -942,7 +978,7 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildSignInButton() {
+  Widget _buildSignInButton(Responsive r) {
     return GestureDetector(
       onTap: isLoading ? null : _handleSignIn,
       child: AnimatedContainer(
@@ -995,7 +1031,7 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildSocialSection() {
+  Widget _buildSocialSection(Responsive r) {
   return _buildAnimatedWidget(
     delay: 0.3,
     child: Column(
@@ -1158,7 +1194,12 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  void _handleSocialLogin(String provider) {
+  Future<void> _handleSocialLogin(String provider) async {
+    if (provider == 'Google') {
+      await _handleGoogleSignIn();
+      return;
+    }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -1171,6 +1212,69 @@ bool _validateEmailSimple(String email) {
         margin: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      setState(() => isLoading = true);
+
+      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+      final account = await googleSignIn.signIn();
+
+      if (account == null) {
+        // User cancelled
+        setState(() => isLoading = false);
+        return;
+      }
+
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+
+      if (idToken == null) {
+        setState(() => isLoading = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to get Google credentials'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        return;
+      }
+
+      // Send token to backend
+      final result = await ApiService.googleLogin(idToken: idToken);
+
+      setState(() => isLoading = false);
+
+      if (mounted) {
+        if (result['success']) {
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['error'] ?? 'Google sign-in failed'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google sign-in error: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
 
@@ -1236,6 +1340,40 @@ class BrainLogoPainter extends CustomPainter {
     canvas.drawLine(Offset(center.dx + 8, center.dy - 4), Offset(center.dx + 4, center.dy), paint);
     canvas.drawLine(Offset(center.dx - 6, center.dy + 6), Offset(center.dx - 2, center.dy + 4), paint);
     canvas.drawLine(Offset(center.dx + 6, center.dy + 6), Offset(center.dx + 2, center.dy + 4), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _LoginBrainIconPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF1A1A1A)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final path = Path();
+    path.moveTo(size.width * 0.5, size.height * 0.15);
+    path.cubicTo(size.width * 0.25, size.height * 0.1, size.width * 0.08, size.height * 0.35, size.width * 0.12, size.height * 0.55);
+    path.cubicTo(size.width * 0.08, size.height * 0.75, size.width * 0.25, size.height * 0.9, size.width * 0.5, size.height * 0.85);
+    path.moveTo(size.width * 0.5, size.height * 0.15);
+    path.cubicTo(size.width * 0.75, size.height * 0.1, size.width * 0.92, size.height * 0.35, size.width * 0.88, size.height * 0.55);
+    path.cubicTo(size.width * 0.92, size.height * 0.75, size.width * 0.75, size.height * 0.9, size.width * 0.5, size.height * 0.85);
+    path.moveTo(size.width * 0.5, size.height * 0.15);
+    path.lineTo(size.width * 0.5, size.height * 0.85);
+    path.moveTo(size.width * 0.2, size.height * 0.35);
+    path.quadraticBezierTo(size.width * 0.35, size.height * 0.4, size.width * 0.3, size.height * 0.55);
+    path.moveTo(size.width * 0.22, size.height * 0.6);
+    path.quadraticBezierTo(size.width * 0.38, size.height * 0.62, size.width * 0.35, size.height * 0.75);
+    path.moveTo(size.width * 0.8, size.height * 0.35);
+    path.quadraticBezierTo(size.width * 0.65, size.height * 0.4, size.width * 0.7, size.height * 0.55);
+    path.moveTo(size.width * 0.78, size.height * 0.6);
+    path.quadraticBezierTo(size.width * 0.62, size.height * 0.62, size.width * 0.65, size.height * 0.75);
+    canvas.drawPath(path, paint);
   }
 
   @override

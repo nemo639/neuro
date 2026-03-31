@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/audio_recorder_service.dart';
+import '../../../core/responsive.dart';
 
 // Test phases - must be outside class
 enum SustainedVowelPhase { instructions, recording, completed }
@@ -16,7 +17,7 @@ class SustainedVowelTestScreen extends StatefulWidget {
 
 class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
     with TickerProviderStateMixin {
-  
+
   SustainedVowelPhase _currentPhase = SustainedVowelPhase.instructions;
 
   // Animation controllers
@@ -31,7 +32,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
   bool _isRecording = false;
   double _recordingProgress = 0.0;
   Timer? _recordingTimer;
-  
+
   // Vowels to test
   final List<Map<String, dynamic>> _vowels = [
     {'sound': 'Ahhh', 'symbol': 'A', 'color': Color(0xFF3B82F6)},
@@ -232,66 +233,67 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
+            _buildHeader(r),
+            _buildProgressBar(r),
             Expanded(
-              child: _buildTestArea(),
+              child: _buildTestArea(r),
             ),
             if (_currentPhase == SustainedVowelPhase.recording)
-              _buildMetricsBar(),
+              _buildMetricsBar(r),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           // Back button
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           // Title
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Sustained Vowel',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: r.sp(20),
                     fontWeight: FontWeight.w800,
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: r.h(2)),
                 Text(
                   _getPhaseText(),
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: r.sp(13),
                     color: Colors.grey[600],
                   ),
                 ),
@@ -300,10 +302,10 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
           ),
           // Trial counter
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
             decoration: BoxDecoration(
               color: (_currentVowel['color'] as Color).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.dp(20)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -315,9 +317,9 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                   color: _currentPhase == SustainedVowelPhase.completed
                       ? greenAccent
                       : _currentVowel['color'] as Color,
-                  size: 16,
+                  size: r.dp(16),
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: r.w(6)),
                 Text(
                   _currentPhase == SustainedVowelPhase.completed
                       ? 'Done'
@@ -326,7 +328,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                     color: _currentPhase == SustainedVowelPhase.completed
                         ? greenAccent
                         : _currentVowel['color'] as Color,
-                    fontSize: 12,
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -349,7 +351,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = (_currentTrial / _totalTrials);
     if (_currentPhase == SustainedVowelPhase.recording) {
       progress += (_recordingProgress / _totalTrials);
@@ -358,11 +360,11 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -372,20 +374,20 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
             gradient: LinearGradient(
               colors: [blueAccent, purpleAccent, orangeAccent],
             ),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTestArea() {
+  Widget _buildTestArea(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(24),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(24)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -394,36 +396,36 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
           ),
         ],
       ),
-      child: _buildPhaseContent(),
+      child: _buildPhaseContent(r),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case SustainedVowelPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case SustainedVowelPhase.recording:
-        return _buildRecordingPhase();
+        return _buildRecordingPhase(r);
       case SustainedVowelPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     final vowelColor = _currentVowel['color'] as Color;
-    
+
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           // Vowel display with breathing animation
           AnimatedBuilder(
             animation: _breatheController,
             builder: (context, child) {
               return Container(
-                width: 120 + (_breatheController.value * 15),
-                height: 120 + (_breatheController.value * 15),
+                width: r.dp(120) + (_breatheController.value * r.dp(15)),
+                height: r.dp(120) + (_breatheController.value * r.dp(15)),
                 decoration: BoxDecoration(
                   color: vowelColor.withOpacity(0.1),
                   shape: BoxShape.circle,
@@ -436,7 +438,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                   child: Text(
                     _currentVowel['symbol'],
                     style: TextStyle(
-                      fontSize: 56,
+                      fontSize: r.sp(56),
                       fontWeight: FontWeight.w800,
                       color: vowelColor,
                     ),
@@ -445,44 +447,44 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               );
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Sound text
           Text(
             'Say "${_currentVowel['sound']}"',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: r.sp(28),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Hold the sound for $_targetDurationSeconds seconds',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: r.sp(14),
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Instructions card
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(r.dp(16)),
             decoration: BoxDecoration(
               color: vowelColor.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
               border: Border.all(color: vowelColor.withOpacity(0.2)),
             ),
             child: Column(
               children: [
-                _buildInstructionRow(Icons.air_rounded, 'Take a deep breath first'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.volume_up_rounded, 'Keep volume consistent'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.straighten_rounded, 'Hold pitch steady'),
+                _buildInstructionRow(Icons.air_rounded, 'Take a deep breath first', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.volume_up_rounded, 'Keep volume consistent', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.straighten_rounded, 'Hold pitch steady', r),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Trial indicator
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -490,27 +492,27 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               final isCompleted = index < _currentTrial;
               final isCurrent = index == _currentTrial;
               final trialColor = _vowels[index]['color'] as Color;
-              
+
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                width: isCurrent ? 36 : 28,
-                height: isCurrent ? 36 : 28,
+                margin: EdgeInsets.symmetric(horizontal: r.w(6)),
+                width: isCurrent ? r.dp(36) : r.dp(28),
+                height: isCurrent ? r.dp(36) : r.dp(28),
                 decoration: BoxDecoration(
-                  color: isCompleted 
-                      ? greenAccent 
+                  color: isCompleted
+                      ? greenAccent
                       : (isCurrent ? trialColor : Colors.grey[200]),
                   shape: BoxShape.circle,
-                  border: isCurrent 
+                  border: isCurrent
                       ? Border.all(color: trialColor, width: 3)
                       : null,
                 ),
                 child: Center(
                   child: isCompleted
-                      ? const Icon(Icons.check, color: Colors.white, size: 16)
+                      ? Icon(Icons.check, color: Colors.white, size: r.dp(16))
                       : Text(
                           _vowels[index]['symbol'],
                           style: TextStyle(
-                            fontSize: isCurrent ? 16 : 12,
+                            fontSize: r.sp(isCurrent ? 16 : 12),
                             fontWeight: FontWeight.w700,
                             color: isCurrent ? Colors.white : Colors.grey[500],
                           ),
@@ -519,7 +521,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               );
             }),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: r.h(28)),
           // Start button
           GestureDetector(
             onTap: () {
@@ -527,10 +529,10 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               _startRecording();
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+              padding: EdgeInsets.symmetric(horizontal: r.w(48), vertical: r.h(16)),
               decoration: BoxDecoration(
                 color: vowelColor,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: vowelColor.withOpacity(0.4),
@@ -542,13 +544,13 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.mic_rounded, color: Colors.white, size: 22),
-                  const SizedBox(width: 10),
+                  Icon(Icons.mic_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(10)),
                   Text(
                     _currentTrial == 0 ? 'Start Recording' : 'Record Next',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: r.sp(16),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -556,21 +558,21 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildInstructionRow(IconData icon, String text) {
+  Widget _buildInstructionRow(IconData icon, String text, Responsive r) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey[600], size: 20),
-        const SizedBox(width: 12),
+        Icon(icon, color: Colors.grey[600], size: r.dp(20)),
+        SizedBox(width: r.w(12)),
         Text(
           text,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: r.sp(13),
             color: Colors.grey[700],
           ),
         ),
@@ -578,27 +580,27 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
     );
   }
 
-  Widget _buildRecordingPhase() {
+  Widget _buildRecordingPhase(Responsive r) {
     final vowelColor = _currentVowel['color'] as Color;
-    
+
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           // Animated vowel with pulse
           AnimatedBuilder(
             animation: _pulseController,
             builder: (context, child) {
               return Container(
-                width: 130 + (_pulseController.value * 30),
-                height: 130 + (_pulseController.value * 30),
+                width: r.dp(130) + (_pulseController.value * r.dp(30)),
+                height: r.dp(130) + (_pulseController.value * r.dp(30)),
                 decoration: BoxDecoration(
                   color: vowelColor.withOpacity(0.1 + _pulseController.value * 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Container(
-                  margin: const EdgeInsets.all(20),
+                  margin: EdgeInsets.all(r.dp(20)),
                   decoration: BoxDecoration(
                     color: vowelColor,
                     shape: BoxShape.circle,
@@ -613,8 +615,8 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                   child: Center(
                     child: Text(
                       _currentVowel['symbol'],
-                      style: const TextStyle(
-                        fontSize: 40,
+                      style: TextStyle(
+                        fontSize: r.sp(40),
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                       ),
@@ -624,64 +626,64 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               );
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Recording indicator
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 12,
-                height: 12,
+                width: r.dp(12),
+                height: r.dp(12),
                 decoration: BoxDecoration(
                   color: redAccent,
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Text(
                 'Say "${_currentVowel['sound']}"',
-                style: const TextStyle(
-                  fontSize: 22,
+                style: TextStyle(
+                  fontSize: r.sp(22),
                   fontWeight: FontWeight.w700,
                   color: Colors.black87,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Hold steady...',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: r.sp(14),
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Circular progress timer
           SizedBox(
-            width: 120,
-            height: 120,
+            width: r.dp(120),
+            height: r.dp(120),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 // Background circle
                 SizedBox(
-                  width: 120,
-                  height: 120,
+                  width: r.dp(120),
+                  height: r.dp(120),
                   child: CircularProgressIndicator(
                     value: 1,
-                    strokeWidth: 8,
+                    strokeWidth: r.dp(8),
                     backgroundColor: Colors.grey[200],
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[200]!),
                   ),
                 ),
                 // Progress circle
                 SizedBox(
-                  width: 120,
-                  height: 120,
+                  width: r.dp(120),
+                  height: r.dp(120),
                   child: CircularProgressIndicator(
                     value: _recordingProgress,
-                    strokeWidth: 8,
+                    strokeWidth: r.dp(8),
                     backgroundColor: Colors.transparent,
                     valueColor: AlwaysStoppedAnimation<Color>(vowelColor),
                   ),
@@ -693,7 +695,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                     Text(
                       '${_recordingSeconds}s',
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: r.sp(32),
                         fontWeight: FontWeight.w700,
                         color: vowelColor,
                       ),
@@ -701,7 +703,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                     Text(
                       'of ${_targetDurationSeconds}s',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: r.sp(12),
                         color: Colors.grey[500],
                       ),
                     ),
@@ -710,16 +712,16 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Waveform
           Container(
-            height: 50,
-            margin: const EdgeInsets.symmetric(horizontal: 10),
+            height: r.h(50),
+            margin: EdgeInsets.symmetric(horizontal: r.w(10)),
             child: AnimatedBuilder(
               animation: _waveController,
               builder: (context, child) {
                 return CustomPaint(
-                  size: const Size(double.infinity, 50),
+                  size: Size(double.infinity, r.h(50)),
                   painter: VowelWaveformPainter(
                     animation: _waveController.value,
                     color: vowelColor,
@@ -728,7 +730,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               },
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Stop early button
           TextButton(
             onPressed: () {
@@ -739,7 +741,7 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               'Stop Early',
               style: TextStyle(
                 color: Colors.grey[500],
-                fontSize: 14,
+                fontSize: r.sp(14),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -749,50 +751,50 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Success icon
           Container(
-            width: 100,
-            height: 100,
+            width: r.dp(100),
+            height: r.dp(100),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle_rounded,
               color: greenAccent,
-              size: 60,
+              size: r.dp(60),
             ),
           ),
-          const SizedBox(height: 24),
-          const Text(
+          SizedBox(height: r.h(24)),
+          Text(
             'All Vowels Recorded!',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: r.sp(24),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Voice analysis data has been captured',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: r.sp(14),
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: r.h(28)),
           // Results summary
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(r.dp(16)),
             decoration: BoxDecoration(
               color: mintGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
             ),
             child: Column(
               children: [
@@ -800,12 +802,12 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                   final trial = _trialResults[index];
                   final vowelColor = _vowels[index]['color'] as Color;
                   return Padding(
-                    padding: EdgeInsets.only(bottom: index < _trialResults.length - 1 ? 12 : 0),
+                    padding: EdgeInsets.only(bottom: index < _trialResults.length - 1 ? r.h(12) : 0),
                     child: Row(
                       children: [
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: r.dp(36),
+                          height: r.dp(36),
                           decoration: BoxDecoration(
                             color: vowelColor.withOpacity(0.15),
                             shape: BoxShape.circle,
@@ -814,19 +816,19 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                             child: Text(
                               _vowels[index]['symbol'],
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: r.sp(16),
                                 fontWeight: FontWeight.w700,
                                 color: vowelColor,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: r.w(12)),
                         Expanded(
                           child: Text(
                             '"${trial['vowel']}"',
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: r.sp(14),
                               fontWeight: FontWeight.w600,
                               color: Colors.black87,
                             ),
@@ -835,16 +837,16 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                         Text(
                           '${(trial['duration_ms'] / 1000).toStringAsFixed(1)}s',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: r.sp(14),
                             fontWeight: FontWeight.w700,
                             color: Colors.grey[700],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: r.w(8)),
                         Icon(
                           Icons.check_circle_rounded,
                           color: greenAccent,
-                          size: 20,
+                          size: r.dp(20),
                         ),
                       ],
                     ),
@@ -853,15 +855,15 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: r.h(28)),
           // Continue button
           GestureDetector(
             onTap: _completeTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+              padding: EdgeInsets.symmetric(horizontal: r.w(48), vertical: r.h(16)),
               decoration: BoxDecoration(
                 color: greenAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: greenAccent.withOpacity(0.4),
@@ -870,16 +872,16 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Continue',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: r.sp(16),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -887,26 +889,26 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           GestureDetector(
             onTap: _retakeRecording,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(48), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 border: Border.all(color: Colors.black.withOpacity(0.1)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.refresh_rounded, color: Colors.grey[700], size: 20),
-                  const SizedBox(width: 8),
+                  Icon(Icons.refresh_rounded, color: Colors.grey[700], size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Retake Recording',
                     style: TextStyle(
                       color: Colors.grey[700],
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -914,72 +916,72 @@ class _SustainedVowelTestScreenState extends State<SustainedVowelTestScreen>
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
         ],
       ),
     );
   }
 
-  Widget _buildMetricsBar() {
+  Widget _buildMetricsBar(Responsive r) {
     final vowelColor = _currentVowel['color'] as Color;
-    
+
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(16)),
       decoration: BoxDecoration(
         color: darkCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(r.dp(20)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildMiniMetric('VOWEL', _currentVowel['symbol'], vowelColor),
+          _buildMiniMetric('VOWEL', _currentVowel['symbol'], vowelColor, r),
           Container(
-            width: 1,
-            height: 40,
+            width: r.w(1),
+            height: r.h(40),
             color: Colors.white.withOpacity(0.1),
           ),
-          _buildMiniMetric('TIME', '${_recordingSeconds}s', greenAccent),
+          _buildMiniMetric('TIME', '${_recordingSeconds}s', greenAccent, r),
           Container(
-            width: 1,
-            height: 40,
+            width: r.w(1),
+            height: r.h(40),
             color: Colors.white.withOpacity(0.1),
           ),
-          _buildMiniMetric('TRIAL', '${_currentTrial + 1}/$_totalTrials', purpleAccent),
+          _buildMiniMetric('TRIAL', '${_currentTrial + 1}/$_totalTrials', purpleAccent, r),
         ],
       ),
     );
   }
 
-  Widget _buildMiniMetric(String label, String value, Color color) {
+  Widget _buildMiniMetric(String label, String value, Color color, Responsive r) {
     return Column(
       children: [
         Text(
           label,
           style: TextStyle(
             color: Colors.white.withOpacity(0.5),
-            fontSize: 10,
+            fontSize: r.sp(10),
             fontWeight: FontWeight.w600,
             letterSpacing: 1,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: r.h(4)),
         Row(
           children: [
             Container(
-              width: 8,
-              height: 8,
+              width: r.dp(8),
+              height: r.dp(8),
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: r.w(6)),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: r.sp(18),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1009,14 +1011,14 @@ class VowelWaveformPainter extends CustomPainter {
 
     for (int i = 0; i < barCount; i++) {
       final x = i * barWidth + barWidth / 2;
-      
+
       // Create smooth wave pattern
       final wave1 = math.sin((i / barCount + animation) * math.pi * 3);
       final wave2 = math.sin((i / barCount + animation * 1.5) * math.pi * 5) * 0.5;
       final combined = (wave1 + wave2) / 1.5;
-      
+
       final height = size.height * 0.4 * (0.3 + 0.7 * ((combined + 1) / 2));
-      
+
       canvas.drawLine(
         Offset(x, size.height / 2 - height),
         Offset(x, size.height / 2 + height),

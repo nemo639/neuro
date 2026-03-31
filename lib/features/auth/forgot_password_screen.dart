@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
 import 'package:neuroverse/core/loading_bars.dart';
+import 'package:neuroverse/core/responsive.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -14,11 +15,11 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with TickerProviderStateMixin {
   final TextEditingController emailController = TextEditingController();
   final FocusNode emailFocus = FocusNode();
-  
+
   late AnimationController _floatingController;
   late AnimationController _pageController;
   late AnimationController _pulseController;
-  
+
   String? emailError;
   bool isLoading = false;
   bool emailSent = false;
@@ -36,12 +37,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Ticker
   @override
   void initState() {
     super.initState();
-    
+
     _floatingController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
     )..repeat(reverse: true);
-    
+
     _pageController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -75,62 +76,55 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Ticker
       setState(() => emailError = "Email is required");
       return false;
     }
-    
+
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|org|net|edu|gov|mil|co|io|ai|pk|edu\.pk|gov\.pk|com\.pk|uk|co\.uk|de|fr|in|jp|au|ca|us|info|biz|xyz|app|dev|tech|online|site|web|cloud|email|mail|yahoo|gmail|hotmail|outlook)$',
       caseSensitive: false,
     );
-    
+
     final basicEmailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$');
-    
+
     if (!basicEmailRegex.hasMatch(email)) {
       setState(() => emailError = "Please enter a valid email address");
       return false;
     }
-    
+
     setState(() => emailError = null);
     return true;
   }
 
-  // ==========================================
-// REPLACE THIS METHOD IN forgot_password_screen.dart
-// ==========================================
+  Future<void> _handleSendResetLink() async {
+    HapticFeedback.mediumImpact();
 
-Future<void> _handleSendResetLink() async {
-  HapticFeedback.mediumImpact();
-  
-  if (_validateEmail(emailController.text.trim())) {
-    setState(() => isLoading = true);
-    
-    // Call API
-    final result = await ApiService.forgotPassword(
-      email: emailController.text.trim(),
-    );
-    
-    setState(() => isLoading = false);
-    
-    if (result['success']) {
-      // Navigate directly to Reset Password screen (OTP + New Password)
-      Navigator.pushNamed(
-        context,
-        '/reset-password',  // Changed from '/otp-verification'
-        arguments: {
-          'email': emailController.text.trim(),
-        },
+    if (_validateEmail(emailController.text.trim())) {
+      setState(() => isLoading = true);
+
+      final result = await ApiService.forgotPassword(
+        email: emailController.text.trim(),
       );
-    } else {
-      // Show error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['error'] ?? 'Failed to send reset code'),
-          backgroundColor: redAccent,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+
+      setState(() => isLoading = false);
+
+      if (result['success']) {
+        Navigator.pushNamed(
+          context,
+          '/reset-password',
+          arguments: {
+            'email': emailController.text.trim(),
+          },
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['error'] ?? 'Failed to send reset code'),
+            backgroundColor: redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
-}
 
   void _handleResendEmail() {
     HapticFeedback.lightImpact();
@@ -139,29 +133,30 @@ Future<void> _handleSendResetLink() async {
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
         children: [
-          _buildAnimatedBackground(),
+          _buildAnimatedBackground(r),
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(),
+                _buildHeader(r),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: EdgeInsets.symmetric(horizontal: r.w(24)),
                       child: Column(
                         children: [
-                          const SizedBox(height: 40),
-                          _buildIcon(),
-                          const SizedBox(height: 32),
-                          _buildTitle(),
-                          const SizedBox(height: 40),
-                          emailSent ? _buildSuccessCard() : _buildEmailForm(),
-                          const SizedBox(height: 40),
+                          SizedBox(height: r.h(40)),
+                          _buildIcon(r),
+                          SizedBox(height: r.h(32)),
+                          _buildTitle(r),
+                          SizedBox(height: r.h(40)),
+                          emailSent ? _buildSuccessCard(r) : _buildEmailForm(r),
+                          SizedBox(height: r.h(40)),
                         ],
                       ),
                     ),
@@ -175,7 +170,7 @@ Future<void> _handleSendResetLink() async {
     );
   }
 
-  Widget _buildAnimatedBackground() {
+  Widget _buildAnimatedBackground(Responsive r) {
     return Stack(
       children: [
         Positioned(
@@ -190,8 +185,8 @@ Future<void> _handleSendResetLink() async {
                   _floatingController.value * 30,
                 ),
                 child: Container(
-                  width: 250,
-                  height: 250,
+                  width: r.dp(250),
+                  height: r.dp(250),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -218,8 +213,8 @@ Future<void> _handleSendResetLink() async {
                   -_floatingController.value * 40,
                 ),
                 child: Container(
-                  width: 220,
-                  height: 220,
+                  width: r.dp(220),
+                  height: r.dp(220),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -238,9 +233,9 @@ Future<void> _handleSendResetLink() async {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.w(20)),
       child: Row(
         children: [
           GestureDetector(
@@ -249,11 +244,11 @@ Future<void> _handleSendResetLink() async {
               Navigator.pop(context);
             },
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.w(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
                 boxShadow: [
                   BoxShadow(
@@ -263,9 +258,9 @@ Future<void> _handleSendResetLink() async {
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
@@ -275,15 +270,15 @@ Future<void> _handleSendResetLink() async {
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: AnimatedBuilder(
         animation: _pulseController,
         builder: (context, child) {
           return Container(
-            width: 100,
-            height: 100,
+            width: r.dp(100),
+            height: r.dp(100),
             decoration: BoxDecoration(
               color: emailSent ? greenAccent.withOpacity(0.15) : blueAccent.withOpacity(0.15),
               shape: BoxShape.circle,
@@ -297,7 +292,7 @@ Future<void> _handleSendResetLink() async {
             ),
             child: Icon(
               emailSent ? Icons.mark_email_read_rounded : Icons.lock_reset_rounded,
-              size: 48,
+              size: r.dp(48),
               color: emailSent ? greenAccent : blueAccent,
             ),
           );
@@ -306,28 +301,28 @@ Future<void> _handleSendResetLink() async {
     );
   }
 
-  Widget _buildTitle() {
+  Widget _buildTitle(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.1,
       child: Column(
         children: [
           Text(
             emailSent ? "Check Your Email" : "Forgot Password?",
-            style: const TextStyle(
-              fontSize: 28,
+            style: TextStyle(
+              fontSize: r.sp(28),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           Text(
             emailSent
                 ? "We've sent a password reset link to\n${emailController.text}"
                 : "Don't worry! Enter your email address and we'll send you a link to reset your password.",
             style: TextStyle(
-              fontSize: 15,
+              fontSize: r.sp(15),
               fontWeight: FontWeight.w500,
               color: Colors.black.withOpacity(0.5),
               height: 1.5,
@@ -339,14 +334,14 @@ Future<void> _handleSendResetLink() async {
     );
   }
 
-  Widget _buildEmailForm() {
+  Widget _buildEmailForm(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.2,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(r.w(24)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(r.w(28)),
           border: Border.all(color: Colors.black.withOpacity(0.06)),
           boxShadow: [
             BoxShadow(
@@ -362,16 +357,16 @@ Future<void> _handleSendResetLink() async {
             Text(
               "Email Address",
               style: TextStyle(
-                fontSize: 13,
+                fontSize: r.sp(13),
                 fontWeight: FontWeight.w600,
                 color: Colors.black.withOpacity(0.5),
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: r.h(10)),
             Container(
               decoration: BoxDecoration(
                 color: bgColor,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.w(16)),
                 border: Border.all(
                   color: emailError != null
                       ? redAccent.withOpacity(0.5)
@@ -386,55 +381,55 @@ Future<void> _handleSendResetLink() async {
                 onChanged: (v) {
                   if (emailError != null) _validateEmail(v);
                 },
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.black87,
-                  fontSize: 15,
+                  fontSize: r.sp(15),
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
                   hintText: "your.email@example.com",
                   hintStyle: TextStyle(
                     color: Colors.black.withOpacity(0.25),
-                    fontSize: 15,
+                    fontSize: r.sp(15),
                   ),
                   prefixIcon: Icon(
                     Icons.email_outlined,
                     color: emailError != null ? redAccent : Colors.black.withOpacity(0.4),
-                    size: 22,
+                    size: r.dp(22),
                   ),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(16)),
                 ),
               ),
             ),
             if (emailError != null) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: r.h(8)),
               Row(
                 children: [
-                  Icon(Icons.error_outline_rounded, size: 14, color: redAccent),
-                  const SizedBox(width: 6),
+                  Icon(Icons.error_outline_rounded, size: r.dp(14), color: redAccent),
+                  SizedBox(width: r.w(6)),
                   Text(
                     emailError!,
                     style: TextStyle(
                       color: redAccent,
-                      fontSize: 12,
+                      fontSize: r.sp(12),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ],
-            const SizedBox(height: 28),
+            SizedBox(height: r.h(28)),
             GestureDetector(
               onTap: isLoading ? null : _handleSendResetLink,
               child: Container(
                 width: double.infinity,
-                height: 56,
+                height: r.h(56),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [darkCard, darkCard.withOpacity(0.9)],
                   ),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(r.w(18)),
                   boxShadow: [
                     BoxShadow(
                       color: darkCard.withOpacity(0.35),
@@ -445,21 +440,21 @@ Future<void> _handleSendResetLink() async {
                 ),
                 child: Center(
                   child: isLoading
-                      ? const LoadingBars(color: Colors.white, height: 20)
+                      ? LoadingBars(color: Colors.white, height: r.h(20))
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.send_rounded,
                               color: Colors.white,
-                              size: 20,
+                              size: r.dp(20),
                             ),
-                            const SizedBox(width: 10),
-                            const Text(
+                            SizedBox(width: r.w(10)),
+                            Text(
                               "Send Reset Link",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: r.sp(16),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -474,14 +469,14 @@ Future<void> _handleSendResetLink() async {
     );
   }
 
-  Widget _buildSuccessCard() {
+  Widget _buildSuccessCard(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Container(
-        padding: const EdgeInsets.all(28),
+        padding: EdgeInsets.all(r.w(28)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(r.w(28)),
           border: Border.all(color: greenAccent.withOpacity(0.2)),
           boxShadow: [
             BoxShadow(
@@ -494,54 +489,53 @@ Future<void> _handleSendResetLink() async {
         child: Column(
           children: [
             Container(
-              width: 70,
-              height: 70,
+              width: r.dp(70),
+              height: r.dp(70),
               decoration: BoxDecoration(
                 color: greenAccent.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.check_circle_rounded,
-                size: 40,
+                size: r.dp(40),
                 color: greenAccent,
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: r.h(20)),
+            Text(
               "Email Sent Successfully!",
               style: TextStyle(
-                fontSize: 18,
+                fontSize: r.sp(18),
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: r.h(8)),
             Text(
               "Please check your inbox and follow the instructions to reset your password.",
               style: TextStyle(
-                fontSize: 14,
+                fontSize: r.sp(14),
                 fontWeight: FontWeight.w500,
                 color: Colors.black.withOpacity(0.5),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 28),
-            
+            SizedBox(height: r.h(28)),
+
             // Open Email Button
             GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
-                // Open email app
               },
               child: Container(
                 width: double.infinity,
-                height: 56,
+                height: r.h(56),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [darkCard, darkCard.withOpacity(0.9)],
                   ),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(r.w(18)),
                   boxShadow: [
                     BoxShadow(
                       color: darkCard.withOpacity(0.35),
@@ -550,16 +544,16 @@ Future<void> _handleSendResetLink() async {
                     ),
                   ],
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.email_rounded, color: Colors.white, size: 20),
-                    SizedBox(width: 10),
+                    Icon(Icons.email_rounded, color: Colors.white, size: r.dp(20)),
+                    SizedBox(width: r.w(10)),
                     Text(
                       "Open Email App",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: r.sp(16),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -567,17 +561,17 @@ Future<void> _handleSendResetLink() async {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: r.h(16)),
+
             // Resend Link
             GestureDetector(
               onTap: _handleResendEmail,
               child: Container(
                 width: double.infinity,
-                height: 56,
+                height: r.h(56),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(r.w(18)),
                   border: Border.all(color: Colors.black.withOpacity(0.1), width: 1.5),
                 ),
                 child: Row(
@@ -586,14 +580,14 @@ Future<void> _handleSendResetLink() async {
                     Icon(
                       Icons.refresh_rounded,
                       color: Colors.black.withOpacity(0.6),
-                      size: 20,
+                      size: r.dp(20),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: r.w(10)),
                     Text(
                       "Resend Email",
                       style: TextStyle(
                         color: Colors.black.withOpacity(0.6),
-                        fontSize: 15,
+                        fontSize: r.sp(15),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -601,8 +595,8 @@ Future<void> _handleSendResetLink() async {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            
+            SizedBox(height: r.h(20)),
+
             // Back to login
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -611,7 +605,7 @@ Future<void> _handleSendResetLink() async {
                   "Remember your password? ",
                   style: TextStyle(
                     color: Colors.black.withOpacity(0.5),
-                    fontSize: 14,
+                    fontSize: r.sp(14),
                   ),
                 ),
                 GestureDetector(
@@ -620,7 +614,7 @@ Future<void> _handleSendResetLink() async {
                     Navigator.pop(context);
                   },
                   child: Container(
-                    padding: const EdgeInsets.only(bottom: 2),
+                    padding: EdgeInsets.only(bottom: r.h(2)),
                     decoration: BoxDecoration(
                       border: Border(bottom: BorderSide(color: blueAccent, width: 2)),
                     ),
@@ -628,7 +622,7 @@ Future<void> _handleSendResetLink() async {
                       "Sign In",
                       style: TextStyle(
                         color: blueAccent,
-                        fontSize: 14,
+                        fontSize: r.sp(14),
                         fontWeight: FontWeight.w700,
                       ),
                     ),

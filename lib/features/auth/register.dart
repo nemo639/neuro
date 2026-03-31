@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
 import 'package:neuroverse/core/loading_bars.dart';
+import 'package:neuroverse/core/responsive.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -907,32 +908,33 @@ bool _validateEmailSimple(String email) {
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
         children: [
-          _buildAnimatedBackground(),
+          _buildAnimatedBackground(r),
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(),
+                _buildHeader(r),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: EdgeInsets.symmetric(horizontal: r.w(24)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 20),
-                          _buildProgressIndicator(),
-                          const SizedBox(height: 30),
-                          _buildStepTitle(),
-                          const SizedBox(height: 24),
-                          _buildForm(),
-                          const SizedBox(height: 30),
-                          if (currentStep == 1) _buildSocialSection(),
-                          const SizedBox(height: 30),
+                          SizedBox(height: r.h(20)),
+                          _buildProgressIndicator(r),
+                          SizedBox(height: r.h(30)),
+                          _buildStepTitle(r),
+                          SizedBox(height: r.h(24)),
+                          _buildForm(r),
+                          SizedBox(height: r.h(30)),
+                          if (currentStep == 1) _buildSocialSection(r),
+                          SizedBox(height: r.h(30)),
                         ],
                       ),
                     ),
@@ -946,23 +948,23 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildAnimatedBackground() {
+  Widget _buildAnimatedBackground(Responsive r) {
     return Stack(
       children: [
         Positioned(
-          top: -100,
-          right: -60,
+          top: r.h(-100),
+          right: r.w(-60),
           child: AnimatedBuilder(
             animation: _floatingController,
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(
-                  math.sin(_floatingController.value * math.pi) * 15,
-                  _floatingController.value * 30,
+                  math.sin(_floatingController.value * math.pi) * r.w(15),
+                  _floatingController.value * r.h(30),
                 ),
                 child: Container(
-                  width: 250,
-                  height: 250,
+                  width: r.dp(250),
+                  height: r.dp(250),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -978,19 +980,19 @@ bool _validateEmailSimple(String email) {
           ),
         ),
         Positioned(
-          bottom: -80,
-          left: -50,
+          bottom: r.h(-80),
+          left: r.w(-50),
           child: AnimatedBuilder(
             animation: _floatingController,
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(
-                  -math.cos(_floatingController.value * math.pi) * 20,
-                  -_floatingController.value * 40,
+                  -math.cos(_floatingController.value * math.pi) * r.w(20),
+                  -_floatingController.value * r.h(40),
                 ),
                 child: Container(
-                  width: 220,
-                  height: 220,
+                  width: r.dp(220),
+                  height: r.dp(220),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -1009,7 +1011,7 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -1059,7 +1061,7 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildProgressIndicator() {
+  Widget _buildProgressIndicator(Responsive r) {
     return Row(
       children: [
         Expanded(
@@ -1087,7 +1089,7 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildStepTitle() {
+  Widget _buildStepTitle(Responsive r) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1115,7 +1117,7 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildForm() {
+  Widget _buildForm(Responsive r) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -2310,7 +2312,7 @@ bool _validateEmailSimple(String email) {
     );
   }
 
-  Widget _buildSocialSection() {
+  Widget _buildSocialSection(Responsive r) {
     return Column(
       children: [
         Row(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/responsive.dart';
 
 // Test phases matching FOG dataset events
 enum GaitFogPhase { 
@@ -227,7 +228,7 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
     _resetPhaseData();
     _startSensorCollection();
     
-    _testTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _testTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() => _timeRemaining--);
       
       if (_timeRemaining <= 0) {
@@ -248,7 +249,7 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
     _resetPhaseData();
     _startSensorCollection();
     
-    _testTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _testTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() => _timeRemaining--);
       
       if (_timeRemaining <= 0) {
@@ -273,7 +274,7 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
     _resetPhaseData();
     _startSensorCollection();
     
-    _testTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _testTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() => _timeRemaining--);
       
       if (_timeRemaining <= 0) {
@@ -297,7 +298,7 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
     _resetPhaseData();
     _startSensorCollection();
     
-    _testTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _testTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() => _timeRemaining--);
       
       if (_timeRemaining <= 0) {
@@ -325,7 +326,7 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
     _resetPhaseData();
     _startSensorCollection();
     
-    _testTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _testTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() => _timeRemaining--);
       
       if (_timeRemaining <= 0) {
@@ -467,64 +468,65 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
             if (_currentPhase != GaitFogPhase.instructions && 
                 _currentPhase != GaitFogPhase.completed)
-              _buildMetricsBar(),
+              _buildMetricsBar(r),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Gait Assessment',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800),
                 ),
                 Text(
                   _getPhaseText(),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          _buildPhaseIndicator(),
+          _buildPhaseIndicator(r),
         ],
       ),
     );
   }
 
-  Widget _buildPhaseIndicator() {
+  Widget _buildPhaseIndicator(Responsive r) {
     Color color;
     String text;
     IconData icon;
@@ -568,16 +570,16 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(6)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(r.dp(20)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 14),
-          const SizedBox(width: 4),
-          Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          Icon(icon, color: color, size: r.dp(14)),
+          SizedBox(width: r.w(4)),
+          Text(text, style: TextStyle(color: color, fontSize: r.sp(11), fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -602,7 +604,7 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     final totalDuration = _calibrationDuration + (_walkingDuration * 2) + _turnDuration + _startStopDuration;
     double progress = 0;
 
@@ -635,11 +637,11 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -649,193 +651,193 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             gradient: const LinearGradient(
               colors: [tealAccent, blueAccent, purpleAccent, pinkAccent],
             ),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: r.dp(20),
+            offset: Offset(r.w(0), r.h(4)),
           ),
         ],
       ),
-      child: _buildPhaseContent(),
+      child: _buildPhaseContent(r),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case GaitFogPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case GaitFogPhase.calibration:
-        return _buildCalibrationPhase();
+        return _buildCalibrationPhase(r);
       case GaitFogPhase.walkingOutbound:
       case GaitFogPhase.walkingReturn:
-        return _buildWalkingPhase();
+        return _buildWalkingPhase(r);
       case GaitFogPhase.turn:
-        return _buildTurnPhase();
+        return _buildTurnPhase(r);
       case GaitFogPhase.startStopTasks:
-        return _buildStartStopPhase();
+        return _buildStartStopPhase(r);
       case GaitFogPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.w(80),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: tealAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.directions_walk_rounded, color: tealAccent, size: 40),
+            child: Icon(Icons.directions_walk_rounded, color: tealAccent, size: r.dp(40)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Gait Assessment',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Freezing of Gait (FOG) Protocol',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Protocol phases
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: softLavender.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Column(
               children: [
-                _buildPhasePreview(Icons.arrow_forward_rounded, 'Walk Forward', '15 sec', blueAccent),
-                const SizedBox(height: 10),
-                _buildPhasePreview(Icons.rotate_right_rounded, 'Turn Around', '5 sec', purpleAccent),
-                const SizedBox(height: 10),
-                _buildPhasePreview(Icons.arrow_back_rounded, 'Walk Back', '15 sec', indigoAccent),
-                const SizedBox(height: 10),
-                _buildPhasePreview(Icons.play_arrow_rounded, 'Start/Stop Tasks', '20 sec', pinkAccent),
+                _buildPhasePreview(r, Icons.arrow_forward_rounded, 'Walk Forward', '15 sec', blueAccent),
+                SizedBox(height: r.h(10)),
+                _buildPhasePreview(r, Icons.rotate_right_rounded, 'Turn Around', '5 sec', purpleAccent),
+                SizedBox(height: r.h(10)),
+                _buildPhasePreview(r, Icons.arrow_back_rounded, 'Walk Back', '15 sec', indigoAccent),
+                SizedBox(height: r.h(10)),
+                _buildPhasePreview(r, Icons.play_arrow_rounded, 'Start/Stop Tasks', '20 sec', pinkAccent),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Safety warning
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: orangeAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.warning_amber_rounded, color: orangeAccent, size: 20),
-                const SizedBox(width: 10),
+                Icon(Icons.warning_amber_rounded, color: orangeAccent, size: r.dp(20)),
+                SizedBox(width: r.w(10)),
                 Expanded(
                   child: Text(
                     'Stay near a wall or support. Clear path of 10m needed.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: r.sp(12), color: Colors.grey[700]),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           // Phone position
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: blueAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.phone_android_rounded, color: blueAccent, size: 20),
-                const SizedBox(width: 10),
+                Icon(Icons.phone_android_rounded, color: blueAccent, size: r.dp(20)),
+                SizedBox(width: r.w(10)),
                 Expanded(
                   child: Text(
                     'Secure phone at lower back (belt/pocket)',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: r.sp(12), color: Colors.grey[700]),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _startCalibration,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: tealAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: tealAccent.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    blurRadius: r.dp(20),
+                    offset: Offset(r.w(0), r.h(8)),
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Start Assessment',
-                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                    style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildPhasePreview(IconData icon, String title, String duration, Color color) {
+  Widget _buildPhasePreview(Responsive r, IconData icon, String title, String duration, Color color) {
     return Row(
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: r.w(36),
+          height: r.h(36),
           decoration: BoxDecoration(
             color: color.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(r.dp(10)),
           ),
-          child: Icon(icon, color: color, size: 18),
+          child: Icon(icon, color: color, size: r.dp(18)),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: r.w(12)),
         Expanded(
-          child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          child: Text(title, style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w600)),
         ),
-        Text(duration, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+        Text(duration, style: TextStyle(fontSize: r.sp(12), color: Colors.grey[500])),
       ],
     );
   }
 
-  Widget _buildCalibrationPhase() {
+  Widget _buildCalibrationPhase(Responsive r) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -843,16 +845,16 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
           animation: _pulseController,
           builder: (context, child) {
             return Container(
-              width: 120 + (_pulseController.value * 20),
-              height: 120 + (_pulseController.value * 20),
+              width: r.w(120) + (_pulseController.value * 20),
+              height: r.h(120) + (_pulseController.value * 20),
               decoration: BoxDecoration(
                 color: orangeAccent.withOpacity(0.1 + _pulseController.value * 0.1),
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: Container(
-                  width: 80,
-                  height: 80,
+                  width: r.w(80),
+                  height: r.h(80),
                   decoration: const BoxDecoration(
                     color: orangeAccent,
                     shape: BoxShape.circle,
@@ -860,9 +862,9 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
                   child: Center(
                     child: Text(
                       '$_timeRemaining',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 36,
+                        fontSize: r.sp(36),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -872,31 +874,31 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             );
           },
         ),
-        const SizedBox(height: 30),
-        const Text(
+        SizedBox(height: r.h(30)),
+        Text(
           'Stand Still',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w700),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: r.h(8)),
         Text(
           'Calibrating sensors...',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: TextStyle(fontSize: r.sp(14), color: Colors.grey[600]),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(8)),
           decoration: BoxDecoration(
             color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.sensors_rounded, color: orangeAccent, size: 18),
-              const SizedBox(width: 8),
+              Icon(Icons.sensors_rounded, color: orangeAccent, size: r.dp(18)),
+              SizedBox(width: r.w(8)),
               Text(
                 '$_sampleCount samples',
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
               ),
             ],
           ),
@@ -905,7 +907,7 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
     );
   }
 
-  Widget _buildWalkingPhase() {
+  Widget _buildWalkingPhase(Responsive r) {
     final isOutbound = _currentPhase == GaitFogPhase.walkingOutbound;
     final color = isOutbound ? blueAccent : indigoAccent;
 
@@ -913,10 +915,10 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(10)),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -924,14 +926,14 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
               Icon(
                 isOutbound ? Icons.arrow_forward_rounded : Icons.arrow_back_rounded,
                 color: color,
-                size: 20,
+                size: r.dp(20),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Text(
                 isOutbound ? 'WALK FORWARD' : 'WALK BACK',
                 style: TextStyle(
                   color: color,
-                  fontSize: 16,
+                  fontSize: r.sp(16),
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
@@ -939,16 +941,16 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             ],
           ),
         ),
-        const SizedBox(height: 30),
+        SizedBox(height: r.h(30)),
         Text(
           '$_timeRemaining',
-          style: const TextStyle(
-            fontSize: 64,
+          style: TextStyle(
+            fontSize: r.sp(64),
             fontWeight: FontWeight.w300,
             color: Colors.black54,
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         // Walking animation
         AnimatedBuilder(
           animation: _walkController,
@@ -957,28 +959,28 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
               offset: Offset(math.sin(_walkController.value * 2 * math.pi) * 15, 0),
               child: Icon(
                 Icons.directions_walk_rounded,
-                size: 60,
+                size: r.dp(60),
                 color: color,
               ),
             );
           },
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: r.w(24), vertical: r.h(12)),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.directions_walk, color: Colors.black54, size: 24),
-              const SizedBox(width: 10),
+              Icon(Icons.directions_walk, color: Colors.black54, size: r.dp(24)),
+              SizedBox(width: r.w(10)),
               Text(
                 '$_stepCount steps',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: r.sp(18),
                   fontWeight: FontWeight.w700,
                   color: color,
                 ),
@@ -986,35 +988,35 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: r.h(16)),
         Text(
           'Walk at your normal pace',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: TextStyle(fontSize: r.sp(14), color: Colors.grey[600]),
         ),
       ],
     );
   }
 
-  Widget _buildTurnPhase() {
+  Widget _buildTurnPhase(Responsive r) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(10)),
           decoration: BoxDecoration(
             color: purpleAccent.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.rotate_right_rounded, color: purpleAccent, size: 20),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.rotate_right_rounded, color: purpleAccent, size: r.dp(20)),
+              SizedBox(width: r.w(8)),
+              Text(
                 'TURN AROUND',
                 style: TextStyle(
                   color: purpleAccent,
-                  fontSize: 16,
+                  fontSize: r.sp(16),
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
@@ -1022,55 +1024,55 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             ],
           ),
         ),
-        const SizedBox(height: 30),
+        SizedBox(height: r.h(30)),
         Text(
           '$_timeRemaining',
-          style: const TextStyle(
-            fontSize: 64,
+          style: TextStyle(
+            fontSize: r.sp(64),
             fontWeight: FontWeight.w300,
             color: Colors.black54,
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         AnimatedBuilder(
           animation: _pulseController,
           builder: (context, child) {
             return Transform.rotate(
               angle: _pulseController.value * math.pi,
               child: Container(
-                width: 100,
-                height: 100,
+                width: r.w(100),
+                height: r.h(100),
                 decoration: BoxDecoration(
                   color: purpleAccent.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.rotate_right_rounded,
-                  size: 60,
+                  size: r.dp(60),
                   color: purpleAccent,
                 ),
               ),
             );
           },
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         Text(
           'Turn 180° carefully',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: TextStyle(fontSize: r.sp(14), color: Colors.grey[600]),
         ),
       ],
     );
   }
 
-  Widget _buildStartStopPhase() {
+  Widget _buildStartStopPhase(Responsive r) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(10)),
           decoration: BoxDecoration(
             color: pinkAccent.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1078,14 +1080,14 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
               Icon(
                 _isWalking ? Icons.directions_walk_rounded : Icons.accessibility_new_rounded,
                 color: pinkAccent,
-                size: 20,
+                size: r.dp(20),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Text(
                 _isWalking ? 'WALKING' : 'STOPPED',
-                style: const TextStyle(
+                style: TextStyle(
                   color: pinkAccent,
-                  fontSize: 16,
+                  fontSize: r.sp(16),
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
@@ -1093,16 +1095,16 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         Text(
           '$_timeRemaining',
-          style: const TextStyle(
-            fontSize: 48,
+          style: TextStyle(
+            fontSize: r.sp(48),
             fontWeight: FontWeight.w300,
             color: Colors.black54,
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         // Big tap button
         GestureDetector(
           onTap: _toggleStartStop,
@@ -1110,8 +1112,8 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             animation: _pulseController,
             builder: (context, child) {
               return Container(
-                width: 140 + (_pulseController.value * 10),
-                height: 140 + (_pulseController.value * 10),
+                width: r.w(140) + (_pulseController.value * 10),
+                height: r.h(140) + (_pulseController.value * 10),
                 decoration: BoxDecoration(
                   color: _isWalking 
                       ? redAccent.withOpacity(0.1) 
@@ -1120,16 +1122,16 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
                 ),
                 child: Center(
                   child: Container(
-                    width: 100,
-                    height: 100,
+                    width: r.w(100),
+                    height: r.h(100),
                     decoration: BoxDecoration(
                       color: _isWalking ? redAccent : greenAccent,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: (_isWalking ? redAccent : greenAccent).withOpacity(0.4),
-                          blurRadius: 20,
-                          spreadRadius: 5,
+                          blurRadius: r.dp(20),
+                          spreadRadius: r.dp(5),
                         ),
                       ],
                     ),
@@ -1139,13 +1141,13 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
                         Icon(
                           _isWalking ? Icons.stop_rounded : Icons.play_arrow_rounded,
                           color: Colors.white,
-                          size: 36,
+                          size: r.dp(36),
                         ),
                         Text(
                           _isWalking ? 'STOP' : 'START',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 14,
+                            fontSize: r.sp(14),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1157,14 +1159,14 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             },
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         Text(
           _isWalking 
               ? 'Walk until you tap STOP' 
               : 'Tap START and begin walking',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: TextStyle(fontSize: r.sp(14), color: Colors.grey[600]),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: r.h(16)),
         // Progress indicator
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1172,7 +1174,7 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             final isCompleted = index < _currentStartStopTask;
             final isCurrent = index == _currentStartStopTask;
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
+              margin: EdgeInsets.symmetric(horizontal: r.w(4)),
               width: isCurrent ? 12 : 8,
               height: isCurrent ? 12 : 8,
               decoration: BoxDecoration(
@@ -1184,110 +1186,110 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
             );
           }),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: r.h(8)),
         Text(
           'Task ${_currentStartStopTask + 1} of $_totalStartStopTasks',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          style: TextStyle(fontSize: r.sp(12), color: Colors.grey[500]),
         ),
       ],
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     final data = _getTestData();
     final summary = data['summary'] as Map<String, dynamic>;
 
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.w(80),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_rounded, color: greenAccent, size: 45),
+            child: Icon(Icons.check_circle_rounded, color: greenAccent, size: r.dp(45)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Assessment Complete!',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             '${data['total_samples']} sensor samples collected',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Results summary
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(r.dp(16)),
             decoration: BoxDecoration(
               color: mintGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
             ),
             child: Column(
               children: [
-                _buildResultRow('Total Steps', '${summary['total_steps']}'),
-                const Divider(height: 20),
-                _buildResultRow('Walking Duration', '${summary['walking_duration_s']}s'),
-                const Divider(height: 20),
-                _buildResultRow('Start/Stop Tasks', '${summary['start_stop_count']}'),
+                _buildResultRow(r, 'Total Steps', '${summary['total_steps']}'),
+                Divider(height: r.h(20)),
+                _buildResultRow(r, 'Walking Duration', '${summary['walking_duration_s']}s'),
+                Divider(height: r.h(20)),
+                _buildResultRow(r, 'Start/Stop Tasks', '${summary['start_stop_count']}'),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Phase breakdown
           Row(
             children: [
-              Expanded(child: _buildPhaseCard('Walking', blueAccent, Icons.directions_walk_rounded)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildPhaseCard('Turn', purpleAccent, Icons.rotate_right_rounded)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildPhaseCard('Start/Stop', pinkAccent, Icons.play_arrow_rounded)),
+              Expanded(child: _buildPhaseCard(r, 'Walking', blueAccent, Icons.directions_walk_rounded)),
+              SizedBox(width: r.w(8)),
+              Expanded(child: _buildPhaseCard(r, 'Turn', purpleAccent, Icons.rotate_right_rounded)),
+              SizedBox(width: r.w(8)),
+              Expanded(child: _buildPhaseCard(r, 'Start/Stop', pinkAccent, Icons.play_arrow_rounded)),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline_rounded, color: Colors.grey, size: 18),
-                const SizedBox(width: 10),
+                Icon(Icons.info_outline_rounded, color: Colors.grey, size: r.dp(18)),
+                SizedBox(width: r.w(10)),
                 Expanded(
                   child: Text(
                     'Data will be analyzed for FOG patterns',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: r.sp(12), color: Colors.grey[600]),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _finishTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: greenAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Continue',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1295,90 +1297,90 @@ class _GaitAssessmentTestScreenState extends State<GaitAssessmentTestScreen>
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildResultRow(String label, String value) {
+  Widget _buildResultRow(Responsive r, String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        Text(label, style: TextStyle(fontSize: r.sp(14), color: Colors.grey[700])),
+        Text(value, style: TextStyle(fontSize: r.sp(16), fontWeight: FontWeight.w700)),
       ],
     );
   }
 
-  Widget _buildPhaseCard(String title, Color color, IconData icon) {
+  Widget _buildPhaseCard(Responsive r, String title, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(r.dp(12)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(r.dp(12)),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 6),
+          Icon(icon, color: color, size: r.dp(24)),
+          SizedBox(height: r.h(6)),
           Text(
             title,
-            style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: r.sp(11), color: color, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 2),
-          const Icon(Icons.check_circle, color: greenAccent, size: 16),
+          SizedBox(height: r.h(2)),
+          Icon(Icons.check_circle, color: greenAccent, size: r.dp(16)),
         ],
       ),
     );
   }
 
-  Widget _buildMetricsBar() {
+  Widget _buildMetricsBar(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(14)),
       decoration: BoxDecoration(
         color: darkCard,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(r.dp(18)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildMiniMetric('SAMPLES', '$_sampleCount', tealAccent),
-          Container(width: 1, height: 36, color: Colors.white.withOpacity(0.1)),
-          _buildMiniMetric('TIME', '${_timeRemaining}s', blueAccent),
-          Container(width: 1, height: 36, color: Colors.white.withOpacity(0.1)),
-          _buildMiniMetric('STEPS', '$_stepCount', orangeAccent),
+          _buildMiniMetric(r, 'SAMPLES', '$_sampleCount', tealAccent),
+          Container(width: r.w(1), height: r.h(36), color: Colors.white.withOpacity(0.1)),
+          _buildMiniMetric(r, 'TIME', '${_timeRemaining}s', blueAccent),
+          Container(width: r.w(1), height: r.h(36), color: Colors.white.withOpacity(0.1)),
+          _buildMiniMetric(r, 'STEPS', '$_stepCount', orangeAccent),
         ],
       ),
     );
   }
 
-  Widget _buildMiniMetric(String label, String value, Color color) {
+  Widget _buildMiniMetric(Responsive r, String label, String value, Color color) {
     return Column(
       children: [
         Text(
           label,
           style: TextStyle(
             color: Colors.white.withOpacity(0.5),
-            fontSize: 10,
+            fontSize: r.sp(10),
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: r.h(4)),
         Row(
           children: [
             Container(
-              width: 8,
-              height: 8,
+              width: r.w(8),
+              height: r.h(8),
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: r.w(6)),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: r.sp(16),
                 fontWeight: FontWeight.w700,
               ),
             ),

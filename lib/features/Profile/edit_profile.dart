@@ -2,10 +2,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/responsive.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:neuroverse/core/loading_bars.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -14,10 +16,12 @@ class EditProfileScreen extends StatefulWidget {
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> with SingleTickerProviderStateMixin {
+class _EditProfileScreenState extends State<EditProfileScreen> with TickerProviderStateMixin {
   late AnimationController _pageController;
+  late AnimationController _uploadSpinController;
   bool _isLoading = false;
   bool _hasChanges = false;
+  bool _isUploading = false;
   
   final TextEditingController _firstNameController = TextEditingController();
 final TextEditingController _lastNameController = TextEditingController();
@@ -51,6 +55,10 @@ final TextEditingController _locationController = TextEditingController();
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..forward();
+    _uploadSpinController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
     _loadUserData();
     // Listen for changes
     _firstNameController.addListener(_onFieldChanged);
@@ -72,35 +80,71 @@ final TextEditingController _locationController = TextEditingController();
     }
   }
   Future<void> _pickImage(bool fromCamera) async {
-  final picker = ImagePicker();
-  final picked = await picker.pickImage(
-    source: fromCamera ? ImageSource.camera : ImageSource.gallery,
-    imageQuality: 80, // AUTO RESOLUTION COMPRESSION
-  );
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: fromCamera ? ImageSource.camera : ImageSource.gallery,
+      imageQuality: 80,
+    );
 
-  if (picked != null) {
-    // Read bytes from picked image (works on web and mobile)
-    final bytes = await picked.readAsBytes();
-    
+    if (picked == null) return;
+
+    // Crop the image
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      compressQuality: 80,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Profile Photo',
+          toolbarColor: const Color(0xFF1A1A1A),
+          toolbarWidgetColor: Colors.white,
+          activeControlsWidgetColor: const Color(0xFF3B82F6),
+          cropStyle: CropStyle.circle,
+          aspectRatioPresets: [CropAspectRatioPreset.square],
+          lockAspectRatio: true,
+        ),
+        IOSUiSettings(
+          title: 'Crop Profile Photo',
+          cropStyle: CropStyle.circle,
+          aspectRatioPresets: [CropAspectRatioPreset.square],
+          aspectRatioLockEnabled: true,
+        ),
+      ],
+    );
+
+    if (croppedFile == null) return;
+
+    // Start upload with revolving progress
+    setState(() {
+      _isUploading = true;
+      _selectedImage = File(croppedFile.path);
+    });
+    _uploadSpinController.repeat();
+
+    final bytes = await croppedFile.readAsBytes();
     final result = await ApiService.uploadProfileImage(bytes, picked.name);
 
-    if (mounted && result['success']) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Profile picture updated!")),
-      );
-      _loadUserData(); // Refresh UI
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['error'] ?? "Upload failed")),
-      );
+    if (mounted) {
+      _uploadSpinController.stop();
+      setState(() => _isUploading = false);
+
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profile picture updated!")),
+        );
+        _loadUserData();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['error'] ?? "Upload failed")),
+        );
+      }
     }
   }
-}
 
 
   @override
   void dispose() {
     _pageController.dispose();
+    _uploadSpinController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
@@ -238,6 +282,7 @@ String _monthName(int month) {
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     // Add loading check FIRST
   if (_isLoadingData) {
     return Scaffold(
@@ -246,46 +291,46 @@ String _monthName(int month) {
         child: ShimmerLoading(
           child: SingleChildScrollView(
             physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: r.w(20)),
             child: Column(
               children: [
-                const SizedBox(height: 20),
+                SizedBox(height: r.h(20)),
                 // Back button + title
-                Row(children: const [
-                  SkeletonBox(width: 44, height: 44, borderRadius: 14),
-                  SizedBox(width: 16),
-                  SkeletonLine(width: 130, height: 20),
+                Row(children: [
+                  SkeletonBox(width: r.dp(44), height: r.dp(44), borderRadius: r.w(14)),
+                  SizedBox(width: r.w(16)),
+                  SkeletonLine(width: r.w(130), height: r.h(20)),
                 ]),
-                const SizedBox(height: 30),
+                SizedBox(height: r.h(30)),
                 // Avatar
-                const SkeletonCircle(size: 100),
-                const SizedBox(height: 10),
-                const SkeletonLine(width: 100, height: 12),
-                const SizedBox(height: 30),
+                SkeletonCircle(size: r.dp(100)),
+                SizedBox(height: r.h(10)),
+                SkeletonLine(width: r.w(100), height: r.h(12)),
+                SizedBox(height: r.h(30)),
                 // Input fields
-                const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 80, height: 12)),
-                const SizedBox(height: 8),
-                const SkeletonBox(width: double.infinity, height: 52, borderRadius: 14),
-                const SizedBox(height: 20),
-                const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 80, height: 12)),
-                const SizedBox(height: 8),
-                const SkeletonBox(width: double.infinity, height: 52, borderRadius: 14),
-                const SizedBox(height: 20),
-                const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 80, height: 12)),
-                const SizedBox(height: 8),
-                const SkeletonBox(width: double.infinity, height: 52, borderRadius: 14),
-                const SizedBox(height: 20),
-                const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 80, height: 12)),
-                const SizedBox(height: 8),
-                const SkeletonBox(width: double.infinity, height: 52, borderRadius: 14),
-                const SizedBox(height: 30),
+                Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: r.w(80), height: r.h(12))),
+                SizedBox(height: r.h(8)),
+                SkeletonBox(width: double.infinity, height: r.h(52), borderRadius: r.w(14)),
+                SizedBox(height: r.h(20)),
+                Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: r.w(80), height: r.h(12))),
+                SizedBox(height: r.h(8)),
+                SkeletonBox(width: double.infinity, height: r.h(52), borderRadius: r.w(14)),
+                SizedBox(height: r.h(20)),
+                Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: r.w(80), height: r.h(12))),
+                SizedBox(height: r.h(8)),
+                SkeletonBox(width: double.infinity, height: r.h(52), borderRadius: r.w(14)),
+                SizedBox(height: r.h(20)),
+                Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: r.w(80), height: r.h(12))),
+                SizedBox(height: r.h(8)),
+                SkeletonBox(width: double.infinity, height: r.h(52), borderRadius: r.w(14)),
+                SizedBox(height: r.h(30)),
                 // Info cards
-                const SkeletonBox(width: double.infinity, height: 60, borderRadius: 14),
-                const SizedBox(height: 12),
-                const SkeletonBox(width: double.infinity, height: 60, borderRadius: 14),
-                const SizedBox(height: 30),
+                SkeletonBox(width: double.infinity, height: r.h(60), borderRadius: r.w(14)),
+                SizedBox(height: r.h(12)),
+                SkeletonBox(width: double.infinity, height: r.h(60), borderRadius: r.w(14)),
+                SizedBox(height: r.h(30)),
                 // Save button
-                const SkeletonBox(width: double.infinity, height: 56, borderRadius: 16),
+                SkeletonBox(width: double.infinity, height: r.h(56), borderRadius: r.w(16)),
               ],
             ),
           ),
@@ -303,34 +348,34 @@ String _monthName(int month) {
         body: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 20),
-              _buildHeader(),
+              SizedBox(height: r.h(20)),
+              _buildHeader(r),
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: r.w(20)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 24),
-                      _buildProfileAvatar(),
-                      const SizedBox(height: 32),
-                      
+                      SizedBox(height: r.h(24)),
+                      _buildProfileAvatar(r),
+                      SizedBox(height: r.h(32)),
+
                       // Editable Section
-                      _buildSectionTitle('Editable Information', Icons.edit_rounded),
-                      const SizedBox(height: 16),
-                      _buildEditableCard(),
-                      
-                      const SizedBox(height: 28),
-                      
+                      _buildSectionTitle('Editable Information', Icons.edit_rounded, r),
+                      SizedBox(height: r.h(16)),
+                      _buildEditableCard(r),
+
+                      SizedBox(height: r.h(28)),
+
                       // Non-Editable Section
-                      _buildSectionTitle('Account Information', Icons.lock_outline_rounded),
-                      const SizedBox(height: 16),
-                      _buildNonEditableCard(),
-                      
-                      const SizedBox(height: 32),
-                      _buildSaveButton(),
-                      const SizedBox(height: 40),
+                      _buildSectionTitle('Account Information', Icons.lock_outline_rounded, r),
+                      SizedBox(height: r.h(16)),
+                      _buildNonEditableCard(r),
+
+                      SizedBox(height: r.h(32)),
+                      _buildSaveButton(r),
+                      SizedBox(height: r.h(40)),
                     ],
                   ),
                 ),
@@ -342,41 +387,41 @@ String _monthName(int month) {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _discardChanges,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.w(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    blurRadius: r.w(10),
+                    offset: Offset(0, r.h(4)),
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          const Expanded(
+          SizedBox(width: r.w(16)),
+          Expanded(
             child: Text(
               'Edit Profile',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: r.sp(22),
                 fontWeight: FontWeight.w800,
                 color: Colors.black87,
               ),
@@ -384,15 +429,15 @@ String _monthName(int month) {
           ),
           if (_hasChanges)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(5)),
               decoration: BoxDecoration(
                 color: blueAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(r.w(8)),
               ),
-              child: const Text(
+              child: Text(
                 'Unsaved',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: r.sp(11),
                   fontWeight: FontWeight.w600,
                   color: blueAccent,
                 ),
@@ -403,35 +448,53 @@ String _monthName(int month) {
     );
   }
 
-  Widget _buildProfileAvatar() {
+  Widget _buildProfileAvatar(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Center(
         child: Stack(
           children: [
+            // Revolving upload progress ring
+            if (_isUploading)
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _uploadSpinController,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _uploadSpinController.value * 2 * 3.14159,
+                      child: CustomPaint(
+                        size: Size(r.dp(116), r.dp(116)),
+                        painter: _UploadProgressPainter(),
+                      ),
+                    );
+                  },
+                ),
+              ),
             Container(
-              width: 110,
-              height: 110,
+              width: r.dp(110),
+              height: r.dp(110),
+              margin: EdgeInsets.all(r.dp(3)),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: mintGreen, width: 3),
+                border: _isUploading
+                    ? null
+                    : Border.all(color: mintGreen, width: r.dp(3)),
                 boxShadow: [
                   BoxShadow(
-                    color: mintGreen.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    color: (_isUploading ? blueAccent : mintGreen).withOpacity(0.3),
+                    blurRadius: r.w(20),
+                    offset: Offset(0, r.h(8)),
                   ),
                 ],
               ),
               child: ClipOval(
                 child: Container(
                   color: softLavender,
-                 child: _selectedImage != null
-    ? Image.file(_selectedImage!, fit: BoxFit.cover)
-    : (_profileImagePath != null && _profileImagePath!.isNotEmpty
-        ? Image.network("${ApiService.baseUrl}/uploads/${_profileImagePath!}", fit: BoxFit.cover)
-        : const Icon(Icons.person_rounded, size: 60, color: Colors.white)),
-
+                  child: _selectedImage != null
+                      ? Image.file(_selectedImage!, fit: BoxFit.cover)
+                      : (_profileImagePath != null && _profileImagePath!.isNotEmpty
+                          ? Image.network("${ApiService.baseUrl}/uploads/${_profileImagePath!}", fit: BoxFit.cover)
+                          : Icon(Icons.person_rounded, size: r.dp(60), color: Colors.white)),
                 ),
               ),
             ),
@@ -439,30 +502,38 @@ String _monthName(int month) {
               bottom: 0,
               right: 0,
               child: GestureDetector(
-                onTap: () {
+                onTap: _isUploading ? null : () {
                   HapticFeedback.lightImpact();
                   _showImagePickerOptions();
                 },
                 child: Container(
-                  width: 38,
-                  height: 38,
+                  width: r.dp(38),
+                  height: r.dp(38),
                   decoration: BoxDecoration(
-                    color: blueAccent,
+                    color: _isUploading ? Colors.grey : blueAccent,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
+                    border: Border.all(color: Colors.white, width: r.dp(3)),
                     boxShadow: [
                       BoxShadow(
                         color: blueAccent.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        blurRadius: r.w(10),
+                        offset: Offset(0, r.h(4)),
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.camera_alt_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                  child: _isUploading
+                      ? SizedBox(
+                          width: r.dp(16), height: r.dp(16),
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: r.dp(18),
+                        ),
                 ),
               ),
             ),
@@ -473,35 +544,36 @@ String _monthName(int month) {
   }
 
   void _showImagePickerOptions() {
+    final r = Responsive(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
+        padding: EdgeInsets.all(r.w(20)),
+        decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(r.w(24))),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 40,
-              height: 4,
+              width: r.w(40),
+              height: r.h(4),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(r.w(2)),
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: r.h(20)),
+            Text(
               'Change Profile Photo',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: r.sp(18),
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: r.h(20)),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -509,6 +581,7 @@ String _monthName(int month) {
                   icon: Icons.camera_alt_rounded,
                   label: 'Camera',
                   color: blueAccent,
+                  r: r,
                   onTap: () {
                     Navigator.pop(context);
                     // Open camera
@@ -519,6 +592,7 @@ String _monthName(int month) {
                   icon: Icons.photo_library_rounded,
                   label: 'Gallery',
                   color: greenAccent,
+                  r: r,
                   onTap: () {
                     Navigator.pop(context);
                     // Open gallery
@@ -529,6 +603,7 @@ String _monthName(int month) {
                   icon: Icons.delete_rounded,
                   label: 'Remove',
                   color: redAccent,
+                  r: r,
                   onTap: () async{
                     Navigator.pop(context);
                     // Remove photo
@@ -551,7 +626,7 @@ String _monthName(int month) {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: r.h(20)),
           ],
         ),
       ),
@@ -562,6 +637,7 @@ String _monthName(int month) {
     required IconData icon,
     required String label,
     required Color color,
+    required Responsive r,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -569,19 +645,19 @@ String _monthName(int month) {
       child: Column(
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: r.dp(60),
+            height: r.dp(60),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.w(16)),
             ),
-            child: Icon(icon, color: color, size: 28),
+            child: Icon(icon, color: color, size: r.dp(28)),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: r.sp(12),
               fontWeight: FontWeight.w600,
               color: Colors.black.withOpacity(0.6),
             ),
@@ -591,23 +667,23 @@ String _monthName(int month) {
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildSectionTitle(String title, IconData icon, Responsive r) {
     return Row(
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: r.dp(32),
+          height: r.dp(32),
           decoration: BoxDecoration(
             color: darkCard,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(r.w(10)),
           ),
-          child: Icon(icon, color: Colors.white, size: 16),
+          child: Icon(icon, color: Colors.white, size: r.dp(16)),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: r.w(12)),
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: r.sp(16),
             fontWeight: FontWeight.w700,
             color: Colors.black87,
           ),
@@ -616,20 +692,20 @@ String _monthName(int month) {
     );
   }
 
-  Widget _buildEditableCard() {
+  Widget _buildEditableCard(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.1,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(r.dp(20)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(r.w(22)),
           border: Border.all(color: Colors.black.withOpacity(0.06)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
-              blurRadius: 15,
-              offset: const Offset(0, 6),
+              blurRadius: r.w(15),
+              offset: Offset(0, r.h(6)),
             ),
           ],
         ),
@@ -643,30 +719,34 @@ String _monthName(int month) {
                     label: 'First Name',
                     controller: _firstNameController,
                     icon: Icons.person_outline_rounded,
+                    r: r,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: r.w(12)),
                 Expanded(
                   child: _buildInputField(
                     label: 'Last Name',
                     controller: _lastNameController,
                     icon: Icons.person_outline_rounded,
+                    r: r,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: r.h(18)),
             _buildInputField(
               label: 'Phone Number',
               controller: _phoneController,
               icon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
+              r: r,
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: r.h(18)),
             _buildInputField(
               label: 'Location',
               controller: _locationController,
               icon: Icons.location_on_outlined,
+              r: r,
             ),
           ],
         ),
@@ -679,6 +759,7 @@ String _monthName(int month) {
     required TextEditingController controller,
     required IconData icon,
     TextInputType? keyboardType,
+    Responsive? r,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -721,7 +802,7 @@ String _monthName(int month) {
     );
   }
 
-  Widget _buildNonEditableCard() {
+  Widget _buildNonEditableCard(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.15,
       child: Container(
@@ -863,7 +944,7 @@ String _monthName(int month) {
     );
   }
 
-  Widget _buildSaveButton() {
+  Widget _buildSaveButton(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.2,
       child: GestureDetector(
@@ -936,4 +1017,37 @@ String _monthName(int month) {
       ),
     );
   }
+}
+
+class _UploadProgressPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+
+    // Background track
+    final bgPaint = Paint()
+      ..color = const Color(0xFFE5E7EB)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5;
+    canvas.drawOval(rect.deflate(1.75), bgPaint);
+
+    // Gradient arc
+    final sweepGradient = SweepGradient(
+      colors: [
+        const Color(0xFF3B82F6).withOpacity(0.0),
+        const Color(0xFF3B82F6),
+        const Color(0xFF10B981),
+      ],
+      stops: const [0.0, 0.5, 1.0],
+    );
+    final arcPaint = Paint()
+      ..shader = sweepGradient.createShader(rect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(rect.deflate(1.75), 0, 4.2, false, arcPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

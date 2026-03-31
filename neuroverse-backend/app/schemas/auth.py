@@ -87,6 +87,11 @@ class ResetPasswordRequest(BaseModel):
         return v
 
 
+class GoogleAuthRequest(BaseModel):
+    """Google Sign-In - receives id_token from Flutter google_sign_in."""
+    id_token: str
+
+
 class ChangePasswordRequest(BaseModel):
     """Change password (authenticated user)."""
     current_password: str

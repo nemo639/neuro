@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/responsive.dart';
 
 enum TMTPhase { instructions, partA, partB, completed }
 
@@ -348,61 +349,62 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Trail Making Test',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800),
                 ),
                 Text(
                   _getPhaseText(),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          _buildStatusBadge(),
+          _buildStatusBadge(r),
         ],
       ),
     );
   }
 
-  Widget _buildStatusBadge() {
+  Widget _buildStatusBadge(Responsive r) {
     Color color;
     String text;
     IconData icon;
@@ -431,16 +433,16 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(r.dp(20)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 6),
-          Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          Icon(icon, color: color, size: r.dp(16)),
+          SizedBox(width: r.w(6)),
+          Text(text, style: TextStyle(color: color, fontSize: r.sp(12), fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -459,7 +461,7 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0;
     switch (_currentPhase) {
       case TMTPhase.instructions:
@@ -477,11 +479,11 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -489,19 +491,19 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [blueAccent, purpleAccent]),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.dp(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -511,56 +513,56 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: _buildPhaseContent(),
+        borderRadius: BorderRadius.circular(r.dp(24)),
+        child: _buildPhaseContent(r),
       ),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case TMTPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case TMTPhase.partA:
       case TMTPhase.partB:
-        return _buildTestPhase();
+        return _buildTestPhase(r);
       case TMTPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.dp(20)),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.dp(80),
+            height: r.dp(80),
             decoration: BoxDecoration(
               color: orangeAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.route_rounded, color: orangeAccent, size: 40),
+            child: Icon(Icons.route_rounded, color: orangeAccent, size: r.dp(40)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Trail Making Test',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Assess processing speed and executive function',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Part A info
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: blueAccent.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
               border: Border.all(color: blueAccent.withOpacity(0.2)),
             ),
             child: Column(
@@ -569,32 +571,32 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(4)),
                       decoration: BoxDecoration(
                         color: blueAccent,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(r.dp(8)),
                       ),
-                      child: const Text('Part A', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                      child: Text('Part A', style: TextStyle(color: Colors.white, fontSize: r.sp(12), fontWeight: FontWeight.w700)),
                     ),
-                    const SizedBox(width: 8),
-                    Text('Numbers only', style: TextStyle(fontSize: 13, color: Colors.grey[700], fontWeight: FontWeight.w600)),
+                    SizedBox(width: r.w(8)),
+                    Text('Numbers only', style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700], fontWeight: FontWeight.w600)),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: r.h(8)),
                 Text(
                   'Connect circles in numerical order: 1 → 2 → 3 → ... → 25',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           // Part B info
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: purpleAccent.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
               border: Border.all(color: purpleAccent.withOpacity(0.2)),
             ),
             child: Column(
@@ -603,50 +605,50 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(4)),
                       decoration: BoxDecoration(
                         color: purpleAccent,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(r.dp(8)),
                       ),
-                      child: const Text('Part B', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                      child: Text('Part B', style: TextStyle(color: Colors.white, fontSize: r.sp(12), fontWeight: FontWeight.w700)),
                     ),
-                    const SizedBox(width: 8),
-                    Text('Numbers + Letters', style: TextStyle(fontSize: 13, color: Colors.grey[700], fontWeight: FontWeight.w600)),
+                    SizedBox(width: r.w(8)),
+                    Text('Numbers + Letters', style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700], fontWeight: FontWeight.w600)),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: r.h(8)),
                 Text(
                   'Alternate between numbers and letters: 1 → A → 2 → B → 3 → C ...',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: softLavender.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Column(
               children: [
-                _buildInstructionRow(Icons.speed, 'Work as quickly and accurately as possible'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.touch_app, 'Tap or drag through each circle in order'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.error_outline, 'Errors are recorded but you can continue'),
+                _buildInstructionRow(Icons.speed, 'Work as quickly and accurately as possible', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.touch_app, 'Tap or drag through each circle in order', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.error_outline, 'Errors are recorded but you can continue', r),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _startPartA,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: orangeAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: orangeAccent.withOpacity(0.4),
@@ -655,12 +657,12 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
-                  Text('Start Test', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
+                  Text('Start Test', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -670,17 +672,17 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
     );
   }
 
-  Widget _buildInstructionRow(IconData icon, String text) {
+  Widget _buildInstructionRow(IconData icon, String text, Responsive r) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey[600], size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey[700]))),
+        Icon(icon, color: Colors.grey[600], size: r.dp(18)),
+        SizedBox(width: r.w(10)),
+        Expanded(child: Text(text, style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700]))),
       ],
     );
   }
 
-  Widget _buildTestPhase() {
+  Widget _buildTestPhase(Responsive r) {
     final isPartA = _currentPhase == TMTPhase.partA;
     final color = isPartA ? blueAccent : purpleAccent;
     final partLabel = isPartA ? 'PART A: Numbers' : 'PART B: Numbers + Letters';
@@ -765,7 +767,7 @@ class _TrailMakingTestScreenState extends State<TrailMakingTestScreen>
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     final timeA = (_partAResults['time_seconds'] ?? 0).toDouble();
     final timeB = (_partBResults['time_seconds'] ?? 0).toDouble();
     final ratio = timeA > 0 ? timeB / timeA : 0.0;

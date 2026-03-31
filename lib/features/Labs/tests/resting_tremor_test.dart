@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import '../../../core/responsive.dart';
 
 enum TremorPhase { instructions, leftHand, rightHand, completed }
 
@@ -126,7 +127,7 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
   }
 
   void _startTimer() {
-    _testTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _testTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _timeRemaining--;
       });
@@ -277,61 +278,62 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Resting Tremor',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800),
                 ),
                 Text(
                   _getPhaseText(),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          _buildPhaseIndicator(),
+          _buildPhaseIndicator(r),
         ],
       ),
     );
   }
 
-  Widget _buildPhaseIndicator() {
+  Widget _buildPhaseIndicator(Responsive r) {
     Color color;
     String text;
     IconData icon;
@@ -360,16 +362,16 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(r.dp(20)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 6),
-          Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          Icon(icon, color: color, size: r.dp(16)),
+          SizedBox(width: r.w(6)),
+          Text(text, style: TextStyle(color: color, fontSize: r.sp(12), fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -388,7 +390,7 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0;
     switch (_currentPhase) {
       case TremorPhase.instructions:
@@ -406,11 +408,11 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -418,145 +420,145 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [tealAccent, blueAccent]),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: r.dp(20),
+            offset: Offset(r.w(0), r.h(4)),
           ),
         ],
       ),
-      child: _buildPhaseContent(),
+      child: _buildPhaseContent(r),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case TremorPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case TremorPhase.leftHand:
       case TremorPhase.rightHand:
-        return _buildRecordingPhase();
+        return _buildRecordingPhase(r);
       case TremorPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.w(80),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: tealAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.vibration_rounded, color: tealAccent, size: 40),
+            child: Icon(Icons.vibration_rounded, color: tealAccent, size: r.dp(40)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Resting Tremor Test',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Detect hand tremor using phone sensors',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: tealAccent.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Column(
               children: [
-                _buildInstructionRow(Icons.phone_android, 'Hold the phone flat on your open palm'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.airline_seat_recline_normal, 'Sit comfortably with arm resting on your lap'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.do_not_touch, 'Do NOT grip the phone — let it rest naturally'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.timer, '15 seconds per hand'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.back_hand, 'Left hand first, then right hand'),
+                _buildInstructionRow(r, Icons.phone_android, 'Hold the phone flat on your open palm'),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(r, Icons.airline_seat_recline_normal, 'Sit comfortably with arm resting on your lap'),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(r, Icons.do_not_touch, 'Do NOT grip the phone — let it rest naturally'),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(r, Icons.timer, '15 seconds per hand'),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(r, Icons.back_hand, 'Left hand first, then right hand'),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: Colors.amber.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
               border: Border.all(color: Colors.amber.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, color: Colors.amber, size: 20),
-                const SizedBox(width: 10),
+                Icon(Icons.info_outline, color: Colors.amber, size: r.dp(20)),
+                SizedBox(width: r.w(10)),
                 Expanded(
                   child: Text(
                     'The phone sensors will measure involuntary tremor. Stay as still as possible.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: r.sp(12), color: Colors.grey[700]),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildHandChip('Left', blueAccent, Icons.back_hand_rounded),
-              const SizedBox(width: 10),
-              const Icon(Icons.arrow_forward, color: Colors.grey, size: 20),
-              const SizedBox(width: 10),
-              _buildHandChip('Right', purpleAccent, Icons.front_hand_rounded),
+              _buildHandChip(r, 'Left', blueAccent, Icons.back_hand_rounded),
+              SizedBox(width: r.w(10)),
+              Icon(Icons.arrow_forward, color: Colors.grey, size: r.dp(20)),
+              SizedBox(width: r.w(10)),
+              _buildHandChip(r, 'Right', purpleAccent, Icons.front_hand_rounded),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _startLeftHand,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: tealAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: tealAccent.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    blurRadius: r.dp(20),
+                    offset: Offset(r.w(0), r.h(8)),
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Start Test',
-                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                    style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -567,35 +569,35 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
     );
   }
 
-  Widget _buildInstructionRow(IconData icon, String text) {
+  Widget _buildInstructionRow(Responsive r, IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey[600], size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey[700]))),
+        Icon(icon, color: Colors.grey[600], size: r.dp(18)),
+        SizedBox(width: r.w(10)),
+        Expanded(child: Text(text, style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700]))),
       ],
     );
   }
 
-  Widget _buildHandChip(String text, Color color, IconData icon) {
+  Widget _buildHandChip(Responsive r, String text, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(10)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(r.dp(12)),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 6),
+          Icon(icon, color: color, size: r.dp(18)),
+          SizedBox(width: r.w(6)),
           Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 
-  Widget _buildRecordingPhase() {
+  Widget _buildRecordingPhase(Responsive r) {
     final isLeft = _currentPhase == TremorPhase.leftHand;
     final color = isLeft ? blueAccent : purpleAccent;
     final handText = isLeft ? 'LEFT HAND' : 'RIGHT HAND';
@@ -607,19 +609,19 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(10)),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(isLeft ? Icons.back_hand_rounded : Icons.front_hand_rounded, color: color, size: 20),
-              const SizedBox(width: 8),
+              Icon(isLeft ? Icons.back_hand_rounded : Icons.front_hand_rounded, color: color, size: r.dp(20)),
+              SizedBox(width: r.w(8)),
               Text(
                 handText,
-                style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1),
+                style: TextStyle(color: color, fontSize: r.sp(16), fontWeight: FontWeight.w700, letterSpacing: 1),
               ),
             ],
           ),
@@ -629,17 +631,17 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
         Text(
           '$_timeRemaining',
           style: TextStyle(
-            fontSize: 48,
+            fontSize: r.sp(48),
             fontWeight: FontWeight.w300,
             color: _timeRemaining <= 3 ? redAccent : Colors.black54,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: r.h(8)),
         Text(
           'seconds remaining',
-          style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+          style: TextStyle(fontSize: r.sp(13), color: Colors.grey[500]),
         ),
-        const SizedBox(height: 30),
+        SizedBox(height: r.h(30)),
         // Live tremor indicator
         AnimatedBuilder(
           animation: _pulseController,
@@ -654,29 +656,29 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
               ),
               child: Center(
                 child: Container(
-                  width: 90,
-                  height: 90,
+                  width: r.w(90),
+                  height: r.h(90),
                   decoration: BoxDecoration(
                     color: intensityColor.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Container(
-                      width: 60,
-                      height: 60,
+                      width: r.w(60),
+                      height: r.h(60),
                       decoration: BoxDecoration(
                         color: intensityColor,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
                             color: intensityColor.withOpacity(0.4),
-                            blurRadius: 20,
-                            spreadRadius: 5,
+                            blurRadius: r.dp(20),
+                            spreadRadius: r.dp(5),
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Icon(Icons.vibration_rounded, color: Colors.white, size: 28),
+                      child: Center(
+                        child: Icon(Icons.vibration_rounded, color: Colors.white, size: r.dp(28)),
                       ),
                     ),
                   ),
@@ -685,27 +687,27 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
             );
           },
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         // Live reading
         Text(
           '${_currentMagnitude.toStringAsFixed(3)} m/s\u00B2',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: intensityColor),
+          style: TextStyle(fontSize: r.sp(16), fontWeight: FontWeight.w600, color: intensityColor),
         ),
         Text(
           _currentMagnitude < 0.3 ? 'Stable' : _currentMagnitude < 1.0 ? 'Mild tremor' : 'Significant tremor',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          style: TextStyle(fontSize: r.sp(12), color: Colors.grey[500]),
         ),
         const Spacer(),
         Text(
           'Hold phone flat on your open palm',
-          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+          style: TextStyle(fontSize: r.sp(14), color: Colors.grey[500]),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
       ],
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     final leftAmp = (_leftHandResults['tremor_amplitude'] ?? 0.0) as double;
     final rightAmp = (_rightHandResults['tremor_amplitude'] ?? 0.0) as double;
     final leftFreq = (_leftHandResults['tremor_frequency'] ?? 0.0) as double;
@@ -715,73 +717,73 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.w(80),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_rounded, color: greenAccent, size: 45),
+            child: Icon(Icons.check_circle_rounded, color: greenAccent, size: r.dp(45)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Test Completed!',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           Row(
             children: [
-              Expanded(child: _buildHandResultCard('Left Hand', leftAmp, leftFreq, blueAccent)),
-              const SizedBox(width: 12),
-              Expanded(child: _buildHandResultCard('Right Hand', rightAmp, rightFreq, purpleAccent)),
+              Expanded(child: _buildHandResultCard(r, 'Left Hand', leftAmp, leftFreq, blueAccent)),
+              SizedBox(width: r.w(12)),
+              Expanded(child: _buildHandResultCard(r, 'Right Hand', rightAmp, rightFreq, purpleAccent)),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: mintGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Asymmetry Index', style: TextStyle(fontSize: 14)),
+                Text('Asymmetry Index', style: TextStyle(fontSize: r.sp(14))),
                 Text('${asymmetry.toStringAsFixed(1)}%',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    style: TextStyle(fontSize: r.sp(16), fontWeight: FontWeight.w700)),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Text(
               _getTremorInterpretation(leftAmp, rightAmp, leftFreq, rightFreq),
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: r.sp(12), color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _completeTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: greenAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
+                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -791,25 +793,25 @@ class _RestingTremorTestScreenState extends State<RestingTremorTestScreen>
     );
   }
 
-  Widget _buildHandResultCard(String title, double amplitude, double frequency, Color color) {
+  Widget _buildHandResultCard(Responsive r, String title, double amplitude, double frequency, Color color) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(r.dp(14)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(r.dp(14)),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         children: [
-          Text(title, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
+          Text(title, style: TextStyle(fontSize: r.sp(12), color: color, fontWeight: FontWeight.w600)),
+          SizedBox(height: r.h(8)),
           Text(amplitude.toStringAsFixed(3),
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: color)),
-          Text('amplitude', style: TextStyle(fontSize: 10, color: Colors.grey[600])),
-          const SizedBox(height: 6),
+              style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w800, color: color)),
+          Text('amplitude', style: TextStyle(fontSize: r.sp(10), color: Colors.grey[600])),
+          SizedBox(height: r.h(6)),
           Text('${frequency.toStringAsFixed(1)} Hz',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[700])),
-          Text('frequency', style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+              style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w600, color: Colors.grey[700])),
+          Text('frequency', style: TextStyle(fontSize: r.sp(10), color: Colors.grey[600])),
         ],
       ),
     );

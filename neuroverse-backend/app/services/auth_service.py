@@ -20,6 +20,8 @@ from app.core.security import (
 )
 from app.core.config import settings
 from app.services.email_service import EmailService
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 
 
 class AuthService:
@@ -148,7 +150,55 @@ class AuthService:
         refresh_token = create_refresh_token({"sub": str(user.id)})
         
         return user, access_token, refresh_token
-    
+
+    async def google_login(self, token: str) -> tuple[User, str, str]:
+        """Authenticate via Google Sign-In. Creates account if new user."""
+        try:
+            idinfo = google_id_token.verify_oauth2_token(
+                token,
+                google_requests.Request(),
+                clock_skew_in_seconds=10,
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Google token"
+            )
+
+        email = idinfo.get("email")
+        if not email or not idinfo.get("email_verified"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Google account email not verified"
+            )
+
+        # Check if user exists
+        result = await self.db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            # Auto-create verified user from Google profile
+            user = User(
+                email=email,
+                password_hash=get_password_hash(f"google_{idinfo['sub']}_{email}"),
+                first_name=idinfo.get("given_name", ""),
+                last_name=idinfo.get("family_name", ""),
+                is_verified=True,
+            )
+            self.db.add(user)
+            await self.db.commit()
+            await self.db.refresh(user)
+        elif not user.is_verified:
+            # Auto-verify existing unverified user who signs in via Google
+            user.is_verified = True
+            await self.db.commit()
+            await self.db.refresh(user)
+
+        access_token = create_access_token({"sub": str(user.id)})
+        refresh_token = create_refresh_token({"sub": str(user.id)})
+
+        return user, access_token, refresh_token
+
     async def refresh_tokens(self, refresh_token: str) -> tuple[str, str]:
         """Refresh access and refresh tokens."""
         payload = decode_token(refresh_token)

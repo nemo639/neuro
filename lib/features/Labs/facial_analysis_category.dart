@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
 import 'package:neuroverse/core/loading_bars.dart';
+import 'package:neuroverse/core/responsive.dart';
 
 class FacialAnalysisCategoryScreen extends StatefulWidget {
   const FacialAnalysisCategoryScreen({super.key});
@@ -261,6 +262,7 @@ class _FacialAnalysisCategoryScreenState
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, _) async {
@@ -277,17 +279,17 @@ class _FacialAnalysisCategoryScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildAboutCard(),
-                const SizedBox(height: 20),
-                _buildProgressCard(),
-                const SizedBox(height: 24),
-                _buildBeforeYouStartCard(),
-                const SizedBox(height: 24),
-                _buildTestComponentsSection(),
-                const SizedBox(height: 30),
+                SizedBox(height: r.h(20)),
+                _buildHeader(r),
+                SizedBox(height: r.h(24)),
+                _buildAboutCard(r),
+                SizedBox(height: r.h(20)),
+                _buildProgressCard(r),
+                SizedBox(height: r.h(24)),
+                _buildBeforeYouStartCard(r),
+                SizedBox(height: r.h(24)),
+                _buildTestComponentsSection(r),
+                SizedBox(height: r.h(30)),
               ],
             ),
           ),
@@ -296,11 +298,11 @@ class _FacialAnalysisCategoryScreenState
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Row(
           children: [
             GestureDetector(
@@ -342,43 +344,43 @@ class _FacialAnalysisCategoryScreenState
                 }
               },
               child: Container(
-                width: 44,
-                height: 44,
+                width: r.dp(44),
+                height: r.dp(44),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(r.w(14)),
                   border: Border.all(
                       color: Colors.black.withValues(alpha: 0.08)),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
-                    size: 18),
+                child: Icon(Icons.arrow_back_ios_new_rounded,
+                    size: r.dp(18)),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: r.w(16)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Facial Analysis',
+                  Text('Facial Analysis',
                       style: TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.w800)),
+                          fontSize: r.sp(24), fontWeight: FontWeight.w800)),
                   Text('2-3 minutes',
                       style: TextStyle(
-                          fontSize: 14,
+                          fontSize: r.sp(14),
                           fontWeight: FontWeight.w500,
                           color: Colors.black.withValues(alpha: 0.5))),
                 ],
               ),
             ),
             Container(
-              width: 52,
-              height: 52,
+              width: r.dp(52),
+              height: r.dp(52),
               decoration: BoxDecoration(
                 color: pinkAccent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.w(16)),
               ),
-              child: const Icon(Icons.face_retouching_natural_rounded,
-                  color: pinkAccent, size: 28),
+              child: Icon(Icons.face_retouching_natural_rounded,
+                  color: pinkAccent, size: r.dp(28)),
             ),
           ],
         ),
@@ -386,16 +388,16 @@ class _FacialAnalysisCategoryScreenState
     );
   }
 
-  Widget _buildAboutCard() {
+  Widget _buildAboutCard(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.05,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(r.w(18)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.w(20)),
             border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
             boxShadow: [
               BoxShadow(
@@ -407,28 +409,28 @@ class _FacialAnalysisCategoryScreenState
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: r.dp(44),
+                height: r.dp(44),
                 decoration: BoxDecoration(
                   color: pinkAccent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(r.w(14)),
                 ),
                 child:
-                    const Icon(Icons.info_outline_rounded, color: pinkAccent),
+                    Icon(Icons.info_outline_rounded, color: pinkAccent, size: r.dp(22)),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: r.w(14)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('About This Assessment',
+                    Text('About This Assessment',
                         style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 4),
+                            fontSize: r.sp(15), fontWeight: FontWeight.w700)),
+                    SizedBox(height: r.h(4)),
                     Text(
                       'AI-powered facial movement analysis evaluates blink patterns, smile dynamics, expression range and hypomimia for PD screening.',
                       style: TextStyle(
-                          fontSize: 12,
+                          fontSize: r.sp(12),
                           fontWeight: FontWeight.w500,
                           color: Colors.black.withValues(alpha: 0.55)),
                     ),
@@ -442,18 +444,18 @@ class _FacialAnalysisCategoryScreenState
     );
   }
 
-  Widget _buildProgressCard() {
+  Widget _buildProgressCard(Responsive r) {
     final progress = totalCount == 0 ? 0.0 : completedCount / totalCount;
 
     return _buildAnimatedWidget(
       delay: 0.1,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(r.w(18)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.w(20)),
             border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
             boxShadow: [
               BoxShadow(
@@ -467,32 +469,32 @@ class _FacialAnalysisCategoryScreenState
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Progress',
+                  Text('Progress',
                       style: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700)),
+                          fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                   Text('$completedCount/$totalCount completed',
                       style: TextStyle(
-                          fontSize: 13,
+                          fontSize: r.sp(13),
                           fontWeight: FontWeight.w600,
                           color: pinkAccent)),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: r.h(12)),
               ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(r.w(6)),
                 child: Stack(
                   children: [
-                    Container(height: 10, color: Colors.grey.shade100),
+                    Container(height: r.h(10), color: Colors.grey.shade100),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 500),
-                      height: 10,
+                      height: r.h(10),
                       width: MediaQuery.of(context).size.width *
                           progress *
                           0.82,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                             colors: [pinkAccent, Color(0xFFDB2777)]),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(r.w(6)),
                       ),
                     ),
                   ],
@@ -505,49 +507,49 @@ class _FacialAnalysisCategoryScreenState
     );
   }
 
-  Widget _buildBeforeYouStartCard() {
+  Widget _buildBeforeYouStartCard(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(r.w(18)),
           decoration: BoxDecoration(
             color: darkCard,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.w(20)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(Icons.tips_and_updates_rounded,
-                      color: Colors.amber, size: 22),
-                  SizedBox(width: 10),
+                      color: Colors.amber, size: r.dp(22)),
+                  SizedBox(width: r.w(10)),
                   Text('Before You Start',
                       style: TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
+                          fontSize: r.sp(16),
                           fontWeight: FontWeight.w700)),
                 ],
               ),
-              const SizedBox(height: 14),
-              _buildTipItem(
+              SizedBox(height: r.h(14)),
+              _buildTipItem(r,
                   Icons.light_mode_rounded,
                   'Good lighting',
                   'Face a window or lamp for clear detection'),
-              const SizedBox(height: 10),
-              _buildTipItem(
+              SizedBox(height: r.h(10)),
+              _buildTipItem(r,
                   Icons.straighten_rounded,
                   'Arm\'s length',
                   'Hold phone steady at face level'),
-              const SizedBox(height: 10),
-              _buildTipItem(
+              SizedBox(height: r.h(10)),
+              _buildTipItem(r,
                   Icons.visibility_rounded,
                   'Remove glasses',
                   'Better eye tracking without glasses'),
-              const SizedBox(height: 10),
-              _buildTipItem(
+              SizedBox(height: r.h(10)),
+              _buildTipItem(r,
                   Icons.face_rounded,
                   'Follow prompts',
                   'Perform each task as instructed on screen'),
@@ -558,32 +560,32 @@ class _FacialAnalysisCategoryScreenState
     );
   }
 
-  Widget _buildTipItem(IconData icon, String title, String subtitle) {
+  Widget _buildTipItem(Responsive r, IconData icon, String title, String subtitle) {
     return Row(
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: r.dp(36),
+          height: r.dp(36),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(r.w(10)),
           ),
-          child: Icon(icon, color: Colors.white70, size: 18),
+          child: Icon(icon, color: Colors.white70, size: r.dp(18)),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: r.w(12)),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: Colors.white,
-                      fontSize: 13,
+                      fontSize: r.sp(13),
                       fontWeight: FontWeight.w600)),
               Text(subtitle,
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 11)),
+                      fontSize: r.sp(11))),
             ],
           ),
         ),
@@ -591,42 +593,42 @@ class _FacialAnalysisCategoryScreenState
     );
   }
 
-  Widget _buildTestComponentsSection() {
+  Widget _buildTestComponentsSection(Responsive r) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildAnimatedWidget(
           delay: 0.25,
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: r.w(20)),
             child: Text('Test Components',
                 style: TextStyle(
-                    fontSize: 20,
+                    fontSize: r.sp(20),
                     fontWeight: FontWeight.w700,
                     color: Colors.black87)),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: r.h(16)),
         ...testComponents.asMap().entries.map((entry) {
           int index = entry.key;
           _TestComponent test = entry.value;
           return _buildAnimatedWidget(
             delay: 0.3 + (index * 0.05),
-            child: _buildTestComponentCard(test),
+            child: _buildTestComponentCard(r, test),
           );
         }),
       ],
     );
   }
 
-  Widget _buildTestComponentCard(_TestComponent test) {
+  Widget _buildTestComponentCard(Responsive r, _TestComponent test) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(6)),
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(r.w(18)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(r.w(20)),
           border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
           boxShadow: [
             BoxShadow(
@@ -640,23 +642,23 @@ class _FacialAnalysisCategoryScreenState
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: r.dp(48),
+                  height: r.dp(48),
                   decoration: BoxDecoration(
                     color: test.isCompleted
                         ? greenAccent.withValues(alpha: 0.15)
                         : pinkAccent.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(r.w(14)),
                   ),
                   child: Icon(
                     test.isCompleted
                         ? Icons.check_circle_rounded
                         : test.icon,
                     color: test.isCompleted ? greenAccent : pinkAccent,
-                    size: 24,
+                    size: r.dp(24),
                   ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: r.w(14)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,31 +667,31 @@ class _FacialAnalysisCategoryScreenState
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(test.name,
-                              style: const TextStyle(
-                                  fontSize: 16,
+                              style: TextStyle(
+                                  fontSize: r.sp(16),
                                   fontWeight: FontWeight.w700,
                                   color: Colors.black87)),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: r.w(10), vertical: r.h(5)),
                             decoration: BoxDecoration(
                               color:
                                   Colors.black.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(r.w(8)),
                             ),
                             child: Text(test.duration,
                                 style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: r.sp(11),
                                     fontWeight: FontWeight.w600,
                                     color: Colors.black
                                         .withValues(alpha: 0.5))),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: r.h(4)),
                       Text(test.description,
                           style: TextStyle(
-                              fontSize: 13,
+                              fontSize: r.sp(13),
                               fontWeight: FontWeight.w500,
                               color:
                                   Colors.black.withValues(alpha: 0.5))),
@@ -698,26 +700,26 @@ class _FacialAnalysisCategoryScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: r.h(14)),
             if (test.isCompleted)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(vertical: r.h(12)),
                 decoration: BoxDecoration(
                   color: greenAccent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(r.w(14)),
                   border:
                       Border.all(color: greenAccent.withValues(alpha: 0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.check_circle_rounded,
-                        color: greenAccent, size: 18),
-                    SizedBox(width: 8),
+                        color: greenAccent, size: r.dp(18)),
+                    SizedBox(width: r.w(8)),
                     Text('Completed',
                         style: TextStyle(
-                            fontSize: 14,
+                            fontSize: r.sp(14),
                             fontWeight: FontWeight.w700,
                             color: greenAccent)),
                   ],
@@ -755,10 +757,10 @@ class _FacialAnalysisCategoryScreenState
                 },
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: r.h(14)),
                   decoration: BoxDecoration(
                     color: pinkAccent,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(r.w(14)),
                     boxShadow: [
                       BoxShadow(
                           color: pinkAccent.withValues(alpha: 0.4),
@@ -766,15 +768,15 @@ class _FacialAnalysisCategoryScreenState
                           offset: const Offset(0, 4)),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.play_arrow_rounded,
-                          color: Colors.white, size: 20),
-                      SizedBox(width: 8),
+                          color: Colors.white, size: r.dp(20)),
+                      SizedBox(width: r.w(8)),
                       Text('Start Test',
                           style: TextStyle(
-                              fontSize: 14,
+                              fontSize: r.sp(14),
                               fontWeight: FontWeight.w700,
                               color: Colors.white)),
                     ],

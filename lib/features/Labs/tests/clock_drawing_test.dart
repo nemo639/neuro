@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
+import '../../../core/responsive.dart';
 
 enum CDTPhase { instructions, drawing, completed }
 
@@ -263,61 +264,62 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Clock Drawing Test',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800),
                 ),
                 Text(
                   _getPhaseText(),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          _buildStatusBadge(),
+          _buildStatusBadge(r),
         ],
       ),
     );
   }
 
-  Widget _buildStatusBadge() {
+  Widget _buildStatusBadge(Responsive r) {
     Color color;
     String text;
     IconData icon;
@@ -341,16 +343,16 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(r.dp(20)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 6),
-          Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          Icon(icon, color: color, size: r.dp(16)),
+          SizedBox(width: r.w(6)),
+          Text(text, style: TextStyle(color: color, fontSize: r.sp(12), fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -367,7 +369,7 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0;
     switch (_currentPhase) {
       case CDTPhase.instructions:
@@ -382,11 +384,11 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -394,19 +396,19 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [blueAccent, purpleAccent]),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.dp(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -416,89 +418,89 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: _buildPhaseContent(),
+        borderRadius: BorderRadius.circular(r.dp(24)),
+        child: _buildPhaseContent(r),
       ),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case CDTPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case CDTPhase.drawing:
-        return _buildDrawingPhase();
+        return _buildDrawingPhase(r);
       case CDTPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.dp(20)),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.dp(80),
+            height: r.dp(80),
             decoration: BoxDecoration(
               color: purpleAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.access_time_rounded, color: purpleAccent, size: 40),
+            child: Icon(Icons.access_time_rounded, color: purpleAccent, size: r.dp(40)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Clock Drawing Test',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Assess visuospatial and executive function',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Clock preview
           Container(
-            width: 120,
-            height: 120,
+            width: r.dp(120),
+            height: r.dp(120),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
               border: Border.all(color: Colors.grey[200]!),
             ),
             child: CustomPaint(
               painter: ClockTemplatePainter(color: Colors.grey[300]!),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: softLavender.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Column(
               children: [
-                _buildInstructionRow(Icons.circle_outlined, 'Draw a large circle for the clock face'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.format_list_numbered, 'Place all 12 numbers inside the circle'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.schedule, 'Draw the hands to show 11:10'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.timer, 'Take your time, accuracy matters'),
+                _buildInstructionRow(Icons.circle_outlined, 'Draw a large circle for the clock face', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.format_list_numbered, 'Place all 12 numbers inside the circle', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.schedule, 'Draw the hands to show 11:10', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.timer, 'Take your time, accuracy matters', r),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _startDrawing,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: purpleAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: purpleAccent.withOpacity(0.4),
@@ -507,12 +509,12 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
-                  Text('Start Drawing', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
+                  Text('Start Drawing', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -522,23 +524,23 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
     );
   }
 
-  Widget _buildInstructionRow(IconData icon, String text) {
+  Widget _buildInstructionRow(IconData icon, String text, Responsive r) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey[600], size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey[700]))),
+        Icon(icon, color: Colors.grey[600], size: r.dp(18)),
+        SizedBox(width: r.w(10)),
+        Expanded(child: Text(text, style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700]))),
       ],
     );
   }
 
-  Widget _buildDrawingToolbar() {
+  Widget _buildDrawingToolbar(Responsive r) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(8)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(r.dp(14)),
         border: Border.all(color: Colors.black.withOpacity(0.06)),
       ),
       child: Row(
@@ -549,7 +551,7 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
               children: _penColors.map((c) => GestureDetector(
                 onTap: () => setState(() => _selectedColor = c),
                 child: Container(
-                  width: 22, height: 22,
+                  width: r.dp(22), height: r.dp(22),
                   decoration: BoxDecoration(
                     color: c, shape: BoxShape.circle,
                     border: Border.all(
@@ -560,17 +562,17 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
               )).toList(),
             ),
           ),
-          Container(width: 1, height: 24, color: Colors.grey[300], margin: const EdgeInsets.symmetric(horizontal: 4)),
+          Container(width: r.w(1), height: r.h(24), color: Colors.grey[300], margin: EdgeInsets.symmetric(horizontal: r.w(4))),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: _penThicknesses.map((t) => GestureDetector(
               onTap: () => setState(() => _selectedThickness = t),
               child: Container(
-                width: 26, height: 26,
-                margin: const EdgeInsets.symmetric(horizontal: 1),
+                width: r.dp(26), height: r.dp(26),
+                margin: EdgeInsets.symmetric(horizontal: r.w(1)),
                 decoration: BoxDecoration(
                   color: _selectedThickness == t ? Colors.grey[200] : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(r.dp(8)),
                 ),
                 child: Center(child: Container(
                   width: t + 2, height: t + 2,
@@ -584,39 +586,39 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
     );
   }
 
-  Widget _buildDrawingPhase() {
+  Widget _buildDrawingPhase(Responsive r) {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: EdgeInsets.symmetric(vertical: r.h(10)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.draw_rounded, color: blueAccent, size: 20),
-              const SizedBox(width: 8),
+              Icon(Icons.draw_rounded, color: blueAccent, size: r.dp(20)),
+              SizedBox(width: r.w(8)),
               Text(
                 'DRAW A CLOCK SHOWING 11:10',
-                style: TextStyle(color: blueAccent, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                style: TextStyle(color: blueAccent, fontSize: r.sp(14), fontWeight: FontWeight.w700, letterSpacing: 0.5),
               ),
             ],
           ),
         ),
-        _buildDrawingToolbar(),
-        const SizedBox(height: 8),
+        _buildDrawingToolbar(r),
+        SizedBox(height: r.h(8)),
         Expanded(
           child: GestureDetector(
             onPanStart: _onPanStart,
             onPanUpdate: _onPanUpdate,
             onPanEnd: _onPanEnd,
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
+              margin: EdgeInsets.symmetric(horizontal: r.w(20)),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 border: Border.all(color: blueAccent.withOpacity(0.3), width: 2),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 child: RepaintBoundary(
                   key: _canvasKey,
                   child: CustomPaint(
@@ -634,68 +636,68 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(r.dp(16)),
           child: Row(
             children: [
               Expanded(
                 child: GestureDetector(
                   onTap: _clearDrawing,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: r.h(12)),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(r.dp(12)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.refresh_rounded, color: Colors.grey[600], size: 20),
-                        const SizedBox(width: 6),
+                        Icon(Icons.refresh_rounded, color: Colors.grey[600], size: r.dp(20)),
+                        SizedBox(width: r.w(6)),
                         Text('Clear', style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Expanded(
                 child: GestureDetector(
                   onTap: _allStrokes.isNotEmpty ? () {
                     setState(() => _allStrokes.removeLast());
                   } : null,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: r.h(12)),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(r.dp(12)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.undo_rounded, color: _allStrokes.isNotEmpty ? Colors.grey[600] : Colors.grey[400], size: 20),
-                        const SizedBox(width: 6),
+                        Icon(Icons.undo_rounded, color: _allStrokes.isNotEmpty ? Colors.grey[600] : Colors.grey[400], size: r.dp(20)),
+                        SizedBox(width: r.w(6)),
                         Text('Undo', style: TextStyle(color: _allStrokes.isNotEmpty ? Colors.grey[600] : Colors.grey[400], fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Expanded(
                 flex: 2,
                 child: GestureDetector(
                   onTap: _allStrokes.isNotEmpty ? _finishDrawing : null,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: r.h(12)),
                     decoration: BoxDecoration(
                       color: _allStrokes.isNotEmpty ? blueAccent : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(r.dp(12)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_rounded, color: Colors.white, size: 20),
-                        SizedBox(width: 6),
+                        Icon(Icons.check_rounded, color: Colors.white, size: r.dp(20)),
+                        SizedBox(width: r.w(6)),
                         Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                       ],
                     ),
@@ -709,71 +711,71 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     final results = _calculateResults();
     final circleQuality = (results['circle_quality'] ?? 0).toStringAsFixed(0);
     final strokeCount = results['stroke_count'] ?? 0;
     final duration = ((results['drawing_duration_ms'] ?? 0) / 1000).toStringAsFixed(1);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.dp(20)),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.dp(80),
+            height: r.dp(80),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_rounded, color: greenAccent, size: 45),
+            child: Icon(Icons.check_circle_rounded, color: greenAccent, size: r.dp(45)),
           ),
-          const SizedBox(height: 20),
-          const Text('Test Completed!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
+          Text('Test Completed!', style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800)),
+          SizedBox(height: r.h(20)),
           // Results
           Row(
             children: [
-              Expanded(child: _buildResultCard('Circle Quality', '$circleQuality%', blueAccent)),
-              const SizedBox(width: 12),
-              Expanded(child: _buildResultCard('Strokes', '$strokeCount', purpleAccent)),
+              Expanded(child: _buildResultCard('Circle Quality', '$circleQuality%', blueAccent, r)),
+              SizedBox(width: r.w(12)),
+              Expanded(child: _buildResultCard('Strokes', '$strokeCount', purpleAccent, r)),
             ],
           ),
-          const SizedBox(height: 12),
-          _buildResultCard('Drawing Time', '${duration}s', darkCard),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(12)),
+          _buildResultCard('Drawing Time', '${duration}s', darkCard, r),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, size: 16, color: Colors.grey),
-                const SizedBox(width: 8),
+                Icon(Icons.info_outline, size: r.dp(16), color: Colors.grey),
+                SizedBox(width: r.w(8)),
                 Expanded(
                   child: Text(
                     'Your clock drawing will be analyzed by our AI model for visuospatial and executive function assessment.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: r.sp(12), color: Colors.grey[600]),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _completeTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-              decoration: BoxDecoration(color: greenAccent, borderRadius: BorderRadius.circular(16)),
-              child: const Row(
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
+              decoration: BoxDecoration(color: greenAccent, borderRadius: BorderRadius.circular(r.dp(16))),
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
+                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -783,19 +785,19 @@ class _ClockDrawingTestScreenState extends State<ClockDrawingTestScreen>
     );
   }
 
-  Widget _buildResultCard(String label, String value, Color color) {
+  Widget _buildResultCard(String label, String value, Color color, Responsive r) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(r.dp(14)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(r.dp(14)),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         children: [
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          Text(value, style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800, color: color)),
+          SizedBox(height: r.h(4)),
+          Text(label, style: TextStyle(fontSize: r.sp(11), color: Colors.grey[600])),
         ],
       ),
     );

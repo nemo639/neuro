@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:neuroverse/core/api_service.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:neuroverse/core/notification_service.dart';
+import 'package:neuroverse/core/responsive.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _userInitial = 'U';
   String _userName = '';
   int _streak = 0;
+  DateTime? _lastBackPressTime;
   int _totalTestsCompleted = 0;
   int _testsThisWeek = 0;
 
@@ -608,7 +610,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    return Scaffold(
+    final r = Responsive(context);
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        final now = DateTime.now();
+        if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Press back again to exit', style: TextStyle(color: Colors.white)),
+              backgroundColor: darkCard,
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(r.w(12))),
+              margin: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(20)),
+            ),
+          );
+        } else {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
@@ -619,29 +644,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 16),
-                    _buildHeader(),
-                    const SizedBox(height: 20),
-                    _buildWelcomeSection(),
-                    const SizedBox(height: 24),
-                    _buildMainRiskCard(),
-                    const SizedBox(height: 16),
-                    _buildStatsRow(),
-                    const SizedBox(height: 24),
-                    _buildRecentTestsSection(),
-                    const SizedBox(height: 24),
-                    _buildQuickActionsGrid(),
-                    const SizedBox(height: 24),
-                    _buildHealthTipsCarousel(),
-                    const SizedBox(height: 24),
-                    _buildCognitiveScoreTrend(),
-                    const SizedBox(height: 24),
-                    _buildDigitalWellnessCard(),
-                    const SizedBox(height: 14),
-                    _buildWellnessInsightBanner(),
-                    const SizedBox(height: 24),
-                    _buildNeuroEducationCards(),
-                    const SizedBox(height: 24),
+                    SizedBox(height: r.h(16)),
+                    _buildHeader(r),
+                    SizedBox(height: r.h(20)),
+                    _buildWelcomeSection(r),
+                    SizedBox(height: r.h(24)),
+                    _buildMainRiskCard(r),
+                    SizedBox(height: r.h(16)),
+                    _buildStatsRow(r),
+                    SizedBox(height: r.h(24)),
+                    _buildRecentTestsSection(r),
+                    SizedBox(height: r.h(24)),
+                    _buildQuickActionsGrid(r),
+                    SizedBox(height: r.h(24)),
+                    _buildHealthTipsCarousel(r),
+                    SizedBox(height: r.h(24)),
+                    _buildCognitiveScoreTrend(r),
+                    SizedBox(height: r.h(24)),
+                    _buildDigitalWellnessCard(r),
+                    SizedBox(height: r.h(14)),
+                    _buildWellnessInsightBanner(r),
+                    SizedBox(height: r.h(24)),
+                    _buildNeuroEducationCards(r),
+                    SizedBox(height: r.h(24)),
                   ],
                 ),
               ),
@@ -649,59 +674,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildBottomNav(r),
+    ),
     );
   }
 
   // ===================== HEADER =====================
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: r.dp(44),
+                  height: r.dp(44),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(r.w(14)),
                     border: Border.all(color: Colors.black.withOpacity(0.08)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        blurRadius: r.w(8),
+                        offset: Offset(0, r.h(2)),
                       ),
                     ],
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Padding(
-                    padding: const EdgeInsets.all(4),
+                    padding: EdgeInsets.all(r.w(4)),
                     child: Image.asset(
                       'assets/images/logo.png',
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Center(
                         child: CustomPaint(
-                          size: const Size(24, 24),
+                          size: Size(r.dp(24), r.dp(24)),
                           painter: BrainIconPainter(),
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Column(
+                SizedBox(width: r.w(12)),
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'NeuroVerse',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: r.sp(18),
                         fontWeight: FontWeight.w800,
                         color: Colors.black87,
                         letterSpacing: -0.5,
@@ -710,7 +736,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Text(
                       'AI Health Platform',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: r.sp(11),
                         fontWeight: FontWeight.w500,
                         color: Colors.black45,
                       ),
@@ -727,28 +753,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _showNotificationsSheet();
                   },
                   child: Container(
-                    width: 44,
-                    height: 44,
+                    width: r.dp(44),
+                    height: r.dp(44),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(r.w(14)),
                       border: Border.all(color: Colors.black.withOpacity(0.08)),
                     ),
                     child: Stack(
                       children: [
-                        const Center(
+                        Center(
                           child: Icon(
                             Icons.notifications_none_rounded,
-                            size: 22,
+                            size: r.dp(22),
                             color: Colors.black87,
                           ),
                         ),
                         if (_unreadCount > 0)
                           Positioned(
-                            top: 8,
-                            right: 8,
+                            top: r.h(8),
+                            right: r.w(8),
                             child: Container(
-                              width: 18, height: 18,
+                              width: r.dp(18), height: r.dp(18),
                               decoration: const BoxDecoration(
                                 color: Color(0xFFEF4444),
                                 shape: BoxShape.circle,
@@ -756,7 +782,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               child: Center(
                                 child: Text(
                                   _unreadCount > 9 ? '9+' : '$_unreadCount',
-                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white),
+                                  style: TextStyle(fontSize: r.sp(9), fontWeight: FontWeight.w800, color: Colors.white),
                                 ),
                               ),
                             ),
@@ -765,37 +791,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: r.w(10)),
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
                     Navigator.pushNamed(context, '/profile').then((_) {
-                      // Refresh profile image when returning from profile
                       _loadData();
                     });
                   },
                   child: Container(
-                    width: 44,
-                    height: 44,
+                    width: r.dp(44),
+                    height: r.dp(44),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1A1A1A),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(r.w(14)),
                       border: Border.all(color: Colors.black.withOpacity(0.08), width: 2),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(r.w(12)),
                       child: (_profileImagePath != null && _profileImagePath!.isNotEmpty)
                           ? Image.network(
                               '${ApiService.baseUrl}/uploads/$_profileImagePath',
-                              width: 44,
-                              height: 44,
+                              width: r.dp(44),
+                              height: r.dp(44),
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Center(
-                                child: Text(_userInitial, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                                child: Text(_userInitial, style: TextStyle(fontSize: r.sp(18), fontWeight: FontWeight.w700, color: Colors.white)),
                               ),
                             )
                           : Center(
-                              child: Text(_userInitial, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                              child: Text(_userInitial, style: TextStyle(fontSize: r.sp(18), fontWeight: FontWeight.w700, color: Colors.white)),
                             ),
                     ),
                   ),
@@ -1020,18 +1045,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildWelcomeSection() {
+  Widget _buildWelcomeSection(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.05,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Neuro Health',
               style: TextStyle(
-                fontSize: 38,
+                fontSize: r.sp(38),
                 fontWeight: FontWeight.w800,
                 color: Colors.black.withOpacity(0.85),
                 letterSpacing: -1.5,
@@ -1041,7 +1066,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Text(
               'Overview',
               style: TextStyle(
-                fontSize: 38,
+                fontSize: r.sp(38),
                 fontWeight: FontWeight.w800,
                 color: Colors.black.withOpacity(0.85),
                 letterSpacing: -1.5,
@@ -1055,21 +1080,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ===================== MAIN RISK CARD =====================
-  Widget _buildMainRiskCard() {
+  Widget _buildMainRiskCard(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: GestureDetector(
           onTap: () {
             HapticFeedback.lightImpact();
             Navigator.pushNamed(context, '/XAI');
           },
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(r.w(24)),
             decoration: BoxDecoration(
               color: darkCard,
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(r.w(28)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1083,24 +1108,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         Text(
                           'Overall',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: r.sp(14),
                             fontWeight: FontWeight.w500,
                             color: Colors.white.withOpacity(0.6),
                           ),
                         ),
-                        const Text(
+                        Text(
                           'Risk',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: r.sp(28),
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                             letterSpacing: -0.5,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'Assessment',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: r.sp(28),
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                             letterSpacing: -0.5,
@@ -1108,48 +1133,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    _buildCircularIndicator(_overallRisk),
+                    _buildCircularIndicator(_overallRisk, r),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: r.h(24)),
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(10)),
                       decoration: BoxDecoration(
                         color: mintGreen,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(r.w(20)),
                       ),
                       child: Text(
                         '$_riskLevel Risk',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: r.sp(13),
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: r.w(12)),
                     Text(
                       'Tap to view XAI',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: r.sp(13),
                         fontWeight: FontWeight.w500,
                         color: Colors.white.withOpacity(0.5),
                       ),
                     ),
                     const Spacer(),
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: r.dp(44),
+                      height: r.dp(44),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(r.w(14)),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_forward_rounded,
                         color: Colors.white,
-                        size: 22,
+                        size: r.dp(22),
                       ),
                     ),
                   ],
@@ -1162,24 +1187,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCircularIndicator(int value) {
+  Widget _buildCircularIndicator(int value, Responsive r) {
+    final indicatorSize = r.dp(100);
     return Container(
-      width: 100,
-      height: 100,
+      width: indicatorSize,
+      height: indicatorSize,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
           color: Colors.white.withOpacity(0.1),
-          width: 3,
+          width: r.w(3),
         ),
       ),
       child: Stack(
         children: [
           CustomPaint(
-            size: const Size(100, 100),
+            size: Size(indicatorSize, indicatorSize),
             painter: CircularProgressPainter(
               progress: value / 100,
-              strokeWidth: 6,
+              strokeWidth: r.w(6),
               backgroundColor: Colors.white.withOpacity(0.1),
               progressColor: mintGreen,
             ),
@@ -1194,17 +1220,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   children: [
                     Text(
                       value.toString(),
-                      style: const TextStyle(
-                        fontSize: 36,
+                      style: TextStyle(
+                        fontSize: r.sp(36),
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         height: 1,
                       ),
                     ),
-                    const Text(
+                    Text(
                       '%',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: r.sp(14),
                         fontWeight: FontWeight.w600,
                         color: Colors.white70,
                       ),
@@ -1214,7 +1240,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Text(
                   'RISK',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: r.sp(10),
                     fontWeight: FontWeight.w600,
                     color: Colors.white.withOpacity(0.5),
                     letterSpacing: 2,
@@ -1229,11 +1255,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ===================== STATS ROW =====================
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.2,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Row(
           children: [
             Expanded(
@@ -1246,9 +1272,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 badgeColor: _getBadgeColor(_adRisk),
                 bgColor: mintGreen,
                 icon: Icons.memory_rounded,
+                r: r,
               ),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: r.w(14)),
             Expanded(
               child: _buildStatCard(
                 title: "Parkinson's",
@@ -1259,6 +1286,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 badgeColor: _getBadgeColor(_pdRisk),
                 bgColor: softLavender,
                 icon: Icons.timeline_rounded,
+                r: r,
               ),
             ),
           ],
@@ -1276,14 +1304,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required Color badgeColor,
     required Color bgColor,
     required IconData icon,
+    required Responsive r,
   }) {
     return GestureDetector(
       onTap: () => HapticFeedback.lightImpact(),
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(r.w(18)),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(r.w(24)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1291,29 +1320,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(icon, size: 22, color: Colors.black54),
+                Icon(icon, size: r.dp(22), color: Colors.black54),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(4)),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(r.w(10)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 6,
-                        height: 6,
+                        width: r.dp(6),
+                        height: r.dp(6),
                         decoration: BoxDecoration(
                           color: badgeColor,
                           shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(width: 5),
+                      SizedBox(width: r.w(5)),
                       Text(
                         badge,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: r.sp(11),
                           fontWeight: FontWeight.w600,
                           color: badgeColor,
                         ),
@@ -1323,43 +1352,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: r.h(16)),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 15,
+              style: TextStyle(
+                fontSize: r.sp(15),
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: r.h(2)),
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: r.sp(12),
                 fontWeight: FontWeight.w500,
                 color: Colors.black.withOpacity(0.5),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: r.h(12)),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 34,
+                  style: TextStyle(
+                    fontSize: r.sp(34),
                     fontWeight: FontWeight.w800,
                     color: Colors.black87,
                     height: 1,
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4, left: 2),
+                  padding: EdgeInsets.only(bottom: r.h(4), left: r.w(2)),
                   child: Text(
                     unit,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: r.sp(14),
                       fontWeight: FontWeight.w600,
                       color: Colors.black.withOpacity(0.4),
                     ),
@@ -1374,7 +1403,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ===================== RECENT TESTS (DYNAMIC) =====================
-  Widget _buildRecentTestsSection() {
+  Widget _buildRecentTestsSection(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.25,
       child: Column(
@@ -1605,7 +1634,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ===================== HEALTH TIPS CAROUSEL =====================
-  Widget _buildHealthTipsCarousel() {
+  Widget _buildHealthTipsCarousel(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.28,
       child: Column(
@@ -1736,7 +1765,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
 
   // ===================== QUICK ACTIONS GRID =====================
-  Widget _buildQuickActionsGrid() {
+  Widget _buildQuickActionsGrid(Responsive r) {
     final actions = [
       {
         'title': 'Take Test',
@@ -1850,7 +1879,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ===================== COGNITIVE SCORE TREND =====================
-  Widget _buildCognitiveScoreTrend() {
+  Widget _buildCognitiveScoreTrend(Responsive r) {
     // Fixed category list (no gait — not trained)
     final categories = ['All', 'Cognitive', 'Speech', 'Motor', 'Facial'];
 
@@ -2132,7 +2161,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   int _neuroCardIndex = 0;
 
-  Widget _buildNeuroEducationCards() {
+  Widget _buildNeuroEducationCards(Responsive r) {
     final neuroPageController = PageController(viewportFraction: 0.85);
     return _buildAnimatedWidget(
       delay: 0.4,
@@ -2281,7 +2310,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return '${h}h ${m}m';
   }
 
-  Widget _buildDigitalWellnessCard() {
+  Widget _buildDigitalWellnessCard(Responsive r) {
     // Calculate trend
     final screenLimit = 6.0;
     final pctOfLimit = _screenTime > 0 ? ((_screenTime / screenLimit) * 100).round() : 0;
@@ -2492,7 +2521,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildWellnessInsightBanner() {
+  Widget _buildWellnessInsightBanner(Responsive r) {
     // Build insight text based on data
     String insight;
     IconData insightIcon;
@@ -3210,34 +3239,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   // ===================== BOTTOM NAV =====================
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(Responsive r) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      margin: EdgeInsets.fromLTRB(r.w(16), 0, r.w(16), r.h(16)),
       decoration: BoxDecoration(
         color: navBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.w(24)),
         border: Border.all(color: Colors.black.withOpacity(0.06)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: r.w(20),
+            offset: Offset(0, r.h(4)),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(12)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(0, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
-              _buildNavItem(4, Icons.description_outlined, 'Reports'),
-              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
+              _buildNavItem(0, Icons.home_rounded, 'Home', r),
+              _buildNavItem(1, Icons.assignment_outlined, 'Tests', r),
+              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI', r),
+              _buildNavItem(3, Icons.stars_rounded, 'Neuro', r),
+              _buildNavItem(4, Icons.description_outlined, 'Reports', r),
+              _buildNavItem(5, Icons.person_outline_rounded, 'Profile', r),
             ],
           ),
         ),
@@ -3245,16 +3274,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label, Responsive r) {
     final isSelected = _selectedNavIndex == index;
     return GestureDetector(
       onTap: () => _onNavItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(10)),
         decoration: BoxDecoration(
           color: isSelected ? darkCard : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(r.w(16)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -3262,14 +3291,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Icon(
               icon,
               color: isSelected ? Colors.white : Colors.black38,
-              size: 22,
+              size: r.dp(22),
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: TextStyle(
+                  fontSize: r.sp(13),
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),

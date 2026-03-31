@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:neuroverse/features/Home/admin_home_screen.dart';
 import 'package:neuroverse/features/Home/home.dart';
-import 'package:neuroverse/features/Profile/doctor_edit_profile_screen.dart';
-import 'package:neuroverse/features/Profile/doctor_profile_screen.dart';
-import 'package:neuroverse/features/auth/admin_login_screen.dart';
-import 'package:neuroverse/features/auth/doctor-login.dart';
-import 'package:neuroverse/features/Home/doctor-home.dart';
 import 'package:neuroverse/features/auth/login.dart';
 import 'package:neuroverse/features/auth/register.dart';
 import 'package:neuroverse/features/auth/forgot_password_screen.dart';
@@ -95,11 +89,6 @@ class MyApp extends StatelessWidget {
         '/test/story-recall-test': (context) => const StoryRecallTestScreen(),
         '/test/sustained-vowel-test': (context) => const SustainedVowelTestScreen(),
         '/test/picture-description-test': (context) => const PictureDescriptionTestScreen(),
-        '/doctor-profile': (context) => const DoctorProfileScreen(),
-        '/doctor-edit-profile': (context) => const DoctorEditProfileScreen(),
-        // Routes
-        '/doctor-login': (context) => const DoctorLoginScreen(),
-        '/doctor-home': (context) => const DoctorHomeScreen(),
         '/test/stroop-test': (context) => const StroopTestScreen(),
         '/test/nback-test': (context) => const NBackTestScreen(),
         '/test/word-recall-test': (context) => const WordRecallTestScreen(),
@@ -110,8 +99,6 @@ class MyApp extends StatelessWidget {
         '/test/clock-drawing-test': (context) => const ClockDrawingTestScreen(),
         '/test/trail-making-test': (context) => const TrailMakingTestScreen(),
         '/test/meander-drawing-test': (context) => const MeanderDrawingTestScreen(),
-        '/admin-login': (context) => const AdminLoginScreen(),
-        '/admin-home': (context) => const AdminHomeScreen(),
         '/reports': (context) => const ReportsScreen(),
         '/XAI': (context) => const XAIScreen(),
         '/neuro-chat': (context) => const NeuroChatScreen(),

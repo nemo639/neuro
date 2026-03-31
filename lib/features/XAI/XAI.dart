@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/responsive.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 
 class XAIScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
 
   Map<String, dynamic>? _resultData;
   bool _isLoading = true;
+  late Responsive r;
 
   // Design colors matching home screen
   static const Color bgColor = Color(0xFFF7F7F7);
@@ -295,6 +297,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     if (firstReal >= 0 && !modules[_selectedModuleIndex].hasRealData) {
       _selectedModuleIndex = firstReal;
     }
+
     // Auto-select first available method for the selected module
     _autoSelectMethod();
 
@@ -1083,6 +1086,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    r = Responsive(context);
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
@@ -1090,35 +1094,35 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
           child: ShimmerLoading(
             child: SingleChildScrollView(
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   // Header
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     SkeletonLine(width: 160, height: 22),
                     SkeletonCircle(size: 40),
                   ]),
-                  const SizedBox(height: 8),
-                  const SkeletonLine(width: 240, height: 14),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 8),
+                  SkeletonLine(width: 240, height: 14),
+                  SizedBox(height: 24),
                   // Module tabs
-                  Row(children: const [
+                  Row(children: [
                     SkeletonBox(width: 90, height: 36, borderRadius: 18),
                     SizedBox(width: 10),
                     SkeletonBox(width: 90, height: 36, borderRadius: 18),
                     SizedBox(width: 10),
                     SkeletonBox(width: 90, height: 36, borderRadius: 18),
                   ]),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   // Result summary card
-                  const SkeletonBox(width: double.infinity, height: 160, borderRadius: 20),
-                  const SizedBox(height: 24),
+                  SkeletonBox(width: double.infinity, height: 160, borderRadius: 20),
+                  SizedBox(height: 24),
                   // XAI method tabs
-                  const SkeletonLine(width: 140, height: 18),
-                  const SizedBox(height: 12),
-                  Row(children: const [
+                  SkeletonLine(width: 140, height: 18),
+                  SizedBox(height: 12),
+                  Row(children: [
                     SkeletonBox(width: 70, height: 32, borderRadius: 16),
                     SizedBox(width: 8),
                     SkeletonBox(width: 70, height: 32, borderRadius: 16),
@@ -1127,12 +1131,12 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                     SizedBox(width: 8),
                     SkeletonBox(width: 70, height: 32, borderRadius: 16),
                   ]),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   // Explanation card
-                  const SkeletonBox(width: double.infinity, height: 200, borderRadius: 20),
-                  const SizedBox(height: 16),
-                  const SkeletonBox(width: double.infinity, height: 140, borderRadius: 16),
-                  const SizedBox(height: 24),
+                  SkeletonBox(width: double.infinity, height: 200, borderRadius: 20),
+                  SizedBox(height: 16),
+                  SkeletonBox(width: double.infinity, height: 140, borderRadius: 16),
+                  SizedBox(height: 24),
                 ],
               ),
             ),
@@ -1152,24 +1156,24 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20),
-                    _buildHeader(),
-                    const SizedBox(height: 20),
-                    _buildTransparencyCard(),
-                    const SizedBox(height: 24),
-                    _buildModuleSelector(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 20),
+                    _buildHeader(r),
+                    SizedBox(height: 20),
+                    _buildTransparencyCard(r),
+                    SizedBox(height: 24),
+                    _buildModuleSelector(r),
+                    SizedBox(height: 16),
                     if (!selectedModule.hasRealData)
-                      _buildNoDataPlaceholder()
+                      _buildNoDataPlaceholder(r)
                     else ...[
-                      _buildMethodSelector(),
-                      const SizedBox(height: 16),
-                      _buildInterpretationGuideCard(),
-                      const SizedBox(height: 20),
+                      _buildMethodSelector(r),
+                      SizedBox(height: 16),
+                      _buildInterpretationGuideCard(r),
+                      SizedBox(height: 20),
                       // Dynamic content based on selected XAI method
-                      _buildSelectedMethodContent(),
+                      _buildSelectedMethodContent(r),
                     ],
-                    const SizedBox(height: 100),
+                    SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -1177,89 +1181,89 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildBottomNav(r),
     );
   }
 
   // ------------------------------------------------------------------ //
   // No-data placeholder for untested modules                           //
   // ------------------------------------------------------------------ //
-  Widget _buildNoDataPlaceholder() {
+  Widget _buildNoDataPlaceholder(Responsive r) {
     final mod = selectedModule;
-    return _buildAnimatedWidget(
+    return _buildAnimatedWidget(r, 
       delay: 0.1,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+          padding: EdgeInsets.symmetric(vertical: r.h(48), horizontal: r.w(24)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(r.dp(24)),
             border: Border.all(color: mod.color.withValues(alpha: 0.15)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                blurRadius: r.dp(16),
+                offset: Offset(0, r.dp(4)),
               ),
             ],
           ),
           child: Column(
             children: [
               Container(
-                width: 72,
-                height: 72,
+                width: r.dp(72),
+                height: r.dp(72),
                 decoration: BoxDecoration(
                   color: mod.color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(mod.icon, color: mod.color, size: 36),
+                child: Icon(mod.icon, color: mod.color, size: r.dp(36)),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: r.h(20)),
               Text(
                 '${mod.name} Analysis',
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                    fontSize: r.sp(20), fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: r.h(8)),
               Text(
                 'No test results yet',
                 style: TextStyle(
-                    fontSize: 15,
+                    fontSize: r.sp(15),
                     fontWeight: FontWeight.w600,
                     color: mod.color),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: r.h(12)),
               Text(
                 'Complete the ${mod.name} test to see AI-powered explanations, feature importance, and personalized insights.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    fontSize: 13,
+                    fontSize: r.sp(13),
                     fontWeight: FontWeight.w500,
                     color: Colors.black.withValues(alpha: 0.45)),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: r.h(24)),
               // Preview bars at zero
               ...List.generate(4, (i) {
                 final labels = ['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4'];
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: EdgeInsets.only(bottom: r.h(10)),
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 70,
+                        width: r.w(70),
                         child: Text(labels[i],
                             style: TextStyle(
-                                fontSize: 11,
+                                fontSize: r.sp(11),
                                 color: Colors.black.withValues(alpha: 0.3))),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: r.w(8)),
                       Expanded(
                         child: Container(
-                          height: 8,
+                          height: r.h(8),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(r.dp(4)),
                           ),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
@@ -1267,7 +1271,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: mod.color.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(r.dp(4)),
                               ),
                             ),
                           ),
@@ -1277,13 +1281,13 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                   ),
                 );
               }),
-              const SizedBox(height: 20),
+              SizedBox(height: r.h(20)),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                padding: EdgeInsets.symmetric(
+                    horizontal: r.w(20), vertical: r.h(12)),
                 decoration: BoxDecoration(
                   color: mod.color.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(r.dp(14)),
                   border: Border.all(
                       color: mod.color.withValues(alpha: 0.2)),
                 ),
@@ -1291,12 +1295,12 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.science_rounded,
-                        color: mod.color, size: 18),
-                    const SizedBox(width: 8),
+                        color: mod.color, size: r.dp(18)),
+                    SizedBox(width: r.w(8)),
                     Text(
                       'Perform test to unlock insights',
                       style: TextStyle(
-                          fontSize: 13,
+                          fontSize: r.sp(13),
                           fontWeight: FontWeight.w600,
                           color: mod.color),
                     ),
@@ -1313,44 +1317,44 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // Per-module interpretation guide (compact info icon + popup)         //
   // ------------------------------------------------------------------ //
-  Widget _buildInterpretationGuideCard() {
-    return _buildAnimatedWidget(
+  Widget _buildInterpretationGuideCard(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.13,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: GestureDetector(
           onTap: () => _showInterpretationSheet(context),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: r.w(14), vertical: r.h(10)),
             decoration: BoxDecoration(
               color: selectedModule.color.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
               border: Border.all(color: selectedModule.color.withOpacity(0.2)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 28,
-                  height: 28,
+                  width: r.dp(28),
+                  height: r.dp(28),
                   decoration: BoxDecoration(
                     color: selectedModule.color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(r.dp(8)),
                   ),
                   child: Icon(Icons.info_outline_rounded,
-                      size: 16, color: selectedModule.color),
+                      size: r.dp(16), color: selectedModule.color),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: r.w(10)),
                 Expanded(
                   child: Text(
                     'Tap to see risk ranges & feature glossary for ${selectedModule.name}',
                     style: TextStyle(
-                        fontSize: 12,
+                        fontSize: r.sp(12),
                         fontWeight: FontWeight.w600,
                         color: selectedModule.color),
                   ),
                 ),
                 Icon(Icons.chevron_right_rounded,
-                    size: 20, color: selectedModule.color),
+                    size: r.dp(20), color: selectedModule.color),
               ],
             ),
           ),
@@ -1373,13 +1377,13 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
         maxChildSize: 0.9,
         minChildSize: 0.4,
         builder: (_, controller) => Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: ListView(
             controller: controller,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 30),
             children: [
               Center(
                 child: Container(
@@ -1390,12 +1394,12 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(2)),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Row(
                 children: [
                   Icon(Icons.info_rounded,
                       size: 20, color: selectedModule.color),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Text('$moduleName — Risk Ranges',
                       style: TextStyle(
                           fontSize: 17,
@@ -1403,22 +1407,22 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                           color: selectedModule.color)),
                 ],
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               ...guidePoints.map((point) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: EdgeInsets.only(bottom: 10),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
                           width: 10,
                           height: 10,
-                          margin: const EdgeInsets.only(top: 3),
+                          margin: EdgeInsets.only(top: 3),
                           decoration: BoxDecoration(
                             color: point['color'] as Color,
                             borderRadius: BorderRadius.circular(5),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Expanded(
                           child: RichText(
                             text: TextSpan(children: [
@@ -1442,12 +1446,12 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                       ],
                     ),
                   )),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Row(
                 children: [
                   Icon(Icons.menu_book_rounded,
                       size: 20, color: selectedModule.color),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Text('Feature Glossary',
                       style: TextStyle(
                           fontSize: 17,
@@ -1455,16 +1459,16 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                           color: selectedModule.color)),
                 ],
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               ...glossary.entries.map((e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.only(bottom: 8),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(
                           width: 120,
                           child: Text(e.key,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.black87)),
@@ -1656,30 +1660,30 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // Per-method, per-category guidance text                              //
   // ------------------------------------------------------------------ //
-  Widget _buildMethodGuidanceBox(String guidance) {
+  Widget _buildMethodGuidanceBox(Responsive r, String guidance) {
     if (guidance.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: r.h(14)),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: r.w(14), vertical: r.h(12)),
         decoration: BoxDecoration(
           color: selectedModule.color.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(r.dp(14)),
           border: Border.all(color: selectedModule.color.withOpacity(0.15)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(Icons.lightbulb_outline_rounded,
-                size: 16, color: selectedModule.color),
-            const SizedBox(width: 10),
+                size: r.dp(16), color: selectedModule.color),
+            SizedBox(width: r.w(10)),
             Expanded(
               child: Text(guidance,
                   style: TextStyle(
-                      fontSize: 12,
+                      fontSize: r.sp(12),
                       fontWeight: FontWeight.w500,
                       color: Colors.black.withOpacity(0.6),
-                      height: 1.4)),
+                      height: r.h(1.4))),
             ),
           ],
         ),
@@ -1690,7 +1694,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   String _getMethodGuidance(String module, int methodIndex) {
     // methodIndex: 0=SHAP, 1=GradCAM, 2=LIME, 3=IG, 4=What-If, 5=Attention, 6=Clinical
     final key = '${module}_$methodIndex';
-    const guides = {
+    final guides = {
       // Speech SHAP
       'Speech_0': 'SHAP bars show how much each speech feature pushed the risk score up or down. Higher bars = stronger influence. "High" means this feature is a key driver of your result.',
       // Speech GradCAM
@@ -1757,67 +1761,67 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // Dynamic content for selected XAI method                             //
   // ------------------------------------------------------------------ //
-  Widget _buildSelectedMethodContent() {
+  Widget _buildSelectedMethodContent(Responsive r) {
     switch (_selectedMethodIndex) {
       case 0:
         return Column(children: [
-          _buildSHAPValuesCard(),
-          const SizedBox(height: 20),
-          _buildFeatureImportanceCard(),
+          _buildSHAPValuesCard(r),
+          SizedBox(height: r.h(20)),
+          _buildFeatureImportanceCard(r),
         ]);
       case 1:
-        return _buildSaliencyMapCard();
+        return _buildSaliencyMapCard(r);
       case 2:
-        return _buildLIMECard();
+        return _buildLIMECard(r);
       case 3:
-        return _buildIntegratedGradientsCard();
+        return _buildIntegratedGradientsCard(r);
       case 4:
-        return _buildCounterfactualCard();
+        return _buildCounterfactualCard(r);
       case 5:
-        return _buildAttentionCard();
+        return _buildAttentionCard(r);
       case 6:
-        return _buildClinicalInterpretationCard();
+        return _buildClinicalInterpretationCard(r);
       default:
-        return _buildSHAPValuesCard();
+        return _buildSHAPValuesCard(r);
     }
   }
 
   // ------------------------------------------------------------------ //
   // Header                                                              //
   // ------------------------------------------------------------------ //
-  Widget _buildHeader() {
-    return _buildAnimatedWidget(
+  Widget _buildHeader(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.0,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Explainable AI',
+                  Text('Explainable AI',
                       style: TextStyle(
-                          fontSize: 24,
+                          fontSize: r.sp(24),
                           fontWeight: FontWeight.w800,
                           color: Colors.black87,
                           letterSpacing: -0.5)),
-                  const SizedBox(height: 2),
+                  SizedBox(height: r.h(2)),
                   Text('7 methods to understand AI predictions',
                       style: TextStyle(
-                          fontSize: 13,
+                          fontSize: r.sp(13),
                           fontWeight: FontWeight.w500,
                           color: Colors.black.withOpacity(0.5))),
                 ],
               ),
             ),
             Container(
-              width: 48,
-              height: 48,
+              width: r.dp(48),
+              height: r.dp(48),
               decoration: BoxDecoration(
-                  color: darkCard, borderRadius: BorderRadius.circular(16)),
-              child: const Icon(Icons.auto_awesome_rounded,
-                  color: Colors.white, size: 24),
+                  color: darkCard, borderRadius: BorderRadius.circular(r.dp(16))),
+              child: Icon(Icons.auto_awesome_rounded,
+                  color: Colors.white, size: r.dp(24)),
             ),
           ],
         ),
@@ -1828,13 +1832,13 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // Transparency Card                                                   //
   // ------------------------------------------------------------------ //
-  Widget _buildTransparencyCard() {
-    return _buildAnimatedWidget(
+  Widget _buildTransparencyCard(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.05,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(r.dp(18)),
           decoration: BoxDecoration(
             gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -1843,46 +1847,46 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                   Colors.white,
                   selectedModule.bgColor.withOpacity(0.5)
                 ]),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
             border:
                 Border.all(color: selectedModule.color.withOpacity(0.2)),
             boxShadow: [
               BoxShadow(
                   color: selectedModule.color.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8))
+                  blurRadius: r.dp(20),
+                  offset: Offset(0, r.dp(8)))
             ],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: r.dp(44),
+                height: r.dp(44),
                 decoration: BoxDecoration(
                     color: selectedModule.color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(r.dp(12))),
                 child: Icon(Icons.verified_user_rounded,
-                    color: selectedModule.color, size: 22),
+                    color: selectedModule.color, size: r.dp(22)),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: r.w(14)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Transparency & Trust',
+                    Text('Transparency & Trust',
                         style: TextStyle(
-                            fontSize: 16,
+                            fontSize: r.sp(16),
                             fontWeight: FontWeight.w700,
                             color: Colors.black87)),
-                    const SizedBox(height: 6),
+                    SizedBox(height: r.h(6)),
                     Text(
                       'NeuroVerse uses 7 XAI methods: SHAP, GradCAM/Saliency, LIME, Integrated Gradients, Counterfactual Analysis, Attention Visualization, and Clinical Interpretation to explain every prediction.',
                       style: TextStyle(
-                          fontSize: 12.5,
+                          fontSize: r.sp(12.5),
                           fontWeight: FontWeight.w500,
                           color: Colors.black.withOpacity(0.5),
-                          height: 1.4),
+                          height: r.h(1.4)),
                     ),
                   ],
                 ),
@@ -1897,26 +1901,26 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // Module Selector (Speech / Motor / Cognitive)                        //
   // ------------------------------------------------------------------ //
-  Widget _buildModuleSelector() {
-    return _buildAnimatedWidget(
+  Widget _buildModuleSelector(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: r.w(20)),
             child: Text('Select Analysis Module',
                 style: TextStyle(
-                    fontSize: 14,
+                    fontSize: r.sp(14),
                     fontWeight: FontWeight.w600,
                     color: Colors.black.withOpacity(0.5))),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           SizedBox(
-            height: 85,
+            height: r.h(85),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: r.w(16)),
               itemCount: _visibleModules.length,
               itemBuilder: (context, listIdx) {
                 final index = _visibleModules[listIdx];
@@ -1932,8 +1936,8 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    width: 90,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: r.w(90),
+                    margin: EdgeInsets.symmetric(horizontal: r.w(4)),
                     decoration: BoxDecoration(
                       gradient: isSelected
                           ? LinearGradient(
@@ -1945,7 +1949,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                                 ])
                           : null,
                       color: isSelected ? null : Colors.white,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(r.dp(18)),
                       border: Border.all(
                           color: isSelected
                               ? module.color
@@ -1955,14 +1959,14 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                           ? [
                               BoxShadow(
                                   color: module.color.withOpacity(0.4),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 6))
+                                  blurRadius: r.dp(15),
+                                  offset: Offset(0, r.dp(6)))
                             ]
                           : [
                               BoxShadow(
                                   color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4))
+                                  blurRadius: r.dp(10),
+                                  offset: Offset(0, r.dp(4)))
                             ],
                     ),
                     child: Stack(
@@ -1972,27 +1976,27 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Container(
-                                width: 38,
-                                height: 38,
+                                width: r.dp(38),
+                                height: r.dp(38),
                                 decoration: BoxDecoration(
                                     color: isSelected
                                         ? Colors.white.withOpacity(0.25)
                                         : module.hasRealData
                                             ? module.bgColor
                                             : Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(12)),
+                                    borderRadius: BorderRadius.circular(r.dp(12))),
                                 child: Icon(module.icon,
                                     color: isSelected
                                         ? Colors.white
                                         : module.hasRealData
                                             ? module.color
                                             : Colors.grey.shade400,
-                                    size: 20),
+                                    size: r.dp(20)),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: r.h(8)),
                               Text(module.name,
                                   style: TextStyle(
-                                      fontSize: 11,
+                                      fontSize: r.sp(11),
                                       fontWeight: FontWeight.w700,
                                       color: isSelected
                                           ? Colors.white
@@ -2017,26 +2021,26 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // XAI Method Selector (7 methods)                                     //
   // ------------------------------------------------------------------ //
-  Widget _buildMethodSelector() {
-    return _buildAnimatedWidget(
+  Widget _buildMethodSelector(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: r.w(20)),
             child: Text('XAI Method',
                 style: TextStyle(
-                    fontSize: 14,
+                    fontSize: r.sp(14),
                     fontWeight: FontWeight.w600,
                     color: Colors.black.withOpacity(0.5))),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           SizedBox(
-            height: 44,
+            height: r.h(44),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: r.w(16)),
               itemCount: _visibleMethods.length,
               itemBuilder: (context, listIdx) {
                 final index = _visibleMethods[listIdx];
@@ -2049,12 +2053,12 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    margin: EdgeInsets.symmetric(horizontal: r.w(4)),
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        EdgeInsets.symmetric(horizontal: r.w(14), vertical: r.h(8)),
                     decoration: BoxDecoration(
                       color: isSelected ? method.color : Colors.white,
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(r.dp(22)),
                       border: Border.all(
                           color: isSelected
                               ? method.color
@@ -2063,8 +2067,8 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                           ? [
                               BoxShadow(
                                   color: method.color.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4))
+                                  blurRadius: r.dp(10),
+                                  offset: Offset(0, r.dp(4)))
                             ]
                           : null,
                     ),
@@ -2072,15 +2076,15 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(method.icon,
-                            size: 16,
+                            size: r.dp(16),
                             color: isSelected
                                 ? Colors.white
                                 : Colors.black54),
-                        const SizedBox(width: 6),
+                        SizedBox(width: r.w(6)),
                         Text(
                           method.name.replaceAll('\n', ' '),
                           style: TextStyle(
-                              fontSize: 12,
+                              fontSize: r.sp(12),
                               fontWeight: FontWeight.w700,
                               color: isSelected
                                   ? Colors.white
@@ -2101,31 +2105,31 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // 1. Saliency / GradCAM Card                                         //
   // ------------------------------------------------------------------ //
-  Widget _buildSaliencyMapCard() {
-    return _buildAnimatedWidget(
+  Widget _buildSaliencyMapCard(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: _cardDecoration(),
+          padding: EdgeInsets.all(r.dp(18)),
+          decoration: _cardDecoration(r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCardHeader(
+              _buildCardHeader(r,
                   selectedModule.saliencyTitle, Icons.gradient_rounded,
                   subtitle: 'GradCAM / Saliency visualization'),
-              const SizedBox(height: 10),
-              _buildMethodGuidanceBox(_getMethodGuidance(selectedModule.name, 1)),
+              SizedBox(height: r.h(10)),
+              _buildMethodGuidanceBox(r, _getMethodGuidance(selectedModule.name, 1)),
               Text(selectedModule.saliencyDescription,
                   style: TextStyle(
-                      fontSize: 12,
+                      fontSize: r.sp(12),
                       fontWeight: FontWeight.w500,
                       color: Colors.black.withOpacity(0.5))),
-              const SizedBox(height: 16),
-              _buildVisualization(selectedModule),
-              const SizedBox(height: 12),
-              _buildLegendBar(
+              SizedBox(height: r.h(16)),
+              _buildVisualization(r, selectedModule),
+              SizedBox(height: r.h(12)),
+              _buildLegendBar(r,
                   selectedModule.saliencyLegend, selectedModule.color),
             ],
           ),
@@ -2137,24 +2141,24 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // 2. SHAP Values Card                                                 //
   // ------------------------------------------------------------------ //
-  Widget _buildSHAPValuesCard() {
-    return _buildAnimatedWidget(
+  Widget _buildSHAPValuesCard(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.2,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: _cardDecoration(),
+          padding: EdgeInsets.all(r.dp(18)),
+          decoration: _cardDecoration(r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCardHeader(
+              _buildCardHeader(r,
                   'SHAP Values', Icons.bar_chart_rounded,
                   subtitle: 'Feature contribution to risk prediction'),
-              const SizedBox(height: 12),
-              _buildMethodGuidanceBox(_getMethodGuidance(selectedModule.name, 0)),
+              SizedBox(height: r.h(12)),
+              _buildMethodGuidanceBox(r, _getMethodGuidance(selectedModule.name, 0)),
               ...selectedModule.shapValues
-                  .map((shap) => _buildHorizontalBar(
+                  .map((shap) => _buildHorizontalBar(r,
                         label: shap.name,
                         value: shap.value,
                         maxValue: 0.30,
@@ -2172,42 +2176,42 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // 3. LIME Card                                                        //
   // ------------------------------------------------------------------ //
-  Widget _buildLIMECard() {
+  Widget _buildLIMECard(Responsive r) {
     final limeVals = selectedModule.limeValues;
-    return _buildAnimatedWidget(
+    return _buildAnimatedWidget(r, 
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: _cardDecoration(),
+          padding: EdgeInsets.all(r.dp(18)),
+          decoration: _cardDecoration(r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCardHeader(
+              _buildCardHeader(r,
                   'LIME Analysis', Icons.science_rounded,
                   subtitle: 'Local Interpretable Model-agnostic Explanations'),
-              const SizedBox(height: 10),
-              _buildMethodGuidanceBox(_getMethodGuidance(selectedModule.name, 2)),
+              SizedBox(height: r.h(10)),
+              _buildMethodGuidanceBox(r, _getMethodGuidance(selectedModule.name, 2)),
               Text(
                 'How small perturbations in each feature locally affect the prediction:',
                 style: TextStyle(
-                    fontSize: 12,
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w500,
                     color: Colors.black.withOpacity(0.5)),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               if (limeVals.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(vertical: r.h(12)),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline_rounded, color: orangeAccent, size: 20),
-                      const SizedBox(width: 10),
+                      Icon(Icons.info_outline_rounded, color: orangeAccent, size: r.dp(20)),
+                      SizedBox(width: r.w(10)),
                       Expanded(
                         child: Text(
                           'LIME analysis is not available for this module. Complete a test to generate local explanations.',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+                          style: TextStyle(fontSize: r.sp(12), fontWeight: FontWeight.w500,
                               color: Colors.black.withValues(alpha: 0.5)),
                         ),
                       ),
@@ -2216,7 +2220,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                 )
               else
                 ...limeVals
-                    .map((l) => _buildDirectionalBar(
+                    .map((l) => _buildDirectionalBar(r,
                           label: l.name.replaceAll('_', ' '),
                           value: l.weight,
                           maxValue: 0.30,
@@ -2224,8 +2228,8 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                           description: l.description,
                         ))
                     .toList(),
-              const SizedBox(height: 12),
-              _buildLegendBar(
+              SizedBox(height: r.h(12)),
+              _buildLegendBar(r,
                   'Green = Protective (reduces risk)  |  Red = Risk (increases risk)',
                   greenAccent),
             ],
@@ -2238,42 +2242,42 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // 4. Integrated Gradients Card                                        //
   // ------------------------------------------------------------------ //
-  Widget _buildIntegratedGradientsCard() {
+  Widget _buildIntegratedGradientsCard(Responsive r) {
     final igVals = selectedModule.igAttributions;
-    return _buildAnimatedWidget(
+    return _buildAnimatedWidget(r, 
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: _cardDecoration(),
+          padding: EdgeInsets.all(r.dp(18)),
+          decoration: _cardDecoration(r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCardHeader(
+              _buildCardHeader(r,
                   'Integrated Gradients', Icons.timeline_rounded,
                   subtitle: 'Path-integrated feature attributions'),
-              const SizedBox(height: 10),
-              _buildMethodGuidanceBox(_getMethodGuidance(selectedModule.name, 3)),
+              SizedBox(height: r.h(10)),
+              _buildMethodGuidanceBox(r, _getMethodGuidance(selectedModule.name, 3)),
               Text(
                 'Attribution scores from baseline (zero) to actual input via gradient integration:',
                 style: TextStyle(
-                    fontSize: 12,
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w500,
                     color: Colors.black.withOpacity(0.5)),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               if (igVals.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(vertical: r.h(12)),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline_rounded, color: orangeAccent, size: 20),
-                      const SizedBox(width: 10),
+                      Icon(Icons.info_outline_rounded, color: orangeAccent, size: r.dp(20)),
+                      SizedBox(width: r.w(10)),
                       Expanded(
                         child: Text(
                           'Integrated Gradients analysis is not available for this module. Complete a test to generate attributions.',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+                          style: TextStyle(fontSize: r.sp(12), fontWeight: FontWeight.w500,
                               color: Colors.black.withValues(alpha: 0.5)),
                         ),
                       ),
@@ -2282,7 +2286,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                 )
               else
                 ...igVals
-                    .map((ig) => _buildDirectionalBar(
+                    .map((ig) => _buildDirectionalBar(r,
                           label: ig.name.replaceAll('_', ' '),
                           value: ig.attribution,
                           maxValue: 0.35,
@@ -2291,25 +2295,25 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                               'Importance: ${(ig.importance * 100).toStringAsFixed(1)}%',
                         ))
                     .toList(),
-              const SizedBox(height: 12),
+              SizedBox(height: r.h(12)),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(10)),
                 decoration: BoxDecoration(
                   color: orangeAccent.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(r.dp(12)),
                   border: Border.all(color: orangeAccent.withOpacity(0.2)),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.info_outline_rounded,
-                        size: 16, color: orangeAccent),
-                    const SizedBox(width: 8),
+                        size: r.dp(16), color: orangeAccent),
+                    SizedBox(width: r.w(8)),
                     Expanded(
                       child: Text(
                         'Integrated Gradients satisfy completeness axiom: attributions sum to the prediction difference.',
                         style: TextStyle(
-                            fontSize: 11,
+                            fontSize: r.sp(11),
                             fontWeight: FontWeight.w500,
                             color: Colors.black.withOpacity(0.6)),
                       ),
@@ -2327,41 +2331,41 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // 5. Counterfactual / What-If Card                                    //
   // ------------------------------------------------------------------ //
-  Widget _buildCounterfactualCard() {
+  Widget _buildCounterfactualCard(Responsive r) {
     final cfs = selectedModule.counterfactuals;
     final actions = selectedModule.actionableInsights;
-    return _buildAnimatedWidget(
+    return _buildAnimatedWidget(r, 
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Column(
           children: [
             // Counterfactual scenarios
             Container(
-              padding: const EdgeInsets.all(18),
-              decoration: _cardDecoration(),
+              padding: EdgeInsets.all(r.dp(18)),
+              decoration: _cardDecoration(r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCardHeader(
+                  _buildCardHeader(r,
                       'What-If Analysis', Icons.compare_arrows_rounded,
                       subtitle:
                           'Changes that would reduce your risk score'),
-                  const SizedBox(height: 10),
-                  _buildMethodGuidanceBox(_getMethodGuidance(selectedModule.name, 4)),
+                  SizedBox(height: r.h(10)),
+                  _buildMethodGuidanceBox(r, _getMethodGuidance(selectedModule.name, 4)),
                   if (cfs.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(vertical: r.h(12)),
                       child: Row(
                         children: [
                           Icon(Icons.check_circle_rounded,
-                              color: greenAccent, size: 20),
-                          const SizedBox(width: 10),
+                              color: greenAccent, size: r.dp(20)),
+                          SizedBox(width: r.w(10)),
                           Expanded(
                             child: Text(
                               'Your risk scores are already low. No counterfactual changes needed.',
                               style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: r.sp(13),
                                   fontWeight: FontWeight.w500,
                                   color: Colors.black.withOpacity(0.6)),
                             ),
@@ -2370,25 +2374,25 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                       ),
                     )
                   else
-                    ...cfs.map((cf) => _buildCounterfactualRow(cf)).toList(),
+                    ...cfs.map((cf) => _buildCounterfactualRow(r, cf)).toList(),
                 ],
               ),
             ),
             if (actions.isNotEmpty) ...[
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               // Actionable insights (light theme)
               Container(
-                padding: const EdgeInsets.all(18),
-                decoration: _cardDecoration(),
+                padding: EdgeInsets.all(r.dp(18)),
+                decoration: _cardDecoration(r),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildCardHeader('Actionable Recommendations',
+                    _buildCardHeader(r, 'Actionable Recommendations',
                         Icons.tips_and_updates_rounded,
                         subtitle: 'Steps you can take to improve your scores'),
-                    const SizedBox(height: 14),
+                    SizedBox(height: r.h(14)),
                     ...actions
-                        .map((a) => _buildActionableRow(a))
+                        .map((a) => _buildActionableRow(r, a))
                         .toList(),
                   ],
                 ),
@@ -2403,29 +2407,29 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // 6. Attention Visualization Card                                     //
   // ------------------------------------------------------------------ //
-  Widget _buildAttentionCard() {
+  Widget _buildAttentionCard(Responsive r) {
     final bars = selectedModule.attentionBars;
-    return _buildAnimatedWidget(
+    return _buildAnimatedWidget(r, 
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: _cardDecoration(),
+          padding: EdgeInsets.all(r.dp(18)),
+          decoration: _cardDecoration(r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCardHeader('Attention Patterns',
+              _buildCardHeader(r, 'Attention Patterns',
                   Icons.center_focus_strong_rounded,
                   subtitle: 'What the AI model focused on most'),
-              const SizedBox(height: 10),
-              _buildMethodGuidanceBox(_getMethodGuidance(selectedModule.name, 5)),
+              SizedBox(height: r.h(10)),
+              _buildMethodGuidanceBox(r, _getMethodGuidance(selectedModule.name, 5)),
               // Attention bars
-              ...bars.map((b) => _buildAttentionBarRow(b)).toList(),
-              const SizedBox(height: 16),
+              ...bars.map((b) => _buildAttentionBarRow(r, b)).toList(),
+              SizedBox(height: r.h(16)),
               // Summary
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(r.dp(14)),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -2434,7 +2438,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                         pinkAccent.withOpacity(0.08),
                         softLavender.withOpacity(0.3)
                       ]),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(r.dp(14)),
                   border: Border.all(color: pinkAccent.withOpacity(0.15)),
                 ),
                 child: Column(
@@ -2443,25 +2447,25 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                     Row(
                       children: [
                         Icon(Icons.auto_awesome_rounded,
-                            size: 16, color: pinkAccent),
-                        const SizedBox(width: 8),
+                            size: r.dp(16), color: pinkAccent),
+                        SizedBox(width: r.w(8)),
                         Text('Attention Summary',
                             style: TextStyle(
-                                fontSize: 13,
+                                fontSize: r.sp(13),
                                 fontWeight: FontWeight.w700,
                                 color: Colors.black.withOpacity(0.7))),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: r.h(8)),
                     Text(
                       selectedModule.attentionNarrative.isNotEmpty
                           ? selectedModule.attentionNarrative
                           : selectedModule.attentionSummary,
                       style: TextStyle(
-                          fontSize: 12,
+                          fontSize: r.sp(12),
                           fontWeight: FontWeight.w500,
                           color: Colors.black.withOpacity(0.6),
-                          height: 1.4),
+                          height: r.h(1.4)),
                     ),
                   ],
                 ),
@@ -2476,61 +2480,61 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // 7. Clinical Interpretation Card                                     //
   // ------------------------------------------------------------------ //
-  Widget _buildClinicalInterpretationCard() {
-    return _buildAnimatedWidget(
+  Widget _buildClinicalInterpretationCard(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: _cardDecoration(),
+          padding: EdgeInsets.all(r.dp(18)),
+          decoration: _cardDecoration(r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCardHeader(
+              _buildCardHeader(r,
                   'Clinical Interpretation', Icons.medical_information_rounded,
                   subtitle: 'Based on neuropsychological assessment standards'),
-              const SizedBox(height: 12),
-              _buildMethodGuidanceBox(_getMethodGuidance(selectedModule.name, 6)),
+              SizedBox(height: r.h(12)),
+              _buildMethodGuidanceBox(r, _getMethodGuidance(selectedModule.name, 6)),
               // Summary
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(r.dp(12)),
                 decoration: BoxDecoration(
                   color: selectedModule.color.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(r.dp(12)),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.summarize_rounded,
-                        color: selectedModule.color, size: 18),
-                    const SizedBox(width: 10),
+                        color: selectedModule.color, size: r.dp(18)),
+                    SizedBox(width: r.w(10)),
                     Expanded(
                       child: Text(selectedModule.summary,
                           style: TextStyle(
-                              fontSize: 12.5,
+                              fontSize: r.sp(12.5),
                               fontWeight: FontWeight.w500,
                               color: Colors.black.withOpacity(0.7),
-                              height: 1.4)),
+                              height: r.h(1.4))),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: r.h(14)),
               // Confidence meter
               Row(
                 children: [
                   Text('Model Confidence:',
                       style: TextStyle(
-                          fontSize: 12,
+                          fontSize: r.sp(12),
                           fontWeight: FontWeight.w600,
                           color: Colors.black.withOpacity(0.5))),
-                  const SizedBox(width: 10),
+                  SizedBox(width: r.w(10)),
                   Expanded(
                     child: Container(
-                      height: 8,
+                      height: r.h(8),
                       decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(4)),
+                          borderRadius: BorderRadius.circular(r.dp(4))),
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
                         widthFactor: selectedModule.confidence,
@@ -2542,24 +2546,24 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                                     ? greenAccent
                                     : yellowAccent
                               ]),
-                              borderRadius: BorderRadius.circular(4)),
+                              borderRadius: BorderRadius.circular(r.dp(4))),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: r.w(8)),
                   Text(
                       '${(selectedModule.confidence * 100).toStringAsFixed(0)}%',
                       style: TextStyle(
-                          fontSize: 12,
+                          fontSize: r.sp(12),
                           fontWeight: FontWeight.w700,
                           color: Colors.black.withOpacity(0.8))),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               // Interpretation points
               ...selectedModule.interpretationPoints
-                  .map((point) => _buildInterpretationRow(point))
+                  .map((point) => _buildInterpretationRow(r, point))
                   .toList(),
             ],
           ),
@@ -2571,33 +2575,33 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // Feature Importance Card                                             //
   // ------------------------------------------------------------------ //
-  Widget _buildFeatureImportanceCard() {
+  Widget _buildFeatureImportanceCard(Responsive r) {
     final features = selectedModule.featureImportance;
     if (features.isEmpty) return const SizedBox.shrink();
     final maxVal = features.map((f) => f.value).reduce((a, b) => a > b ? a : b);
 
-    return _buildAnimatedWidget(
+    return _buildAnimatedWidget(r, 
       delay: 0.25,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: _cardDecoration(),
+          padding: EdgeInsets.all(r.dp(18)),
+          decoration: _cardDecoration(r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Overall Feature Importance',
+              Text('Overall Feature Importance',
                   style: TextStyle(
-                      fontSize: 16,
+                      fontSize: r.sp(16),
                       fontWeight: FontWeight.w700,
                       color: Colors.black87)),
-              const SizedBox(height: 4),
+              SizedBox(height: r.h(4)),
               Text('Ranking of biomarkers by prediction impact',
                   style: TextStyle(
-                      fontSize: 12,
+                      fontSize: r.sp(12),
                       fontWeight: FontWeight.w500,
                       color: Colors.black.withOpacity(0.5))),
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               // Horizontal bars (no overflow)
               ...features.map((feature) {
                 final ratio = maxVal > 0 ? (feature.value / maxVal).clamp(0.0, 1.0) : 0.0;
@@ -2607,25 +2611,25 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                         ? orangeAccent
                         : greenAccent;
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: EdgeInsets.only(bottom: r.h(10)),
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 80,
+                        width: r.w(80),
                         child: Text(feature.name,
                             style: TextStyle(
-                                fontSize: 12,
+                                fontSize: r.sp(12),
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black.withOpacity(0.7)),
                             overflow: TextOverflow.ellipsis),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: r.w(8)),
                       Expanded(
                         child: Container(
-                          height: 14,
+                          height: r.h(14),
                           decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(7)),
+                              borderRadius: BorderRadius.circular(r.dp(7))),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
                             widthFactor: ratio,
@@ -2635,16 +2639,16 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                                   barColor.withOpacity(0.7),
                                   barColor,
                                 ]),
-                                borderRadius: BorderRadius.circular(7),
+                                borderRadius: BorderRadius.circular(r.dp(7)),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: r.w(8)),
                       Text(feature.value.toStringAsFixed(2),
                           style: TextStyle(
-                              fontSize: 11,
+                              fontSize: r.sp(11),
                               fontWeight: FontWeight.w700,
                               color: barColor)),
                     ],
@@ -2662,46 +2666,46 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // Shared widget builders                                              //
   // ================================================================== //
 
-  BoxDecoration _cardDecoration() {
+  BoxDecoration _cardDecoration(Responsive r) {
     return BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(r.dp(22)),
       border: Border.all(color: Colors.black.withOpacity(0.06)),
       boxShadow: [
         BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 6))
+            blurRadius: r.dp(15),
+            offset: Offset(0, r.dp(6)))
       ],
     );
   }
 
-  Widget _buildCardHeader(String title, IconData icon,
+  Widget _buildCardHeader(Responsive r, String title, IconData icon,
       {String subtitle = ''}) {
     return Row(
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: r.dp(36),
+          height: r.dp(36),
           decoration: BoxDecoration(
               color: selectedModule.bgColor,
-              borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: selectedModule.color, size: 20),
+              borderRadius: BorderRadius.circular(r.dp(10))),
+          child: Icon(icon, color: selectedModule.color, size: r.dp(20)),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: r.w(12)),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title,
-                  style: const TextStyle(
-                      fontSize: 15,
+                  style: TextStyle(
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w700,
                       color: Colors.black87)),
               if (subtitle.isNotEmpty)
                 Text(subtitle,
                     style: TextStyle(
-                        fontSize: 11,
+                        fontSize: r.sp(11),
                         fontWeight: FontWeight.w500,
                         color: Colors.black.withOpacity(0.5))),
             ],
@@ -2711,29 +2715,29 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildLegendBar(String text, Color color) {
+  Widget _buildLegendBar(Responsive r, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(10)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(r.dp(12)),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           Container(
-            width: 10,
-            height: 10,
+            width: r.dp(10),
+            height: r.dp(10),
             decoration: BoxDecoration(
                 gradient:
                     const LinearGradient(colors: [Colors.red, Colors.yellow]),
-                borderRadius: BorderRadius.circular(3)),
+                borderRadius: BorderRadius.circular(r.dp(3))),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: r.w(8)),
           Expanded(
             child: Text(text,
                 style: TextStyle(
-                    fontSize: 11,
+                    fontSize: r.sp(11),
                     fontWeight: FontWeight.w600,
                     color: Colors.black.withOpacity(0.6))),
           ),
@@ -2803,7 +2807,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   }
 
   /// Horizontal bar for SHAP-style values with risk-level colors
-  Widget _buildHorizontalBar({
+  Widget _buildHorizontalBar(Responsive r, {
     required String label,
     required double value,
     required double maxValue,
@@ -2817,7 +2821,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
             ? orangeAccent
             : greenAccent;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2831,14 +2835,14 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                     children: [
                       Flexible(
                         child: Text(label,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black87),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Icon(Icons.info_outline_rounded,
                           size: 12,
                           color: Colors.black.withOpacity(0.3)),
@@ -2846,11 +2850,11 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               if (badge.isNotEmpty)
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                       color: barColor.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(6)),
@@ -2860,7 +2864,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                           fontWeight: FontWeight.w700,
                           color: barColor)),
                 ),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Text(value.toStringAsFixed(2),
                   style: TextStyle(
                       fontSize: 11,
@@ -2868,7 +2872,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                       color: barColor)),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Container(
             height: 8,
             decoration: BoxDecoration(
@@ -2896,7 +2900,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   }
 
   /// Directional bar (LIME / IG) with risk/protective color coding
-  Widget _buildDirectionalBar({
+  Widget _buildDirectionalBar(Responsive r, {
     required String label,
     required double value,
     required double maxValue,
@@ -2909,14 +2913,14 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
         : Icons.arrow_downward_rounded;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(icon, size: 14, color: color),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Expanded(
                 child: GestureDetector(
                   onTap: () => _showFeatureInfo(label),
@@ -2925,13 +2929,13 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                     children: [
                       Flexible(
                         child: Text(label,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black87),
                             overflow: TextOverflow.ellipsis),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Icon(Icons.info_outline_rounded,
                           size: 11,
                           color: Colors.black.withOpacity(0.3)),
@@ -2946,7 +2950,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                       color: color)),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Container(
             height: 6,
             decoration: BoxDecoration(
@@ -2968,7 +2972,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
           ),
           if (description.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: EdgeInsets.only(top: 4),
               child: Text(description,
                   style: TextStyle(
                       fontSize: 10.5,
@@ -2981,15 +2985,15 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   }
 
   /// Counterfactual scenario row
-  Widget _buildCounterfactualRow(CounterfactualScenario cf) {
+  Widget _buildCounterfactualRow(Responsive r, CounterfactualScenario cf) {
     final isIncrease = cf.changeDirection == 'increase';
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: r.h(14)),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(r.dp(14)),
         decoration: BoxDecoration(
           color: tealAccent.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(r.dp(14)),
           border: Border.all(color: tealAccent.withOpacity(0.15)),
         ),
         child: Column(
@@ -2998,42 +3002,42 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
             Row(
               children: [
                 Container(
-                  width: 30,
-                  height: 30,
+                  width: r.dp(30),
+                  height: r.dp(30),
                   decoration: BoxDecoration(
                       color: tealAccent.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(r.dp(8))),
                   child: Icon(
                       isIncrease
                           ? Icons.trending_up_rounded
                           : Icons.trending_down_rounded,
                       color: tealAccent,
-                      size: 16),
+                      size: r.dp(16)),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: r.w(10)),
                 Expanded(
                   child: Text(cf.feature,
-                      style: const TextStyle(
-                          fontSize: 13,
+                      style: TextStyle(
+                          fontSize: r.sp(13),
                           fontWeight: FontWeight.w700,
                           color: Colors.black87)),
                 ),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(4)),
                   decoration: BoxDecoration(
                       color: greenAccent.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(r.dp(8))),
                   child: Text('-${cf.riskReduction.toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                          fontSize: 11,
+                      style: TextStyle(
+                          fontSize: r.sp(11),
                           fontWeight: FontWeight.w700,
                           color: greenAccent)),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            // Before → After
+            SizedBox(height: r.h(10)),
+            // Before -> After
             Row(
               children: [
                 Expanded(
@@ -3042,35 +3046,35 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                     children: [
                       Text('Current',
                           style: TextStyle(
-                              fontSize: 10,
+                              fontSize: r.sp(10),
                               fontWeight: FontWeight.w600,
                               color: Colors.black.withOpacity(0.4))),
                       Text(cf.currentValue.toStringAsFixed(
                           cf.currentValue > 10 ? 0 : 2),
-                          style: const TextStyle(
-                              fontSize: 16,
+                          style: TextStyle(
+                              fontSize: r.sp(16),
                               fontWeight: FontWeight.w800,
                               color: Colors.black87)),
                     ],
                   ),
                 ),
                 Icon(Icons.arrow_forward_rounded,
-                    color: tealAccent, size: 20),
-                const SizedBox(width: 12),
+                    color: tealAccent, size: r.dp(20)),
+                SizedBox(width: r.w(12)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Target',
                           style: TextStyle(
-                              fontSize: 10,
+                              fontSize: r.sp(10),
                               fontWeight: FontWeight.w600,
                               color: Colors.black.withOpacity(0.4))),
                       Text(
                           cf.targetValue
                               .toStringAsFixed(cf.targetValue > 10 ? 0 : 2),
                           style: TextStyle(
-                              fontSize: 16,
+                              fontSize: r.sp(16),
                               fontWeight: FontWeight.w800,
                               color: greenAccent)),
                     ],
@@ -3079,22 +3083,22 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
               ],
             ),
             if (cf.feasibility != 'not_modifiable') ...[
-              const SizedBox(height: 6),
+              SizedBox(height: r.h(6)),
               Text(cf.description,
                   style: TextStyle(
-                      fontSize: 11,
+                      fontSize: r.sp(11),
                       fontWeight: FontWeight.w500,
                       color: Colors.black.withOpacity(0.5))),
             ],
             if (cf.feasibility == 'not_modifiable') ...[
-              const SizedBox(height: 6),
+              SizedBox(height: r.h(6)),
               Row(
                 children: [
-                  Icon(Icons.lock_rounded, size: 12, color: Colors.grey),
-                  const SizedBox(width: 4),
+                  Icon(Icons.lock_rounded, size: r.dp(12), color: Colors.grey),
+                  SizedBox(width: r.w(4)),
                   Text('Diagnostic indicator (not directly modifiable)',
                       style: TextStyle(
-                          fontSize: 10.5,
+                          fontSize: r.sp(10.5),
                           fontWeight: FontWeight.w500,
                           color: Colors.black.withOpacity(0.4))),
                 ],
@@ -3107,36 +3111,36 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   }
 
   /// Actionable insight row (light theme)
-  Widget _buildActionableRow(ActionableInsight action) {
+  Widget _buildActionableRow(Responsive r, ActionableInsight action) {
     final accentColor = action.priority == 'high' ? orangeAccent : tealAccent;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: r.h(12)),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(r.dp(12)),
         decoration: BoxDecoration(
           color: accentColor.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(r.dp(12)),
           border: Border.all(color: accentColor.withOpacity(0.15)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 28,
-              height: 28,
+              width: r.dp(28),
+              height: r.dp(28),
               decoration: BoxDecoration(
                 color: accentColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(r.dp(8)),
               ),
               child: Icon(
                 action.priority == 'high'
                     ? Icons.priority_high_rounded
                     : Icons.lightbulb_outline_rounded,
-                size: 16,
+                size: r.dp(16),
                 color: accentColor,
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: r.w(10)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -3146,32 +3150,32 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                       Expanded(
                         child: Text(action.feature,
                             style: TextStyle(
-                                fontSize: 13,
+                                fontSize: r.sp(13),
                                 fontWeight: FontWeight.w700,
                                 color: accentColor)),
                       ),
                       if (action.benefit.isNotEmpty)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: r.w(6), vertical: r.h(2)),
                           decoration: BoxDecoration(
                               color: greenAccent.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(6)),
+                              borderRadius: BorderRadius.circular(r.dp(6))),
                           child: Text(action.benefit,
-                              style: const TextStyle(
-                                  fontSize: 10,
+                              style: TextStyle(
+                                  fontSize: r.sp(10),
                                   fontWeight: FontWeight.w600,
                                   color: greenAccent)),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: r.h(4)),
                   Text(action.recommendation,
                       style: TextStyle(
-                          fontSize: 12,
+                          fontSize: r.sp(12),
                           fontWeight: FontWeight.w500,
                           color: Colors.black.withOpacity(0.6),
-                          height: 1.3)),
+                          height: r.h(1.3))),
                 ],
               ),
             ),
@@ -3182,14 +3186,14 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   }
 
   /// Attention bar row
-  Widget _buildAttentionBarRow(AttentionBar bar) {
+  Widget _buildAttentionBarRow(Responsive r, AttentionBar bar) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: r.h(12)),
       child: Row(
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: r.dp(8),
+            height: r.dp(8),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: bar.activated ? orangeAccent : Colors.grey.shade300,
@@ -3197,35 +3201,35 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                   ? [
                       BoxShadow(
                           color: orangeAccent.withOpacity(0.5),
-                          blurRadius: 4)
+                          blurRadius: r.dp(4))
                     ]
                   : null,
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: r.w(10)),
           SizedBox(
-            width: 100,
+            width: r.w(100),
             child: Text(bar.feature.replaceAll('_', ' '),
                 style: TextStyle(
-                    fontSize: 12,
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w600,
                     color: Colors.black.withOpacity(0.7)),
                 overflow: TextOverflow.ellipsis),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: r.w(8)),
           Expanded(
             child: Container(
-              height: 10,
+              height: r.h(10),
               decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(5)),
+                  borderRadius: BorderRadius.circular(r.dp(5))),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final ratio = (bar.weight / 0.40).clamp(0.0, 1.0);
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 500),
                     width: constraints.maxWidth * ratio,
-                    height: 10,
+                    height: r.h(10),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(colors: [
                         bar.activated
@@ -3233,17 +3237,17 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                             : Colors.grey.shade300,
                         bar.activated ? orangeAccent : Colors.grey.shade400,
                       ]),
-                      borderRadius: BorderRadius.circular(5),
+                      borderRadius: BorderRadius.circular(r.dp(5)),
                     ),
                   );
                 },
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: r.w(8)),
           Text('${(bar.weight * 100).toStringAsFixed(0)}%',
               style: TextStyle(
-                  fontSize: 11,
+                  fontSize: r.sp(11),
                   fontWeight: FontWeight.w700,
                   color: bar.activated
                       ? orangeAccent
@@ -3254,14 +3258,14 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   }
 
   /// Clinical interpretation row (light theme)
-  Widget _buildInterpretationRow(InterpretationPoint point) {
+  Widget _buildInterpretationRow(Responsive r, InterpretationPoint point) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: r.h(14)),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(r.dp(12)),
         decoration: BoxDecoration(
           color: point.color.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(r.dp(12)),
           border: Border.all(color: point.color.withOpacity(0.2)),
         ),
         child: Column(
@@ -3270,58 +3274,58 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
             Row(
               children: [
                 Container(
-                  width: 8,
-                  height: 8,
+                  width: r.dp(8),
+                  height: r.dp(8),
                   decoration: BoxDecoration(
                     color: point.color,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(r.dp(4)),
                     boxShadow: [
                       BoxShadow(
-                          color: point.color.withOpacity(0.5), blurRadius: 4)
+                          color: point.color.withOpacity(0.5), blurRadius: r.dp(4))
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: r.w(8)),
                 Expanded(
                   child: Text(point.title,
                       style: TextStyle(
-                          fontSize: 13,
+                          fontSize: r.sp(13),
                           fontWeight: FontWeight.w700,
                           color: point.color)),
                 ),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      EdgeInsets.symmetric(horizontal: r.w(6), vertical: r.h(2)),
                   decoration: BoxDecoration(
                       color: point.color.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(6)),
+                      borderRadius: BorderRadius.circular(r.dp(6))),
                   child: Text(point.severity.toUpperCase(),
                       style: TextStyle(
-                          fontSize: 9,
+                          fontSize: r.sp(9),
                           fontWeight: FontWeight.w700,
                           color: point.color)),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: r.h(6)),
             Text(point.description,
                 style: TextStyle(
-                    fontSize: 12,
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w500,
                     color: Colors.black.withOpacity(0.6),
-                    height: 1.3)),
+                    height: r.h(1.3))),
             if (point.recommendation.isNotEmpty) ...[
-              const SizedBox(height: 6),
+              SizedBox(height: r.h(6)),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.lightbulb_outline_rounded,
-                      size: 14, color: Colors.black.withOpacity(0.35)),
-                  const SizedBox(width: 6),
+                      size: r.dp(14), color: Colors.black.withOpacity(0.35)),
+                  SizedBox(width: r.w(6)),
                   Expanded(
                     child: Text(point.recommendation,
                         style: TextStyle(
-                            fontSize: 11,
+                            fontSize: r.sp(11),
                             fontWeight: FontWeight.w500,
                             color: Colors.black.withOpacity(0.45),
                             fontStyle: FontStyle.italic)),
@@ -3338,33 +3342,33 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
   // ------------------------------------------------------------------ //
   // Visualizations                                                      //
   // ------------------------------------------------------------------ //
-  Widget _buildVisualization(AnalysisModule module) {
+  Widget _buildVisualization(Responsive r, AnalysisModule module) {
     switch (module.visualizationType) {
       case 'spectrogram':
-        return _buildSpectrogramVisualization();
+        return _buildSpectrogramVisualization(r);
       case 'spiral':
-        return _buildSpiralVisualization();
+        return _buildSpiralVisualization(r);
       case 'bars':
-        return _buildBarsVisualization();
+        return _buildBarsVisualization(r);
       default:
-        return _buildBarsVisualization();
+        return _buildBarsVisualization(r);
     }
   }
 
-  Widget _buildSpectrogramVisualization() {
+  Widget _buildSpectrogramVisualization(Responsive r) {
     // Speech is tabular — show feature saliency bars from real SHAP data
     final features = selectedModule.shapValues;
     if (features.isEmpty) {
       return Container(
-        height: 100,
+        height: r.h(100),
         decoration: BoxDecoration(
           color: blueAccent.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(r.dp(16)),
         ),
         child: Center(
           child: Text('No saliency data available for speech',
               style: TextStyle(
-                  fontSize: 12,
+                  fontSize: r.sp(12),
                   color: Colors.black.withOpacity(0.4))),
         ),
       );
@@ -3372,7 +3376,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     final maxVal = features.map((f) => f.value).reduce((a, b) => a > b ? a : b);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(r.dp(14)),
       decoration: BoxDecoration(
         gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -3381,7 +3385,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
               const Color(0xFFEFF6FF),
               blueAccent.withOpacity(0.08),
             ]),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(r.dp(16)),
         border: Border.all(color: blueAccent.withOpacity(0.15)),
       ),
       child: Column(
@@ -3389,10 +3393,10 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
         children: [
           Text('Speech Feature Saliency',
               style: TextStyle(
-                  fontSize: 11,
+                  fontSize: r.sp(11),
                   fontWeight: FontWeight.w700,
                   color: blueAccent)),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           ...features.map((f) {
             final ratio = maxVal > 0 ? (f.value / maxVal).clamp(0.0, 1.0) : 0.0;
             final barColor = f.level == 'High'
@@ -3401,25 +3405,25 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                     ? orangeAccent
                     : greenAccent;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: EdgeInsets.only(bottom: r.h(6)),
               child: Row(
                 children: [
                   SizedBox(
-                    width: 75,
+                    width: r.w(75),
                     child: Text(f.name,
                         style: TextStyle(
-                            fontSize: 10,
+                            fontSize: r.sp(10),
                             fontWeight: FontWeight.w600,
                             color: Colors.black.withOpacity(0.6)),
                         overflow: TextOverflow.ellipsis),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: r.w(6)),
                   Expanded(
                     child: Container(
-                      height: 10,
+                      height: r.h(10),
                       decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(5)),
+                          borderRadius: BorderRadius.circular(r.dp(5))),
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
                         widthFactor: ratio,
@@ -3427,22 +3431,22 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                                 colors: [barColor.withOpacity(0.6), barColor]),
-                            borderRadius: BorderRadius.circular(5),
+                            borderRadius: BorderRadius.circular(r.dp(5)),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: r.w(6)),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 1),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: r.w(4), vertical: r.h(1)),
                     decoration: BoxDecoration(
                         color: barColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4)),
+                        borderRadius: BorderRadius.circular(r.dp(4))),
                     child: Text(f.level,
                         style: TextStyle(
-                            fontSize: 8,
+                            fontSize: r.sp(8),
                             fontWeight: FontWeight.w700,
                             color: barColor)),
                   ),
@@ -3455,35 +3459,35 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildSpiralVisualization() {
+  Widget _buildSpiralVisualization(Responsive r) {
     return Container(
-      height: 140,
+      height: r.h(140),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8F0),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(r.dp(16)),
         border: Border.all(color: orangeAccent.withOpacity(0.2)),
       ),
       child: Center(
         child: CustomPaint(
-            size: const Size(120, 120), painter: ImprovedSpiralPainter()),
+            size: Size(r.dp(120), r.dp(120)), painter: ImprovedSpiralPainter()),
       ),
     );
   }
 
-  Widget _buildBarsVisualization() {
+  Widget _buildBarsVisualization(Responsive r) {
     // Use real feature importance data for cognitive saliency
     final features = selectedModule.featureImportance.take(6).toList();
     if (features.isEmpty) {
       return Container(
-        height: 100,
+        height: r.h(100),
         decoration: BoxDecoration(
           color: purpleAccent.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(r.dp(16)),
         ),
         child: Center(
           child: Text('No saliency data available',
               style: TextStyle(
-                  fontSize: 12,
+                  fontSize: r.sp(12),
                   color: Colors.black.withOpacity(0.4))),
         ),
       );
@@ -3491,13 +3495,13 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     final maxVal = features.map((f) => f.value).reduce((a, b) => a > b ? a : b);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(r.dp(14)),
       decoration: BoxDecoration(
         gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [softLavender.withOpacity(0.3), Colors.white]),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(r.dp(16)),
         border: Border.all(color: purpleAccent.withOpacity(0.15)),
       ),
       child: Column(
@@ -3505,10 +3509,10 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
         children: [
           Text('Cognitive Feature Saliency',
               style: TextStyle(
-                  fontSize: 11,
+                  fontSize: r.sp(11),
                   fontWeight: FontWeight.w700,
                   color: purpleAccent)),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           ...features.map((f) {
             final ratio = maxVal > 0
                 ? (f.value / maxVal).clamp(0.0, 1.0)
@@ -3519,25 +3523,25 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                     ? orangeAccent
                     : greenAccent;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: EdgeInsets.only(bottom: r.h(6)),
               child: Row(
                 children: [
                   SizedBox(
-                    width: 60,
+                    width: r.w(60),
                     child: Text(f.name,
                         style: TextStyle(
-                            fontSize: 10,
+                            fontSize: r.sp(10),
                             fontWeight: FontWeight.w600,
                             color: Colors.black.withOpacity(0.6)),
                         overflow: TextOverflow.ellipsis),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: r.w(6)),
                   Expanded(
                     child: Container(
-                      height: 10,
+                      height: r.h(10),
                       decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(5)),
+                          borderRadius: BorderRadius.circular(r.dp(5))),
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
                         widthFactor: ratio,
@@ -3545,16 +3549,16 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                                 colors: [barColor.withOpacity(0.6), barColor]),
-                            borderRadius: BorderRadius.circular(5),
+                            borderRadius: BorderRadius.circular(r.dp(5)),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: r.w(6)),
                   Text(f.value.toStringAsFixed(2),
                       style: TextStyle(
-                          fontSize: 9,
+                          fontSize: r.sp(9),
                           fontWeight: FontWeight.w700,
                           color: barColor)),
                 ],
@@ -3566,33 +3570,33 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(Responsive r) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      margin: EdgeInsets.fromLTRB(r.w(16), 0, r.w(16), r.h(16)),
       decoration: BoxDecoration(
         color: navBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         border: Border.all(color: Colors.black.withOpacity(0.06)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 4))
+              blurRadius: r.dp(20),
+              offset: Offset(0, r.dp(4)))
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(12)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(0, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
-              _buildNavItem(4, Icons.description_outlined, 'Reports'),
-              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
+              _buildNavItem(r, 0, Icons.home_rounded, 'Home'),
+              _buildNavItem(r, 1, Icons.assignment_outlined, 'Tests'),
+              _buildNavItem(r, 2, Icons.auto_awesome_rounded, 'XAI'),
+              _buildNavItem(r, 3, Icons.stars_rounded, 'Neuro'),
+              _buildNavItem(r, 4, Icons.description_outlined, 'Reports'),
+              _buildNavItem(r, 5, Icons.person_outline_rounded, 'Profile'),
             ],
           ),
         ),
@@ -3600,26 +3604,26 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(Responsive r, int index, IconData icon, String label) {
     final isSelected = _selectedNavIndex == index;
     return GestureDetector(
       onTap: () => _onNavItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(10)),
         decoration: BoxDecoration(
             color: isSelected ? darkCard : Colors.transparent,
-            borderRadius: BorderRadius.circular(16)),
+            borderRadius: BorderRadius.circular(r.dp(16))),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon,
-                color: isSelected ? Colors.white : Colors.black38, size: 22),
+                color: isSelected ? Colors.white : Colors.black38, size: r.dp(22)),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Text(label,
-                  style: const TextStyle(
-                      fontSize: 13,
+                  style: TextStyle(
+                      fontSize: r.sp(13),
                       fontWeight: FontWeight.w600,
                       color: Colors.white)),
             ],
@@ -3629,7 +3633,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildAnimatedWidget({required double delay, required Widget child}) {
+  Widget _buildAnimatedWidget(Responsive r, {required double delay, required Widget child}) {
     return FadeTransition(
       opacity: CurvedAnimation(
         parent: _pageController,
@@ -3638,7 +3642,7 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
       ),
       child: SlideTransition(
         position: Tween<Offset>(
-                begin: const Offset(0, 0.15), end: Offset.zero)
+                begin: Offset(r.w(0), r.h(0.15)), end: Offset.zero)
             .animate(CurvedAnimation(
           parent: _pageController,
           curve: Interval(delay, math.min(delay + 0.3, 1.0),

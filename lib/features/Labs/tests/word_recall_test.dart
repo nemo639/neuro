@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/loading_bars.dart';
+import '../../../core/responsive.dart';
 
 // Test phases
 enum WordRecallPhase { instructions, learning, distraction, immediateRecall, delayedRecall, recognition, completed }
@@ -365,7 +366,7 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
       _wordRecallTimes = [];
     });
 
-    _recallTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _recallTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _recallTimeLeft--;
       });
@@ -412,7 +413,7 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
       _countdownResponses.clear();
     });
 
-    _distractionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _distractionTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _distractionTimeLeft--;
       });
@@ -450,7 +451,7 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
       _wordRecallTimes = [];
     });
 
-    _recallTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _recallTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _recallTimeLeft--;
       });
@@ -708,66 +709,67 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Word List Recall',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800),
                 ),
                 Text(
                   _getPhaseText(),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
           if (_currentPhase == WordRecallPhase.learning)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
               decoration: BoxDecoration(
                 color: orangeAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(r.dp(20)),
               ),
               child: Text(
                 'Trial $_learningTrial/$_totalLearningTrials',
-                style: const TextStyle(
+                style: TextStyle(
                   color: orangeAccent,
-                  fontSize: 12,
+                  fontSize: r.sp(12),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -796,7 +798,7 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0;
     switch (_currentPhase) {
       case WordRecallPhase.instructions:
@@ -825,11 +827,11 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -837,170 +839,170 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [tealAccent, greenAccent]),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: r.dp(20),
+            offset: Offset(r.w(0), r.h(4)),
           ),
         ],
       ),
-      child: _buildPhaseContent(),
+      child: _buildPhaseContent(r),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case WordRecallPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case WordRecallPhase.learning:
-        return _buildLearningPhase();
+        return _buildLearningPhase(r);
       case WordRecallPhase.immediateRecall:
-        return _buildRecallPhase(isDelayed: false);
+        return _buildRecallPhase(r, isDelayed: false);
       case WordRecallPhase.distraction:
-        return _buildDistractionPhase();
+        return _buildDistractionPhase(r);
       case WordRecallPhase.delayedRecall:
-        return _buildRecallPhase(isDelayed: true);
+        return _buildRecallPhase(r, isDelayed: true);
       case WordRecallPhase.recognition:
-        return _buildRecognitionPhase();
+        return _buildRecognitionPhase(r);
       case WordRecallPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.w(80),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: tealAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.extension_rounded, color: tealAccent, size: 40),
+            child: Icon(Icons.extension_rounded, color: tealAccent, size: r.dp(40)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Word List Memory Test',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Based on CERAD Word List Protocol',
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            style: TextStyle(fontSize: r.sp(12), color: Colors.grey[500]),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: softLavender.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Column(
               children: [
-                _buildInstructionStep('1', 'You will see $_wordsToShow words, one at a time'),
-                const SizedBox(height: 8),
-                _buildInstructionStep('2', 'Try to memorize each word'),
-                const SizedBox(height: 8),
-                _buildInstructionStep('3', 'Recall words → 3 learning trials'),
-                const SizedBox(height: 8),
-                _buildInstructionStep('4', 'Count backwards (distraction task)'),
-                const SizedBox(height: 8),
-                _buildInstructionStep('5', 'Recall words again (delayed recall)'),
-                const SizedBox(height: 8),
-                _buildInstructionStep('6', 'Recognition: "Did you see this word?"'),
+                _buildInstructionStep(r, '1', 'You will see $_wordsToShow words, one at a time'),
+                SizedBox(height: r.h(8)),
+                _buildInstructionStep(r, '2', 'Try to memorize each word'),
+                SizedBox(height: r.h(8)),
+                _buildInstructionStep(r, '3', 'Recall words → 3 learning trials'),
+                SizedBox(height: r.h(8)),
+                _buildInstructionStep(r, '4', 'Count backwards (distraction task)'),
+                SizedBox(height: r.h(8)),
+                _buildInstructionStep(r, '5', 'Recall words again (delayed recall)'),
+                SizedBox(height: r.h(8)),
+                _buildInstructionStep(r, '6', 'Recognition: "Did you see this word?"'),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: mintGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.info_outline, color: tealAccent, size: 18),
-                const SizedBox(width: 8),
+                Icon(Icons.info_outline, color: tealAccent, size: r.dp(18)),
+                SizedBox(width: r.w(8)),
                 Text(
                   'Each test uses randomized words',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                  style: TextStyle(fontSize: r.sp(12), color: Colors.grey[700]),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.timer_outlined, color: Colors.grey[500], size: 18),
-              const SizedBox(width: 6),
+              Icon(Icons.timer_outlined, color: Colors.grey[500], size: r.dp(18)),
+              SizedBox(width: r.w(6)),
               Text(
                 'Total time: ~8-10 minutes',
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _startLearning,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: tealAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: tealAccent.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    blurRadius: r.dp(20),
+                    offset: Offset(r.w(0), r.h(8)),
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Start Test',
-                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                    style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildInstructionStep(String number, String text) {
+  Widget _buildInstructionStep(Responsive r, String number, String text) {
     return Row(
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: r.w(24),
+          height: r.h(24),
           decoration: const BoxDecoration(
             color: tealAccent,
             shape: BoxShape.circle,
@@ -1008,21 +1010,21 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
           child: Center(
             child: Text(
               number,
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+              style: TextStyle(color: Colors.white, fontSize: r.sp(12), fontWeight: FontWeight.w700),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: r.w(12)),
         Expanded(
-          child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+          child: Text(text, style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700])),
         ),
       ],
     );
   }
 
-  Widget _buildLearningPhase() {
+  Widget _buildLearningPhase(Responsive r) {
     if (_currentWordIndex >= _currentWordList.length) {
-      return Center(child: LoadingBars(color: Colors.grey[600]!, height: 24));
+      return Center(child: LoadingBars(color: Colors.grey[600]!, height: r.h(24)));
     }
 
     return Column(
@@ -1032,32 +1034,32 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(8)),
               decoration: BoxDecoration(
                 color: tealAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(r.dp(20)),
               ),
               child: Text(
                 'Word ${_currentWordIndex + 1} of ${_currentWordList.length}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: tealAccent,
-                  fontSize: 14,
+                  fontSize: r.sp(14),
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: r.w(10)),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
               decoration: BoxDecoration(
                 color: orangeAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
               child: Text(
                 'Trial $_learningTrial',
-                style: const TextStyle(
+                style: TextStyle(
                   color: orangeAccent,
-                  fontSize: 12,
+                  fontSize: r.sp(12),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1068,16 +1070,16 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
         FadeTransition(
           opacity: _fadeController,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+            padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(30)),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: tealAccent.withOpacity(0.3), width: 2),
+              borderRadius: BorderRadius.circular(r.dp(20)),
+              border: Border.all(color: tealAccent.withOpacity(0.3), width: r.w(2)),
             ),
             child: Text(
               _currentWordList[_currentWordIndex],
-              style: const TextStyle(
-                fontSize: 36,
+              style: TextStyle(
+                fontSize: r.sp(36),
                 fontWeight: FontWeight.w800,
                 color: Colors.black87,
                 letterSpacing: 2,
@@ -1088,9 +1090,9 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
         const Spacer(),
         Text(
           'Memorize this word',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: TextStyle(fontSize: r.sp(14), color: Colors.grey[600]),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         // Progress dots
         Wrap(
           alignment: WrapAlignment.center,
@@ -1108,115 +1110,115 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
       ],
     );
   }
 
-  Widget _buildDistractionPhase() {
+  Widget _buildDistractionPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(8)),
             decoration: BoxDecoration(
               color: purpleAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.dp(20)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.timer, color: purpleAccent, size: 18),
-                const SizedBox(width: 6),
+                Icon(Icons.timer, color: purpleAccent, size: r.dp(18)),
+                SizedBox(width: r.w(6)),
                 Text(
                   '${_distractionTimeLeft}s remaining',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: purpleAccent,
-                    fontSize: 14,
+                    fontSize: r.sp(14),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Count backwards by 7',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'What comes next?',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            style: TextStyle(fontSize: r.sp(14), color: Colors.grey[600]),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Text(
             '$_countdownNumber',
-            style: const TextStyle(
-              fontSize: 48,
+            style: TextStyle(
+              fontSize: r.sp(48),
               fontWeight: FontWeight.w800,
               color: purpleAccent,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: r.h(6)),
           Text(
             '- 7 = ?',
-            style: TextStyle(fontSize: 18, color: Colors.grey[500]),
+            style: TextStyle(fontSize: r.sp(18), color: Colors.grey[500]),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
+            padding: EdgeInsets.symmetric(horizontal: r.w(40)),
             child: TextField(
               controller: _countdownController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w600),
               decoration: InputDecoration(
                 hintText: 'Your answer',
                 hintStyle: TextStyle(color: Colors.grey[400]),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(r.dp(16)),
                   borderSide: BorderSide(color: Colors.grey[300]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: purpleAccent, width: 2),
+                  borderRadius: BorderRadius.circular(r.dp(16)),
+                  borderSide: BorderSide(color: purpleAccent, width: r.w(2)),
                 ),
               ),
               onSubmitted: (_) => _handleCountdownSubmit(),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           GestureDetector(
             onTap: _handleCountdownSubmit,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: r.w(32), vertical: r.h(12)),
               decoration: BoxDecoration(
                 color: purpleAccent,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
               ),
-              child: const Text(
+              child: Text(
                 'Submit',
-                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w600),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(r.dp(10)),
             decoration: BoxDecoration(
               color: Colors.amber.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(r.dp(10)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.lightbulb_outline, color: Colors.amber, size: 18),
-                const SizedBox(width: 8),
+                Icon(Icons.lightbulb_outline, color: Colors.amber, size: r.dp(18)),
+                SizedBox(width: r.w(8)),
                 Text(
                   'This keeps your mind busy before recall',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(11), color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -1226,7 +1228,7 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
     );
   }
 
-  Widget _buildRecallPhase({required bool isDelayed}) {
+  Widget _buildRecallPhase(Responsive r, {required bool isDelayed}) {
     final recalledWords = isDelayed ? _delayedRecalledWords : _recalledWords;
     final phaseColor = isDelayed ? orangeAccent : tealAccent;
     final phaseTitle = isDelayed ? 'Delayed Recall' : 'Immediate Recall';
@@ -1238,20 +1240,20 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
               decoration: BoxDecoration(
                 color: redAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.timer, color: redAccent, size: 16),
-                  const SizedBox(width: 4),
+                  Icon(Icons.timer, color: redAccent, size: r.dp(16)),
+                  SizedBox(width: r.w(4)),
                   Text(
                     '${_recallTimeLeft}s',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: redAccent,
-                      fontSize: 14,
+                      fontSize: r.sp(14),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1259,38 +1261,38 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(4)),
               decoration: BoxDecoration(
                 color: phaseColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(r.dp(12)),
               ),
               child: Text(
                 phaseTitle,
                 style: TextStyle(
                   color: phaseColor,
-                  fontSize: 11,
+                  fontSize: r.sp(11),
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
               decoration: BoxDecoration(
                 color: greenAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
               child: Text(
                 '${recalledWords.length} words',
-                style: const TextStyle(
+                style: TextStyle(
                   color: greenAccent,
-                  fontSize: 14,
+                  fontSize: r.sp(14),
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: r.h(16)),
         
         // Input
         Row(
@@ -1302,32 +1304,32 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
                 decoration: InputDecoration(
                   hintText: 'Type a word...',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(r.dp(14)),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: phaseColor, width: 2),
+                    borderRadius: BorderRadius.circular(r.dp(14)),
+                    borderSide: BorderSide(color: phaseColor, width: r.w(2)),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(14)),
                 ),
                 onSubmitted: (_) => _handleWordSubmit(isDelayed: isDelayed),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: r.w(10)),
             GestureDetector(
               onTap: () => _handleWordSubmit(isDelayed: isDelayed),
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(r.dp(14)),
                 decoration: BoxDecoration(
                   color: phaseColor,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(r.dp(14)),
                 ),
-                child: const Icon(Icons.add, color: Colors.white, size: 24),
+                child: Icon(Icons.add, color: Colors.white, size: r.dp(24)),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: r.h(16)),
         
         // Recalled words
         Expanded(
@@ -1336,8 +1338,8 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.text_fields, color: Colors.grey[300], size: 40),
-                      const SizedBox(height: 10),
+                      Icon(Icons.text_fields, color: Colors.grey[300], size: r.dp(40)),
+                      SizedBox(height: r.h(10)),
                       Text(
                         'Type all words you remember',
                         style: TextStyle(color: Colors.grey[500]),
@@ -1351,10 +1353,10 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
                     runSpacing: 8,
                     children: recalledWords.map((word) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(8)),
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(r.dp(12)),
                           border: Border.all(color: Colors.grey[300]!),
                         ),
                         child: Row(
@@ -1362,15 +1364,15 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
                           children: [
                             Text(
                               word,
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: TextStyle(
+                                fontSize: r.sp(14),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            SizedBox(width: r.w(6)),
                             GestureDetector(
                               onTap: () => _removeWord(word, isDelayed: isDelayed),
-                              child: Icon(Icons.close, size: 16, color: Colors.grey[500]),
+                              child: Icon(Icons.close, size: r.dp(16), color: Colors.grey[500]),
                             ),
                           ],
                         ),
@@ -1379,22 +1381,22 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
                   ),
                 ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: r.h(10)),
         
         // Done button
         GestureDetector(
           onTap: isDelayed ? _completeDelayedRecall : _completeImmediateRecall,
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: EdgeInsets.symmetric(vertical: r.h(14)),
             decoration: BoxDecoration(
               color: darkCard,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
                 'Done Recalling',
-                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -1403,9 +1405,9 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
     );
   }
 
-  Widget _buildRecognitionPhase() {
+  Widget _buildRecognitionPhase(Responsive r) {
     if (_currentRecognitionIndex >= _recognitionItems.length) {
-      return Center(child: LoadingBars(color: Colors.grey[600]!, height: 24));
+      return Center(child: LoadingBars(color: Colors.grey[600]!, height: r.h(24)));
     }
 
     final item = _recognitionItems[_currentRecognitionIndex];
@@ -1415,37 +1417,37 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(8)),
           decoration: BoxDecoration(
             color: blueAccent.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
           ),
           child: Text(
             '${_currentRecognitionIndex + 1} of ${_recognitionItems.length}',
-            style: const TextStyle(
+            style: TextStyle(
               color: blueAccent,
-              fontSize: 14,
+              fontSize: r.sp(14),
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
         const Spacer(),
-        const Text(
+        Text(
           'Did you see this word?',
-          style: TextStyle(fontSize: 16, color: Colors.black54),
+          style: TextStyle(fontSize: r.sp(16), color: Colors.black54),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+          padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(24)),
           decoration: BoxDecoration(
             color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: blueAccent.withOpacity(0.3), width: 2),
+            borderRadius: BorderRadius.circular(r.dp(20)),
+            border: Border.all(color: blueAccent.withOpacity(0.3), width: r.w(2)),
           ),
           child: Text(
             word,
-            style: const TextStyle(
-              fontSize: 32,
+            style: TextStyle(
+              fontSize: r.sp(32),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
               letterSpacing: 2,
@@ -1459,41 +1461,41 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
             GestureDetector(
               onTap: () => _handleRecognitionResponse(false),
               child: Container(
-                width: 100,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                width: r.w(100),
+                padding: EdgeInsets.symmetric(vertical: r.h(16)),
                 decoration: BoxDecoration(
                   color: redAccent,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(r.dp(16)),
                 ),
-                child: const Column(
+                child: Column(
                   children: [
-                    Icon(Icons.close, color: Colors.white, size: 28),
-                    SizedBox(height: 4),
+                    Icon(Icons.close, color: Colors.white, size: r.dp(28)),
+                    SizedBox(height: r.h(4)),
                     Text(
                       'NO',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: Colors.white, fontSize: r.sp(16), fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(width: 30),
+            SizedBox(width: r.w(30)),
             GestureDetector(
               onTap: () => _handleRecognitionResponse(true),
               child: Container(
-                width: 100,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                width: r.w(100),
+                padding: EdgeInsets.symmetric(vertical: r.h(16)),
                 decoration: BoxDecoration(
                   color: greenAccent,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(r.dp(16)),
                 ),
-                child: const Column(
+                child: Column(
                   children: [
-                    Icon(Icons.check, color: Colors.white, size: 28),
-                    SizedBox(height: 4),
+                    Icon(Icons.check, color: Colors.white, size: r.dp(28)),
+                    SizedBox(height: r.h(4)),
                     Text(
                       'YES',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: Colors.white, fontSize: r.sp(16), fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -1501,12 +1503,12 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
             ),
           ],
         ),
-        const SizedBox(height: 30),
+        SizedBox(height: r.h(30)),
       ],
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     final data = _getTestData();
     final immediate = data['immediate_recall'] as Map<String, dynamic>;
     final delayed = data['delayed_recall'] as Map<String, dynamic>;
@@ -1520,53 +1522,53 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.w(80),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_rounded, color: greenAccent, size: 45),
+            child: Icon(Icons.check_circle_rounded, color: greenAccent, size: r.dp(45)),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: r.h(16)),
+          Text(
             'Test Completed!',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           
           // Results summary
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: mintGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
             ),
             child: Column(
               children: [
-                _buildResultRow('Immediate Recall', '$immediateAcc%', immediate['correct_count'], _currentWordList.length),
-                const Divider(height: 16),
-                _buildResultRow('Delayed Recall', '$delayedAcc%', delayed['correct_count'], _currentWordList.length),
-                const Divider(height: 16),
-                _buildResultRow('Recognition', '$recognitionAcc%', recognition['hits'] + recognition['correct_rejections'], _recognitionItems.length),
-                const Divider(height: 16),
+                _buildResultRow(r, 'Immediate Recall', '$immediateAcc%', immediate['correct_count'], _currentWordList.length),
+                Divider(height: r.h(16)),
+                _buildResultRow(r, 'Delayed Recall', '$delayedAcc%', delayed['correct_count'], _currentWordList.length),
+                Divider(height: r.h(16)),
+                _buildResultRow(r, 'Recognition', '$recognitionAcc%', recognition['hits'] + recognition['correct_rejections'], _recognitionItems.length),
+                Divider(height: r.h(16)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Retention Rate', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+                    Text('Retention Rate', style: TextStyle(fontSize: r.sp(14), color: Colors.grey[700])),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(4)),
                       decoration: BoxDecoration(
                         color: int.parse(retentionRate) >= 70 ? greenAccent.withOpacity(0.2) : orangeAccent.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(r.dp(8)),
                       ),
                       child: Text(
                         '$retentionRate%',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: r.sp(14),
                           fontWeight: FontWeight.w700,
                           color: int.parse(retentionRate) >= 70 ? greenAccent : orangeAccent,
                         ),
@@ -1577,24 +1579,24 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           
           // Learning curve
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Learning Curve',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: r.h(8)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: List.generate(_trialRecalls.length, (i) {
@@ -1603,19 +1605,19 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
                       children: [
                         Text(
                           'Trial ${i + 1}',
-                          style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                          style: TextStyle(fontSize: r.sp(11), color: Colors.grey[500]),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: r.h(4)),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
                           decoration: BoxDecoration(
                             color: tealAccent.withOpacity(0.1 + (i * 0.1)),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(r.dp(8)),
                           ),
                           child: Text(
                             '$score/${_currentWordList.length}',
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: r.sp(14),
                               fontWeight: FontWeight.w700,
                               color: tealAccent,
                             ),
@@ -1628,17 +1630,17 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           
           // Validity indicator
           if (data['validity_indicators'] != null)
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(r.dp(10)),
               decoration: BoxDecoration(
                 color: (data['validity_indicators']['recognition_above_chance'] == true)
                     ? greenAccent.withOpacity(0.1)
                     : redAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(r.dp(10)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1647,18 +1649,18 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
                     (data['validity_indicators']['recognition_above_chance'] == true)
                         ? Icons.verified
                         : Icons.warning_amber,
-                    size: 16,
+                    size: r.dp(16),
                     color: (data['validity_indicators']['recognition_above_chance'] == true)
                         ? greenAccent
                         : redAccent,
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: r.w(6)),
                   Text(
                     (data['validity_indicators']['recognition_above_chance'] == true)
                         ? 'Valid performance'
                         : 'Review validity',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: r.sp(12),
                       color: (data['validity_indicators']['recognition_above_chance'] == true)
                           ? greenAccent
                           : redAccent,
@@ -1668,44 +1670,44 @@ class _WordRecallTestScreenState extends State<WordRecallTestScreen>
                 ],
               ),
             ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           
           GestureDetector(
             onTap: _finishTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: greenAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
+                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildResultRow(String label, String percentage, int correct, int total) {
+  Widget _buildResultRow(Responsive r, String label, String percentage, int correct, int total) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-            Text('$correct / $total words', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+            Text(label, style: TextStyle(fontSize: r.sp(14), color: Colors.grey[700])),
+            Text('$correct / $total words', style: TextStyle(fontSize: r.sp(11), color: Colors.grey[500])),
           ],
         ),
-        Text(percentage, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        Text(percentage, style: TextStyle(fontSize: r.sp(18), fontWeight: FontWeight.w700)),
       ],
     );
   }

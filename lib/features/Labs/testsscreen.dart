@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/responsive.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 
 class TestsScreen extends StatefulWidget {
@@ -187,6 +188,7 @@ Map<String, int> _categoryCompletedTests = {};
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
@@ -194,40 +196,40 @@ Map<String, int> _categoryCompletedTests = {};
           child: ShimmerLoading(
             child: SingleChildScrollView(
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: r.w(20)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
+                  SizedBox(height: r.h(16)),
                   // Header
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
-                    SkeletonLine(width: 120, height: 22),
-                    SkeletonCircle(size: 40),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    SkeletonLine(width: r.w(120), height: r.h(22)),
+                    SkeletonCircle(size: r.dp(40)),
                   ]),
-                  const SizedBox(height: 8),
-                  const SkeletonLine(width: 220, height: 14),
-                  const SizedBox(height: 24),
+                  SizedBox(height: r.h(8)),
+                  SkeletonLine(width: r.w(220), height: r.h(14)),
+                  SizedBox(height: r.h(24)),
                   // Progress card
-                  const SkeletonBox(width: double.infinity, height: 100, borderRadius: 20),
-                  const SizedBox(height: 24),
+                  SkeletonBox(width: double.infinity, height: r.h(100), borderRadius: r.w(20)),
+                  SizedBox(height: r.h(24)),
                   // Category tabs
-                  Row(children: const [
-                    SkeletonBox(width: 80, height: 36, borderRadius: 18),
-                    SizedBox(width: 10),
-                    SkeletonBox(width: 80, height: 36, borderRadius: 18),
-                    SizedBox(width: 10),
-                    SkeletonBox(width: 80, height: 36, borderRadius: 18),
+                  Row(children: [
+                    SkeletonBox(width: r.w(80), height: r.h(36), borderRadius: r.w(18)),
+                    SizedBox(width: r.w(10)),
+                    SkeletonBox(width: r.w(80), height: r.h(36), borderRadius: r.w(18)),
+                    SizedBox(width: r.w(10)),
+                    SkeletonBox(width: r.w(80), height: r.h(36), borderRadius: r.w(18)),
                   ]),
-                  const SizedBox(height: 24),
+                  SizedBox(height: r.h(24)),
                   // Test cards
-                  const SkeletonBox(width: double.infinity, height: 90, borderRadius: 16),
-                  const SizedBox(height: 12),
-                  const SkeletonBox(width: double.infinity, height: 90, borderRadius: 16),
-                  const SizedBox(height: 12),
-                  const SkeletonBox(width: double.infinity, height: 90, borderRadius: 16),
-                  const SizedBox(height: 12),
-                  const SkeletonBox(width: double.infinity, height: 90, borderRadius: 16),
-                  const SizedBox(height: 24),
+                  SkeletonBox(width: double.infinity, height: r.h(90), borderRadius: r.w(16)),
+                  SizedBox(height: r.h(12)),
+                  SkeletonBox(width: double.infinity, height: r.h(90), borderRadius: r.w(16)),
+                  SizedBox(height: r.h(12)),
+                  SkeletonBox(width: double.infinity, height: r.h(90), borderRadius: r.w(16)),
+                  SizedBox(height: r.h(12)),
+                  SkeletonBox(width: double.infinity, height: r.h(90), borderRadius: r.w(16)),
+                  SizedBox(height: r.h(24)),
                 ],
               ),
             ),
@@ -246,13 +248,13 @@ Map<String, int> _categoryCompletedTests = {};
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20),
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-                    _buildOverallProgress(),
-                    const SizedBox(height: 24),
-                    _buildTestCategories(),
-                    const SizedBox(height: 100),
+                    SizedBox(height: r.h(20)),
+                    _buildHeader(r),
+                    SizedBox(height: r.h(24)),
+                    _buildOverallProgress(r),
+                    SizedBox(height: r.h(24)),
+                    _buildTestCategories(r),
+                    SizedBox(height: r.h(100)),
                   ],
                 ),
               ),
@@ -260,15 +262,15 @@ Map<String, int> _categoryCompletedTests = {};
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildBottomNav(r),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -278,20 +280,20 @@ Map<String, int> _categoryCompletedTests = {};
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Test Modules',
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: r.sp(32),
                         fontWeight: FontWeight.w800,
                         color: Colors.black87,
                         letterSpacing: -1,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: r.h(6)),
                     Text(
                       'Multimodal neurological assessments',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: r.sp(14),
                         fontWeight: FontWeight.w500,
                         color: Colors.black.withOpacity(0.5),
                       ),
@@ -299,16 +301,16 @@ Map<String, int> _categoryCompletedTests = {};
                   ],
                 ),
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: r.dp(48),
+                  height: r.dp(48),
                   decoration: BoxDecoration(
                     color: darkCard,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(r.w(16)),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.science_rounded,
                     color: Colors.white,
-                    size: 24,
+                    size: r.dp(24),
                   ),
                 ),
               ],
@@ -319,19 +321,19 @@ Map<String, int> _categoryCompletedTests = {};
     );
   }
 
-  Widget _buildOverallProgress() {
+  Widget _buildOverallProgress(Responsive r) {
     double progressPercent = completedTests / totalTests;
     int percentDisplay = (progressPercent * 100).round();
-    
+
     return _buildAnimatedWidget(
       delay: 0.1,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(r.dp(20)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(r.w(24)),
             border: Border.all(color: Colors.black.withOpacity(0.06)),
             boxShadow: [
               BoxShadow(
@@ -350,43 +352,43 @@ Map<String, int> _categoryCompletedTests = {};
                     Text(
                       'Overall Progress',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: r.sp(13),
                         fontWeight: FontWeight.w600,
                         color: Colors.black.withOpacity(0.5),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: r.h(6)),
                     Text(
                       '$completedTests/$totalTests Completed',
-                      style: const TextStyle(
-                        fontSize: 24,
+                      style: TextStyle(
+                        fontSize: r.sp(24),
                         fontWeight: FontWeight.w800,
                         color: Colors.black87,
                         letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: r.h(10)),
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(6)),
                           decoration: BoxDecoration(
                             color: mintGreen.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(r.w(10)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.sensors_rounded,
-                                size: 14,
+                                size: r.dp(14),
                                 color: Colors.black.withOpacity(0.6),
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: r.w(6)),
                               Text(
                                 'Sensor-based AI screening',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: r.sp(11),
                                   fontWeight: FontWeight.w600,
                                   color: Colors.black.withOpacity(0.6),
                                 ),
@@ -399,8 +401,8 @@ Map<String, int> _categoryCompletedTests = {};
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              _buildCircularProgress(percentDisplay, progressPercent),
+              SizedBox(width: r.w(16)),
+              _buildCircularProgress(percentDisplay, progressPercent, r),
             ],
           ),
         ),
@@ -408,17 +410,18 @@ Map<String, int> _categoryCompletedTests = {};
     );
   }
 
-  Widget _buildCircularProgress(int percent, double progress) {
-    return Container(
-      width: 70,
-      height: 70,
+  Widget _buildCircularProgress(int percent, double progress, Responsive r) {
+    final size = r.dp(70);
+    return SizedBox(
+      width: size,
+      height: size,
       child: Stack(
         children: [
           CustomPaint(
-            size: const Size(70, 70),
+            size: Size(size, size),
             painter: CircularProgressPainter(
               progress: progress,
-              strokeWidth: 6,
+              strokeWidth: r.dp(6),
               backgroundColor: Colors.black.withOpacity(0.08),
               progressColor: mintGreen,
             ),
@@ -426,8 +429,8 @@ Map<String, int> _categoryCompletedTests = {};
           Center(
             child: Text(
               '$percent%',
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: r.sp(16),
                 fontWeight: FontWeight.w800,
                 color: Colors.black87,
               ),
@@ -438,18 +441,18 @@ Map<String, int> _categoryCompletedTests = {};
     );
   }
 
-  Widget _buildTestCategories() {
+  Widget _buildTestCategories(Responsive r) {
     return Column(
       children: List.generate(testCategories.length, (index) {
         return _buildAnimatedWidget(
           delay: 0.15 + (index * 0.05),
-          child: _buildTestCategoryCard(index, testCategories[index]),
+          child: _buildTestCategoryCard(index, testCategories[index], r),
         );
       }),
     );
   }
 
-  Widget _buildTestCategoryCard(int index, TestCategory category) {
+  Widget _buildTestCategoryCard(int index, TestCategory category, Responsive r) {
     bool isExpanded = expandedCategories[index] ?? false;
 
     // Map index to backend category key for completion lookup
@@ -738,7 +741,7 @@ Map<String, int> _categoryCompletedTests = {};
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(Responsive r) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(

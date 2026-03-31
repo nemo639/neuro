@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:neuroverse/core/responsive.dart';
 
 enum MeanderPhase { instructions, leftHand, rightHand, completed }
 
@@ -276,61 +277,62 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.w(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Meander Drawing',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800),
                 ),
                 Text(
                   _getPhaseText(),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          _buildHandIndicator(),
+          _buildHandIndicator(r),
         ],
       ),
     );
   }
 
-  Widget _buildHandIndicator() {
+  Widget _buildHandIndicator(Responsive r) {
     Color color;
     String text;
     IconData icon;
@@ -359,16 +361,16 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(r.w(20)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 6),
-          Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          Icon(icon, color: color, size: r.dp(16)),
+          SizedBox(width: r.w(6)),
+          Text(text, style: TextStyle(color: color, fontSize: r.sp(12), fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -387,7 +389,7 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0;
     switch (_currentPhase) {
       case MeanderPhase.instructions:
@@ -405,11 +407,11 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.w(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -417,19 +419,19 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [tealAccent, blueAccent]),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.w(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.w(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.w(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -439,90 +441,90 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: _buildPhaseContent(),
+        borderRadius: BorderRadius.circular(r.w(24)),
+        child: _buildPhaseContent(r),
       ),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case MeanderPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case MeanderPhase.leftHand:
       case MeanderPhase.rightHand:
-        return _buildDrawingPhase();
+        return _buildDrawingPhase(r);
       case MeanderPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.w(20)),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.dp(80),
+            height: r.dp(80),
             decoration: BoxDecoration(
               color: tealAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.show_chart_rounded, color: tealAccent, size: 40),
+            child: Icon(Icons.show_chart_rounded, color: tealAccent, size: r.dp(40)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Meander Drawing Test',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Assess tremor and motor smoothness',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Meander preview
           Container(
-            width: 200,
-            height: 80,
+            width: r.w(200),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.w(16)),
               border: Border.all(color: Colors.grey[200]!),
             ),
             child: CustomPaint(
               painter: MeanderTemplatePainter(color: Colors.grey[300]!),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.w(14)),
             decoration: BoxDecoration(
               color: tealAccent.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.w(14)),
             ),
             child: Column(
               children: [
-                _buildInstructionRow(Icons.show_chart, 'Trace the zigzag pattern carefully'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.speed, 'Draw at a comfortable speed'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.back_hand, 'Left hand first, then right hand'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.straighten, 'Try to stay on the line'),
+                _buildInstructionRow(Icons.show_chart, 'Trace the zigzag pattern carefully', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.speed, 'Draw at a comfortable speed', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.back_hand, 'Left hand first, then right hand', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.straighten, 'Try to stay on the line', r),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _startLeftHand,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: tealAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.w(16)),
                 boxShadow: [
                   BoxShadow(
                     color: tealAccent.withOpacity(0.4),
@@ -531,12 +533,12 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
-                  Text('Start Test', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
+                  Text('Start Test', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -546,23 +548,23 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
     );
   }
 
-  Widget _buildInstructionRow(IconData icon, String text) {
+  Widget _buildInstructionRow(IconData icon, String text, Responsive r) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey[600], size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey[700]))),
+        Icon(icon, color: Colors.grey[600], size: r.dp(18)),
+        SizedBox(width: r.w(10)),
+        Expanded(child: Text(text, style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700]))),
       ],
     );
   }
 
-  Widget _buildDrawingToolbar() {
+  Widget _buildDrawingToolbar(Responsive r) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(8)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(r.w(14)),
         border: Border.all(color: Colors.black.withOpacity(0.06)),
       ),
       child: Row(
@@ -573,7 +575,7 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
               children: _penColors.map((c) => GestureDetector(
                 onTap: () => setState(() => _selectedColor = c),
                 child: Container(
-                  width: 22, height: 22,
+                  width: r.dp(22), height: r.dp(22),
                   decoration: BoxDecoration(
                     color: c, shape: BoxShape.circle,
                     border: Border.all(
@@ -584,17 +586,17 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
               )).toList(),
             ),
           ),
-          Container(width: 1, height: 24, color: Colors.grey[300], margin: const EdgeInsets.symmetric(horizontal: 4)),
+          Container(width: r.w(1), height: r.h(24), color: Colors.grey[300], margin: EdgeInsets.symmetric(horizontal: r.w(4))),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: _penThicknesses.map((t) => GestureDetector(
               onTap: () => setState(() => _selectedThickness = t),
               child: Container(
-                width: 26, height: 26,
-                margin: const EdgeInsets.symmetric(horizontal: 1),
+                width: r.dp(26), height: r.dp(26),
+                margin: EdgeInsets.symmetric(horizontal: r.w(1)),
                 decoration: BoxDecoration(
                   color: _selectedThickness == t ? Colors.grey[200] : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(r.w(8)),
                 ),
                 child: Center(child: Container(
                   width: t + 2, height: t + 2,
@@ -608,57 +610,57 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
     );
   }
 
-  Widget _buildDrawingPhase() {
+  Widget _buildDrawingPhase(Responsive r) {
     final isLeft = _currentPhase == MeanderPhase.leftHand;
     final phaseColor = isLeft ? blueAccent : purpleAccent;
 
     return Column(
       children: [
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          margin: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(6)),
+          padding: EdgeInsets.symmetric(vertical: r.h(10), horizontal: r.w(16)),
           decoration: BoxDecoration(
             color: phaseColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(r.w(12)),
             border: Border.all(color: phaseColor.withOpacity(0.3)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(isLeft ? Icons.back_hand_rounded : Icons.front_hand_rounded, color: phaseColor, size: 22),
-              const SizedBox(width: 10),
+              Icon(isLeft ? Icons.back_hand_rounded : Icons.front_hand_rounded, color: phaseColor, size: r.dp(22)),
+              SizedBox(width: r.w(10)),
               Column(
                 children: [
                   Text(
                     isLeft ? 'LEFT HAND' : 'RIGHT HAND',
-                    style: TextStyle(color: phaseColor, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1),
+                    style: TextStyle(color: phaseColor, fontSize: r.sp(16), fontWeight: FontWeight.w700, letterSpacing: 1),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: r.h(2)),
                   Text(
                     isLeft ? 'Use only your left hand to draw' : 'Use only your right hand to draw',
-                    style: TextStyle(color: phaseColor.withOpacity(0.7), fontSize: 11),
+                    style: TextStyle(color: phaseColor.withOpacity(0.7), fontSize: r.sp(11)),
                   ),
                 ],
               ),
             ],
           ),
         ),
-        _buildDrawingToolbar(),
-        const SizedBox(height: 8),
+        _buildDrawingToolbar(r),
+        SizedBox(height: r.h(8)),
         Expanded(
           child: GestureDetector(
             onPanStart: _onPanStart,
             onPanUpdate: _onPanUpdate,
             onPanEnd: _onPanEnd,
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
+              margin: EdgeInsets.symmetric(horizontal: r.w(20)),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.w(16)),
                 border: Border.all(color: phaseColor.withOpacity(0.3), width: 2),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.w(14)),
                 child: RepaintBoundary(
                   key: _canvasKey,
                   child: CustomPaint(
@@ -677,68 +679,68 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(r.w(16)),
           child: Row(
             children: [
               Expanded(
                 child: GestureDetector(
                   onTap: _clearDrawing,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: r.h(12)),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(r.w(12)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.refresh_rounded, color: Colors.grey[600], size: 20),
-                        const SizedBox(width: 6),
+                        Icon(Icons.refresh_rounded, color: Colors.grey[600], size: r.dp(20)),
+                        SizedBox(width: r.w(6)),
                         Text('Clear', style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Expanded(
                 child: GestureDetector(
                   onTap: _allStrokes.isNotEmpty ? () {
                     setState(() => _allStrokes.removeLast());
                   } : null,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: r.h(12)),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(r.w(12)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.undo_rounded, color: _allStrokes.isNotEmpty ? Colors.grey[600] : Colors.grey[400], size: 20),
-                        const SizedBox(width: 6),
+                        Icon(Icons.undo_rounded, color: _allStrokes.isNotEmpty ? Colors.grey[600] : Colors.grey[400], size: r.dp(20)),
+                        SizedBox(width: r.w(6)),
                         Text('Undo', style: TextStyle(color: _allStrokes.isNotEmpty ? Colors.grey[600] : Colors.grey[400], fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Expanded(
                 flex: 2,
                 child: GestureDetector(
                   onTap: _allStrokes.isNotEmpty ? _finishDrawing : null,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: r.h(12)),
                     decoration: BoxDecoration(
                       color: _allStrokes.isNotEmpty ? phaseColor : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(r.w(12)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_rounded, color: Colors.white, size: 20),
-                        SizedBox(width: 6),
+                        Icon(Icons.check_rounded, color: Colors.white, size: r.dp(20)),
+                        SizedBox(width: r.w(6)),
                         Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                       ],
                     ),
@@ -752,75 +754,75 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     final leftTremor = (_leftHandResults['tremor_score'] ?? 0).toStringAsFixed(0);
     final rightTremor = (_rightHandResults['tremor_score'] ?? 0).toStringAsFixed(0);
     final leftSmooth = (_leftHandResults['smoothness_score'] ?? 0).toStringAsFixed(0);
     final rightSmooth = (_rightHandResults['smoothness_score'] ?? 0).toStringAsFixed(0);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.w(20)),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.dp(80),
+            height: r.dp(80),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_rounded, color: greenAccent, size: 45),
+            child: Icon(Icons.check_circle_rounded, color: greenAccent, size: r.dp(45)),
           ),
-          const SizedBox(height: 20),
-          const Text('Test Completed!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
+          Text('Test Completed!', style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800)),
+          SizedBox(height: r.h(20)),
           Row(
             children: [
-              Expanded(child: _buildHandResultCard('Left Hand', leftTremor, leftSmooth, blueAccent)),
-              const SizedBox(width: 12),
-              Expanded(child: _buildHandResultCard('Right Hand', rightTremor, rightSmooth, purpleAccent)),
+              Expanded(child: _buildHandResultCard('Left Hand', leftTremor, leftSmooth, blueAccent, r)),
+              SizedBox(width: r.w(12)),
+              Expanded(child: _buildHandResultCard('Right Hand', rightTremor, rightSmooth, purpleAccent, r)),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.w(12)),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.w(12)),
             ),
             child: Column(
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.vibration, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Text('Tremor Score: Higher = less tremor', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    Icon(Icons.vibration, size: r.dp(16), color: Colors.grey),
+                    SizedBox(width: r.w(8)),
+                    Text('Tremor Score: Higher = less tremor', style: TextStyle(fontSize: r.sp(12), color: Colors.grey[600])),
                   ],
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: r.h(6)),
                 Row(
                   children: [
-                    const Icon(Icons.waves, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Text('Smoothness: How fluid the drawing is', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    Icon(Icons.waves, size: r.dp(16), color: Colors.grey),
+                    SizedBox(width: r.w(8)),
+                    Text('Smoothness: How fluid the drawing is', style: TextStyle(fontSize: r.sp(12), color: Colors.grey[600])),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _completeTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-              decoration: BoxDecoration(color: greenAccent, borderRadius: BorderRadius.circular(16)),
-              child: const Row(
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
+              decoration: BoxDecoration(color: greenAccent, borderRadius: BorderRadius.circular(r.w(16))),
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
+                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -830,31 +832,31 @@ class _MeanderDrawingTestScreenState extends State<MeanderDrawingTestScreen>
     );
   }
 
-  Widget _buildHandResultCard(String title, String tremor, String smoothness, Color color) {
+  Widget _buildHandResultCard(String title, String tremor, String smoothness, Color color, Responsive r) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(r.w(14)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(r.w(14)),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         children: [
-          Text(title, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 10),
+          Text(title, style: TextStyle(fontSize: r.sp(12), color: color, fontWeight: FontWeight.w600)),
+          SizedBox(height: r.h(10)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Column(
                 children: [
-                  Text(tremor, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)),
-                  Text('Tremor', style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                  Text(tremor, style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800, color: color)),
+                  Text('Tremor', style: TextStyle(fontSize: r.sp(10), color: Colors.grey[600])),
                 ],
               ),
               Column(
                 children: [
-                  Text(smoothness, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)),
-                  Text('Smooth', style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                  Text(smoothness, style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800, color: color)),
+                  Text('Smooth', style: TextStyle(fontSize: r.sp(10), color: Colors.grey[600])),
                 ],
               ),
             ],

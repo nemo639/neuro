@@ -11,8 +11,8 @@ from app.services.auth_service import AuthService
 from app.schemas.auth import (
     RegisterRequest, VerifyOTPRequest, ResendOTPRequest,
     LoginRequest, RefreshTokenRequest, ForgotPasswordRequest,
-    ResetPasswordRequest, TokenResponse, MessageResponse,
-    AuthUserResponse, LoginResponse
+    ResetPasswordRequest, GoogleAuthRequest, TokenResponse,
+    MessageResponse, AuthUserResponse, LoginResponse
 )
 
 router = APIRouter()
@@ -114,6 +114,44 @@ async def login(
         await db.flush()
     except Exception:
         pass  # Non-critical — don't block login
+
+    return LoginResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        user=AuthUserResponse.model_validate(user)
+    )
+
+
+@router.post("/google", response_model=LoginResponse)
+async def google_login(
+    data: GoogleAuthRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Login or register via Google Sign-In.
+
+    - Verifies Google id_token
+    - Creates account if new user (auto-verified)
+    - Returns access and refresh tokens
+    """
+    service = AuthService(db)
+    user, access_token, refresh_token = await service.google_login(data.id_token)
+
+    # Create login alert notification
+    try:
+        from app.models.notification import Notification as NotifModel
+        from datetime import datetime
+        notif = NotifModel(
+            user_id=user.id,
+            title="Google Login Detected",
+            message=f"You signed in via Google at {datetime.now().strftime('%I:%M %p, %b %d %Y')}.",
+            notification_type="login_alert",
+        )
+        db.add(notif)
+        await db.flush()
+    except Exception:
+        pass
 
     return LoginResponse(
         access_token=access_token,

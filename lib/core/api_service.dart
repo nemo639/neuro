@@ -195,6 +195,28 @@ static const _storage = FlutterSecureStorage();
     }
   }
 
+  /// Google Sign-In
+  static Future<Map<String, dynamic>> googleLogin({required String idToken}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl$apiVersion/auth/google'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id_token': idToken}),
+      ).timeout(const Duration(seconds: 15));
+
+      final result = await _handleResponse(response);
+      if (result['success'] && result['data'] != null) {
+        await _saveTokens(
+          result['data']['access_token'],
+          result['data']['refresh_token'],
+        );
+      }
+      return result;
+    } catch (e) {
+      return {'success': false, 'error': 'Google sign-in failed: $e'};
+    }
+  }
+
   /// Logout
   static Future<Map<String, dynamic>> logout() async {
     try {

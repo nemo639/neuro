@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
 import 'package:neuroverse/core/loading_bars.dart';
+import 'package:neuroverse/core/responsive.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -16,39 +17,39 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
   // OTP Controllers
   final List<TextEditingController> otpControllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> otpFocusNodes = List.generate(6, (_) => FocusNode());
-  
+
   // Password Controllers
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
   final FocusNode passwordFocus = FocusNode();
   final FocusNode confirmFocus = FocusNode();
-  
+
   // Animation Controllers
   late AnimationController _floatingController;
   late AnimationController _pageController;
   late AnimationController _pulseController;
   late AnimationController _shakeController;
-  
+
   // State
   bool isLoading = false;
   bool isResending = false;
   bool resetSuccess = false;
   bool obscurePassword = true;
   bool obscureConfirm = true;
-  
+
   String? otpError;
   String? passwordError;
   String? confirmError;
-  
+
   // Password strength
   double passwordStrength = 0;
   String passwordStrengthText = '';
   Color passwordStrengthColor = Colors.grey;
-  
+
   // Timer for resend
   int resendTimer = 60;
   Timer? _timer;
-  
+
   // Data from previous screen
   String? email;
 
@@ -66,12 +67,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
   @override
   void initState() {
     super.initState();
-    
+
     _floatingController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
     )..repeat(reverse: true);
-    
+
     _pageController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -142,11 +143,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
 
   void _onOtpChanged(int index, String value) {
     setState(() => otpError = null);
-    
+
     if (value.length == 1 && index < 5) {
       otpFocusNodes[index + 1].requestFocus();
     }
-    
+
     // Auto-focus password field when OTP complete
     if (_otpCode.length == 6) {
       passwordFocus.requestFocus();
@@ -155,14 +156,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
 
   void _calculatePasswordStrength(String password) {
     double strength = 0;
-    
+
     if (password.length >= 8) strength += 0.25;
     if (password.length >= 12) strength += 0.15;
     if (RegExp(r'[A-Z]').hasMatch(password)) strength += 0.2;
     if (RegExp(r'[a-z]').hasMatch(password)) strength += 0.1;
     if (RegExp(r'[0-9]').hasMatch(password)) strength += 0.15;
     if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength += 0.15;
-    
+
     setState(() {
       passwordStrength = strength.clamp(0, 1);
       if (strength < 0.3) {
@@ -183,7 +184,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
 
   bool _validate() {
     bool isValid = true;
-    
+
     // OTP validation
     if (_otpCode.length != 6) {
       setState(() => otpError = "Please enter the 6-digit code");
@@ -191,7 +192,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     } else {
       setState(() => otpError = null);
     }
-    
+
     // Password validation
     final password = passwordController.text;
     if (password.isEmpty) {
@@ -212,7 +213,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     } else {
       setState(() => passwordError = null);
     }
-    
+
     // Confirm password
     if (confirmPasswordController.text.isEmpty) {
       setState(() => confirmError = "Please confirm password");
@@ -223,11 +224,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     } else {
       setState(() => confirmError = null);
     }
-    
+
     if (!isValid) {
       _triggerShake();
     }
-    
+
     return isValid;
   }
 
@@ -245,7 +246,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
 
   Future<void> _handleResetPassword() async {
     if (!_validate()) return;
-    
+
     setState(() => isLoading = true);
     HapticFeedback.mediumImpact();
 
@@ -265,13 +266,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
           isLoading = false;
           resetSuccess = true;
         });
-        
+
         // Wait for animation then navigate
         await Future.delayed(const Duration(milliseconds: 2000));
-        
+
         if (mounted) {
           Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Row(
@@ -290,10 +291,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
       } else {
         setState(() => isLoading = false);
         _triggerShake();
-        
+
         // Check if it's an OTP error
         final error = result['error'] ?? 'Failed to reset password';
-        if (error.toLowerCase().contains('otp') || 
+        if (error.toLowerCase().contains('otp') ||
             error.toLowerCase().contains('code') ||
             error.toLowerCase().contains('invalid')) {
           setState(() => otpError = error);
@@ -310,7 +311,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
 
   Future<void> _resendOtp() async {
     if (resendTimer > 0) return;
-    
+
     setState(() => isResending = true);
     HapticFeedback.lightImpact();
 
@@ -322,7 +323,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
       if (result['success']) {
         _startResendTimer();
         _clearOtp();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
@@ -365,38 +366,39 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
         children: [
-          _buildAnimatedBackground(),
+          _buildAnimatedBackground(r),
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(),
+                _buildHeader(r),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: EdgeInsets.symmetric(horizontal: r.w(24)),
                       child: Column(
                         children: [
-                          const SizedBox(height: 20),
-                          _buildIcon(),
-                          const SizedBox(height: 20),
-                          _buildTitle(),
-                          const SizedBox(height: 24),
+                          SizedBox(height: r.h(20)),
+                          _buildIcon(r),
+                          SizedBox(height: r.h(20)),
+                          _buildTitle(r),
+                          SizedBox(height: r.h(24)),
                           if (!resetSuccess) ...[
-                            _buildOtpSection(),
-                            const SizedBox(height: 20),
-                            _buildPasswordSection(),
-                            const SizedBox(height: 24),
-                            _buildResetButton(),
-                            const SizedBox(height: 16),
-                            _buildResendSection(),
+                            _buildOtpSection(r),
+                            SizedBox(height: r.h(20)),
+                            _buildPasswordSection(r),
+                            SizedBox(height: r.h(24)),
+                            _buildResetButton(r),
+                            SizedBox(height: r.h(16)),
+                            _buildResendSection(r),
                           ] else
-                            _buildSuccessCard(),
-                          const SizedBox(height: 40),
+                            _buildSuccessCard(r),
+                          SizedBox(height: r.h(40)),
                         ],
                       ),
                     ),
@@ -410,7 +412,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildAnimatedBackground() {
+  Widget _buildAnimatedBackground(Responsive r) {
     return Stack(
       children: [
         Positioned(
@@ -425,8 +427,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
                   _floatingController.value * 30,
                 ),
                 child: Container(
-                  width: 250,
-                  height: 250,
+                  width: r.dp(250),
+                  height: r.dp(250),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -453,8 +455,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
                   -_floatingController.value * 40,
                 ),
                 child: Container(
-                  width: 220,
-                  height: 220,
+                  width: r.dp(220),
+                  height: r.dp(220),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -473,9 +475,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.w(20)),
       child: Row(
         children: [
           if (!resetSuccess)
@@ -485,11 +487,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
                 Navigator.pop(context);
               },
               child: Container(
-                width: 44,
-                height: 44,
+                width: r.dp(44),
+                height: r.dp(44),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(r.w(14)),
                   border: Border.all(color: Colors.black.withOpacity(0.08)),
                   boxShadow: [
                     BoxShadow(
@@ -499,9 +501,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back_ios_new_rounded,
-                  size: 18,
+                  size: r.dp(18),
                   color: Colors.black87,
                 ),
               ),
@@ -509,17 +511,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
           const Spacer(),
           // Step indicator
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: r.w(14), vertical: r.h(8)),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.w(20)),
               border: Border.all(color: Colors.black.withOpacity(0.08)),
             ),
             child: Row(
               children: [
-                _buildStepDot(true, 1),
-                _buildStepConnector(true),
-                _buildStepDot(!resetSuccess, 2),
+                _buildStepDot(true, 1, r),
+                _buildStepConnector(true, r),
+                _buildStepDot(!resetSuccess, 2, r),
               ],
             ),
           ),
@@ -528,22 +530,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildStepDot(bool active, int step) {
+  Widget _buildStepDot(bool active, int step, Responsive r) {
     final bool completed = resetSuccess || (step == 1);
     return Container(
-      width: 24,
-      height: 24,
+      width: r.dp(24),
+      height: r.dp(24),
       decoration: BoxDecoration(
         color: completed ? greenAccent : (active ? blueAccent : Colors.grey[300]),
         shape: BoxShape.circle,
       ),
       child: Center(
         child: completed
-            ? const Icon(Icons.check, size: 14, color: Colors.white)
+            ? Icon(Icons.check, size: r.dp(14), color: Colors.white)
             : Text(
                 '$step',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: r.sp(12),
                   color: active ? Colors.white : Colors.grey[600],
                   fontWeight: FontWeight.w600,
                 ),
@@ -552,24 +554,24 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildStepConnector(bool active) {
+  Widget _buildStepConnector(bool active, Responsive r) {
     return Container(
-      width: 30,
-      height: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 6),
+      width: r.w(30),
+      height: r.h(2),
+      margin: EdgeInsets.symmetric(horizontal: r.w(6)),
       color: resetSuccess ? greenAccent : (active ? blueAccent : Colors.grey[300]),
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: AnimatedBuilder(
         animation: _pulseController,
         builder: (context, child) {
           return Container(
-            width: 80,
-            height: 80,
+            width: r.dp(80),
+            height: r.dp(80),
             decoration: BoxDecoration(
               color: (resetSuccess ? greenAccent : blueAccent).withOpacity(0.15),
               shape: BoxShape.circle,
@@ -583,7 +585,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
             ),
             child: Icon(
               resetSuccess ? Icons.check_circle_rounded : Icons.lock_reset_rounded,
-              size: 40,
+              size: r.dp(40),
               color: resetSuccess ? greenAccent : blueAccent,
             ),
           );
@@ -592,28 +594,28 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildTitle() {
+  Widget _buildTitle(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.1,
       child: Column(
         children: [
           Text(
             resetSuccess ? "Password Reset!" : "Reset Password",
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: r.sp(24),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           if (!resetSuccess)
             RichText(
               textAlign: TextAlign.center,
               text: TextSpan(
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: r.sp(14),
                   fontWeight: FontWeight.w500,
                   color: Colors.black.withOpacity(0.5),
                   height: 1.4,
@@ -636,7 +638,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildOtpSection() {
+  Widget _buildOtpSection(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.2,
       child: AnimatedBuilder(
@@ -649,10 +651,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
           );
         },
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(r.w(20)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(r.w(24)),
             border: Border.all(
               color: otpError != null ? redAccent.withOpacity(0.3) : Colors.black.withOpacity(0.06),
             ),
@@ -669,34 +671,34 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
             children: [
               Row(
                 children: [
-                  Icon(Icons.pin_rounded, color: blueAccent, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(Icons.pin_rounded, color: blueAccent, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     "Verification Code",
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: r.sp(14),
                       fontWeight: FontWeight.w600,
                       color: Colors.black.withOpacity(0.7),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(6, (index) => _buildOtpField(index)),
+                children: List.generate(6, (index) => _buildOtpField(index, r)),
               ),
               if (otpError != null) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: r.h(12)),
                 Row(
                   children: [
-                    const Icon(Icons.error_outline_rounded, size: 14, color: redAccent),
-                    const SizedBox(width: 6),
+                    Icon(Icons.error_outline_rounded, size: r.dp(14), color: redAccent),
+                    SizedBox(width: r.w(6)),
                     Text(
                       otpError!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: redAccent,
-                        fontSize: 12,
+                        fontSize: r.sp(12),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -710,18 +712,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildOtpField(int index) {
+  Widget _buildOtpField(int index, Responsive r) {
     return SizedBox(
-      width: 48,
-      height: 56,
+      width: r.w(48),
+      height: r.h(56),
       child: TextField(
         controller: otpControllers[index],
         focusNode: otpFocusNodes[index],
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         maxLength: 1,
-        style: const TextStyle(
-          fontSize: 22,
+        style: TextStyle(
+          fontSize: r.sp(22),
           fontWeight: FontWeight.w700,
           color: Colors.black87,
         ),
@@ -731,15 +733,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
           filled: true,
           fillColor: bgColor,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(r.w(14)),
             borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(r.w(14)),
             borderSide: const BorderSide(color: blueAccent, width: 2),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(r.w(14)),
             borderSide: BorderSide(
               color: otpError != null ? redAccent.withOpacity(0.5) : Colors.transparent,
               width: 1.5,
@@ -751,14 +753,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildPasswordSection() {
+  Widget _buildPasswordSection(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.3,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(r.w(20)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(r.w(24)),
           border: Border.all(color: Colors.black.withOpacity(0.06)),
           boxShadow: [
             BoxShadow(
@@ -773,22 +775,23 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
           children: [
             Row(
               children: [
-                Icon(Icons.lock_outline_rounded, color: blueAccent, size: 20),
-                const SizedBox(width: 8),
+                Icon(Icons.lock_outline_rounded, color: blueAccent, size: r.dp(20)),
+                SizedBox(width: r.w(8)),
                 Text(
                   "New Password",
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: r.sp(14),
                     fontWeight: FontWeight.w600,
                     color: Colors.black.withOpacity(0.7),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: r.h(16)),
+
             // Password field
             _buildPasswordField(
+              r: r,
               controller: passwordController,
               focusNode: passwordFocus,
               hint: "Enter new password",
@@ -800,21 +803,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
                 if (passwordError != null) setState(() => passwordError = null);
               },
             ),
-            
+
             if (passwordController.text.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _buildPasswordStrengthIndicator(),
+              SizedBox(height: r.h(12)),
+              _buildPasswordStrengthIndicator(r),
             ],
-            
+
             if (passwordError != null) ...[
-              const SizedBox(height: 8),
-              _buildErrorText(passwordError!),
+              SizedBox(height: r.h(8)),
+              _buildErrorText(passwordError!, r),
             ],
-            
-            const SizedBox(height: 16),
-            
+
+            SizedBox(height: r.h(16)),
+
             // Confirm password field
             _buildPasswordField(
+              r: r,
               controller: confirmPasswordController,
               focusNode: confirmFocus,
               hint: "Confirm new password",
@@ -825,14 +829,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
                 if (confirmError != null) setState(() => confirmError = null);
               },
             ),
-            
+
             if (confirmError != null) ...[
-              const SizedBox(height: 8),
-              _buildErrorText(confirmError!),
+              SizedBox(height: r.h(8)),
+              _buildErrorText(confirmError!, r),
             ],
-            
-            const SizedBox(height: 16),
-            _buildPasswordRequirements(),
+
+            SizedBox(height: r.h(16)),
+            _buildPasswordRequirements(r),
           ],
         ),
       ),
@@ -840,6 +844,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
   }
 
   Widget _buildPasswordField({
+    required Responsive r,
     required TextEditingController controller,
     required FocusNode focusNode,
     required String hint,
@@ -851,7 +856,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(r.w(14)),
         border: Border.all(
           color: error != null ? redAccent.withOpacity(0.5) : Colors.black.withOpacity(0.06),
           width: 1.5,
@@ -862,56 +867,56 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
         focusNode: focusNode,
         obscureText: obscure,
         onChanged: onChanged,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.black87,
-          fontSize: 15,
+          fontSize: r.sp(15),
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
             color: Colors.black.withOpacity(0.3),
-            fontSize: 14,
+            fontSize: r.sp(14),
           ),
           prefixIcon: Icon(
             Icons.lock_outline_rounded,
             color: error != null ? redAccent : Colors.black.withOpacity(0.4),
-            size: 20,
+            size: r.dp(20),
           ),
           suffixIcon: GestureDetector(
             onTap: onToggle,
             child: Icon(
               obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
               color: Colors.black.withOpacity(0.4),
-              size: 20,
+              size: r.dp(20),
             ),
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(14)),
         ),
       ),
     );
   }
 
-  Widget _buildPasswordStrengthIndicator() {
+  Widget _buildPasswordStrengthIndicator(Responsive r) {
     return Row(
       children: [
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(r.w(4)),
             child: LinearProgressIndicator(
               value: passwordStrength,
               backgroundColor: Colors.grey[200],
               valueColor: AlwaysStoppedAnimation<Color>(passwordStrengthColor),
-              minHeight: 5,
+              minHeight: r.h(5),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: r.w(12)),
         Text(
           passwordStrengthText,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: r.sp(11),
             fontWeight: FontWeight.w600,
             color: passwordStrengthColor,
           ),
@@ -920,14 +925,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildPasswordRequirements() {
+  Widget _buildPasswordRequirements(Responsive r) {
     final password = passwordController.text;
-    
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(r.w(12)),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(r.w(12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -935,20 +940,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
           Text(
             "Password must have:",
             style: TextStyle(
-              fontSize: 11,
+              fontSize: r.sp(11),
               fontWeight: FontWeight.w600,
               color: Colors.black.withOpacity(0.5),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Wrap(
-            spacing: 16,
-            runSpacing: 6,
+            spacing: r.w(16),
+            runSpacing: r.h(6),
             children: [
-              _buildRequirement("8+ chars", password.length >= 8),
-              _buildRequirement("Uppercase", RegExp(r'[A-Z]').hasMatch(password)),
-              _buildRequirement("Lowercase", RegExp(r'[a-z]').hasMatch(password)),
-              _buildRequirement("Number", RegExp(r'[0-9]').hasMatch(password)),
+              _buildRequirement("8+ chars", password.length >= 8, r),
+              _buildRequirement("Uppercase", RegExp(r'[A-Z]').hasMatch(password), r),
+              _buildRequirement("Lowercase", RegExp(r'[a-z]').hasMatch(password), r),
+              _buildRequirement("Number", RegExp(r'[0-9]').hasMatch(password), r),
             ],
           ),
         ],
@@ -956,20 +961,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildRequirement(String text, bool met) {
+  Widget _buildRequirement(String text, bool met, Responsive r) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           met ? Icons.check_circle_rounded : Icons.circle_outlined,
-          size: 14,
+          size: r.dp(14),
           color: met ? greenAccent : Colors.grey[400],
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: r.w(4)),
         Text(
           text,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: r.sp(11),
             color: met ? Colors.black87 : Colors.black.withOpacity(0.4),
             fontWeight: met ? FontWeight.w500 : FontWeight.w400,
           ),
@@ -978,16 +983,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildErrorText(String error) {
+  Widget _buildErrorText(String error, Responsive r) {
     return Row(
       children: [
-        const Icon(Icons.error_outline_rounded, size: 14, color: redAccent),
-        const SizedBox(width: 6),
+        Icon(Icons.error_outline_rounded, size: r.dp(14), color: redAccent),
+        SizedBox(width: r.w(6)),
         Text(
           error,
-          style: const TextStyle(
+          style: TextStyle(
             color: redAccent,
-            fontSize: 12,
+            fontSize: r.sp(12),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -995,19 +1000,19 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildResetButton() {
+  Widget _buildResetButton(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.4,
       child: GestureDetector(
         onTap: isLoading ? null : _handleResetPassword,
         child: Container(
           width: double.infinity,
-          height: 56,
+          height: r.h(56),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [darkCard, darkCard.withOpacity(0.9)],
             ),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(r.w(18)),
             boxShadow: [
               BoxShadow(
                 color: darkCard.withOpacity(0.35),
@@ -1018,17 +1023,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
           ),
           child: Center(
             child: isLoading
-                ? const LoadingBars(color: Colors.white, height: 20)
-                : const Row(
+                ? LoadingBars(color: Colors.white, height: r.h(20))
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.lock_reset_rounded, color: Colors.white, size: 20),
-                      SizedBox(width: 10),
+                      Icon(Icons.lock_reset_rounded, color: Colors.white, size: r.dp(20)),
+                      SizedBox(width: r.w(10)),
                       Text(
                         "Reset Password",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
+                          fontSize: r.sp(16),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1040,7 +1045,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildResendSection() {
+  Widget _buildResendSection(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.5,
       child: Column(
@@ -1048,34 +1053,34 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
           Text(
             "Didn't receive the code?",
             style: TextStyle(
-              fontSize: 13,
+              fontSize: r.sp(13),
               color: Colors.black.withOpacity(0.5),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           GestureDetector(
             onTap: resendTimer == 0 ? _resendOtp : null,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(10)),
               decoration: BoxDecoration(
                 color: resendTimer == 0 ? blueAccent.withOpacity(0.1) : Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(r.w(12)),
               ),
               child: isResending
-                  ? LoadingBars(color: blueAccent, height: 16, barCount: 5)
+                  ? LoadingBars(color: blueAccent, height: r.h(16), barCount: 5)
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.refresh_rounded,
-                          size: 16,
+                          size: r.dp(16),
                           color: resendTimer == 0 ? blueAccent : Colors.grey[400],
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: r.w(6)),
                         Text(
                           resendTimer > 0 ? "Resend in ${resendTimer}s" : "Resend Code",
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: r.sp(13),
                             fontWeight: FontWeight.w600,
                             color: resendTimer == 0 ? blueAccent : Colors.grey[400],
                           ),
@@ -1089,14 +1094,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
     );
   }
 
-  Widget _buildSuccessCard() {
+  Widget _buildSuccessCard(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Container(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(r.w(32)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(r.w(28)),
           border: Border.all(color: greenAccent.withOpacity(0.2)),
           boxShadow: [
             BoxShadow(
@@ -1115,40 +1120,40 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> with TickerPr
                 return Transform.scale(
                   scale: value,
                   child: Container(
-                    width: 80,
-                    height: 80,
+                    width: r.dp(80),
+                    height: r.dp(80),
                     decoration: BoxDecoration(
                       color: greenAccent.withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.check_circle_rounded,
-                      size: 50,
+                      size: r.dp(50),
                       color: greenAccent,
                     ),
                   ),
                 );
               },
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: r.h(24)),
+            Text(
               "Password Changed!",
               style: TextStyle(
-                fontSize: 20,
+                fontSize: r.sp(20),
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: r.h(8)),
             Text(
               "Redirecting to login...",
               style: TextStyle(
-                fontSize: 14,
+                fontSize: r.sp(14),
                 color: Colors.black.withOpacity(0.5),
               ),
             ),
-            const SizedBox(height: 20),
-            LoadingBars(color: greenAccent, height: 20),
+            SizedBox(height: r.h(20)),
+            LoadingBars(color: greenAccent, height: r.h(20)),
           ],
         ),
       ),

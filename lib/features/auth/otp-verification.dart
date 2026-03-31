@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
 import 'package:neuroverse/core/loading_bars.dart';
+import 'package:neuroverse/core/responsive.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String email;
   final String verificationType; // 'signup', 'forgot_password', 'login'
-  
+
   const OTPVerificationScreen({
     super.key,
     required this.email,
@@ -22,12 +23,12 @@ class OTPVerificationScreen extends StatefulWidget {
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> with TickerProviderStateMixin {
   final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
-  
+
   late AnimationController _floatingController;
   late AnimationController _pageController;
   late AnimationController _pulseController;
   late AnimationController _shakeController;
-  
+
   Timer? _timer;
   int _remainingSeconds = 60;
   bool _canResend = false;
@@ -51,12 +52,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
   @override
   void initState() {
     super.initState();
-    
+
     _floatingController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
     )..repeat(reverse: true);
-    
+
     _pageController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -73,7 +74,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     );
 
     _startTimer();
-    
+
     // Auto focus first field
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNodes[0].requestFocus();
@@ -160,7 +161,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
         }
         return;
       }
-      
+
       // Move to next field
       if (index < 5) {
         _focusNodes[index + 1].requestFocus();
@@ -210,18 +211,18 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
       _isLoading = false;
       _isVerified = true;
     });
-    
+
     HapticFeedback.heavyImpact();
-    
+
     // Navigate after success animation
     await Future.delayed(const Duration(milliseconds: 1500));
-    
+
     if (mounted) {
       if (widget.verificationType == 'signup') {
         Navigator.pushReplacementNamed(context, '/home');
       } else if (widget.verificationType == 'forgot_password') {
         Navigator.pushReplacementNamed(
-          context, 
+          context,
           '/reset-password',
           arguments: {'email': widget.email, 'otp': _otpCode},
         );
@@ -237,7 +238,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     });
     _shakeController.forward().then((_) => _shakeController.reset());
     HapticFeedback.heavyImpact();
-    
+
     // Clear OTP fields
     for (var controller in _controllers) {
       controller.clear();
@@ -248,9 +249,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
 
   Future<void> _handleResend() async {
   if (!_canResend) return;
-  
+
   HapticFeedback.lightImpact();
-  
+
   // Clear previous OTP
   for (var controller in _controllers) {
     controller.clear();
@@ -259,7 +260,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     _hasError = false;
     _errorMessage = null;
   });
-  
+
   // Show loading
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
@@ -280,13 +281,13 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
       duration: const Duration(seconds: 2),
     ),
   );
-  
+
   // Call API
   final result = await ApiService.resendOtp(email: widget.email);
-  
+
   _startTimer();
   _focusNodes[0].requestFocus();
-  
+
   if (mounted) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -294,8 +295,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
         content: Row(
           children: [
             Icon(
-              result['success'] ? Icons.check_circle_rounded : Icons.error_rounded, 
-              color: Colors.white, 
+              result['success'] ? Icons.check_circle_rounded : Icons.error_rounded,
+              color: Colors.white,
               size: 20
             ),
             const SizedBox(width: 12),
@@ -317,42 +318,43 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
   String _maskEmail(String email) {
     final parts = email.split('@');
     if (parts.length != 2) return email;
-    
+
     final name = parts[0];
     final domain = parts[1];
-    
+
     if (name.length <= 3) {
       return '${name[0]}***@$domain';
     }
-    
+
     return '${name.substring(0, 2)}${'*' * (name.length - 2)}@$domain';
   }
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
         children: [
-          _buildAnimatedBackground(),
+          _buildAnimatedBackground(r),
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(),
+                _buildHeader(r),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: EdgeInsets.symmetric(horizontal: r.w(24)),
                       child: Column(
                         children: [
-                          const SizedBox(height: 30),
-                          _buildIcon(),
-                          const SizedBox(height: 28),
-                          _buildTitle(),
-                          const SizedBox(height: 40),
-                          _isVerified ? _buildSuccessState() : _buildOTPForm(),
-                          const SizedBox(height: 40),
+                          SizedBox(height: r.h(30)),
+                          _buildIcon(r),
+                          SizedBox(height: r.h(28)),
+                          _buildTitle(r),
+                          SizedBox(height: r.h(40)),
+                          _isVerified ? _buildSuccessState(r) : _buildOTPForm(r),
+                          SizedBox(height: r.h(40)),
                         ],
                       ),
                     ),
@@ -366,7 +368,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     );
   }
 
-  Widget _buildAnimatedBackground() {
+  Widget _buildAnimatedBackground(Responsive r) {
     return Stack(
       children: [
         Positioned(
@@ -381,8 +383,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
                   _floatingController.value * 30,
                 ),
                 child: Container(
-                  width: 250,
-                  height: 250,
+                  width: r.dp(250),
+                  height: r.dp(250),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -409,8 +411,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
                   -_floatingController.value * 40,
                 ),
                 child: Container(
-                  width: 220,
-                  height: 220,
+                  width: r.dp(220),
+                  height: r.dp(220),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -437,8 +439,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
                   math.sin(_floatingController.value * math.pi) * 15,
                 ),
                 child: Container(
-                  width: 100,
-                  height: 100,
+                  width: r.dp(100),
+                  height: r.dp(100),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -457,9 +459,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.w(20)),
       child: Row(
         children: [
           GestureDetector(
@@ -468,11 +470,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               Navigator.pop(context);
             },
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.w(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
                 boxShadow: [
                   BoxShadow(
@@ -482,9 +484,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
@@ -493,25 +495,25 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
           // Timer badge
           if (!_isVerified)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: r.w(14), vertical: r.h(8)),
               decoration: BoxDecoration(
                 color: _canResend ? greenAccent.withOpacity(0.15) : darkCard,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(r.w(20)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     _canResend ? Icons.refresh_rounded : Icons.timer_outlined,
-                    size: 16,
+                    size: r.dp(16),
                     color: _canResend ? greenAccent : Colors.white,
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: r.w(6)),
                   Text(
                     _canResend ? "Resend" : _formattedTime,
                     style: TextStyle(
                       color: _canResend ? greenAccent : Colors.white,
-                      fontSize: 13,
+                      fontSize: r.sp(13),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -523,15 +525,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: AnimatedBuilder(
         animation: _pulseController,
         builder: (context, child) {
           return Container(
-            width: 100,
-            height: 100,
+            width: r.dp(100),
+            height: r.dp(100),
             decoration: BoxDecoration(
               color: _isVerified
                   ? greenAccent.withOpacity(0.15)
@@ -557,7 +559,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
                         ? Icons.error_outline_rounded
                         : Icons.mail_outline_rounded,
                 key: ValueKey(_isVerified ? 'verified' : _hasError ? 'error' : 'mail'),
-                size: 48,
+                size: r.dp(48),
                 color: _isVerified ? greenAccent : _hasError ? redAccent : blueAccent,
               ),
             ),
@@ -567,37 +569,37 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     );
   }
 
-  Widget _buildTitle() {
+  Widget _buildTitle(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.1,
       child: Column(
         children: [
           Text(
             _isVerified ? "Verified!" : "Verify Your Email",
-            style: const TextStyle(
-              fontSize: 28,
+            style: TextStyle(
+              fontSize: r.sp(28),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           if (!_isVerified) ...[
             Text(
               "We've sent a 6-digit code to",
               style: TextStyle(
-                fontSize: 15,
+                fontSize: r.sp(15),
                 fontWeight: FontWeight.w500,
                 color: Colors.black.withOpacity(0.5),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: r.h(4)),
             Text(
               _maskEmail(widget.email),
               style: TextStyle(
-                fontSize: 15,
+                fontSize: r.sp(15),
                 fontWeight: FontWeight.w700,
                 color: blueAccent,
               ),
@@ -607,7 +609,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
             Text(
               "Your email has been verified successfully!",
               style: TextStyle(
-                fontSize: 15,
+                fontSize: r.sp(15),
                 fontWeight: FontWeight.w500,
                 color: Colors.black.withOpacity(0.5),
                 height: 1.5,
@@ -619,7 +621,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     );
   }
 
-  Widget _buildOTPForm() {
+  Widget _buildOTPForm(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.2,
       child: Column(
@@ -635,10 +637,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               );
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
+              padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(24)),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(r.w(24)),
                 border: Border.all(
                   color: _hasError
                       ? redAccent.withOpacity(0.3)
@@ -656,31 +658,31 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(6, (index) => _buildOTPBox(index)),
+                children: List.generate(6, (index) => _buildOTPBox(index, r)),
               ),
             ),
           ),
-          
+
           // Error Message
           if (_hasError && _errorMessage != null) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: r.h(16)),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(12)),
               decoration: BoxDecoration(
                 color: redAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(r.w(12)),
                 border: Border.all(color: redAccent.withOpacity(0.2)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline_rounded, color: redAccent, size: 20),
-                  const SizedBox(width: 10),
+                  Icon(Icons.error_outline_rounded, color: redAccent, size: r.dp(20)),
+                  SizedBox(width: r.w(10)),
                   Expanded(
                     child: Text(
                       _errorMessage!,
                       style: TextStyle(
                         color: redAccent,
-                        fontSize: 13,
+                        fontSize: r.sp(13),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -689,22 +691,22 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               ),
             ),
           ],
-          
-          const SizedBox(height: 28),
-          
+
+          SizedBox(height: r.h(28)),
+
           // Verify Button
           GestureDetector(
             onTap: _isLoading ? null : _handleVerify,
             child: Container(
               width: double.infinity,
-              height: 56,
+              height: r.h(56),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: _isOtpComplete
                       ? [darkCard, darkCard.withOpacity(0.9)]
                       : [Colors.grey.shade400, Colors.grey.shade500],
                 ),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(r.w(18)),
                 boxShadow: [
                   BoxShadow(
                     color: (_isOtpComplete ? darkCard : Colors.grey).withOpacity(0.35),
@@ -715,21 +717,21 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               ),
               child: Center(
                 child: _isLoading
-                    ? const LoadingBars(color: Colors.white, height: 20)
+                    ? LoadingBars(color: Colors.white, height: r.h(20))
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.verified_user_rounded,
                             color: Colors.white,
-                            size: 20,
+                            size: r.dp(20),
                           ),
-                          const SizedBox(width: 10),
-                          const Text(
+                          SizedBox(width: r.w(10)),
+                          Text(
                             "Verify Code",
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: r.sp(16),
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -738,9 +740,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               ),
             ),
           ),
-          
-          const SizedBox(height: 24),
-          
+
+          SizedBox(height: r.h(24)),
+
           // Resend Section
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -749,14 +751,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
                 "Didn't receive the code? ",
                 style: TextStyle(
                   color: Colors.black.withOpacity(0.5),
-                  fontSize: 14,
+                  fontSize: r.sp(14),
                   fontWeight: FontWeight.w500,
                 ),
               ),
               GestureDetector(
                 onTap: _canResend ? _handleResend : null,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  padding: EdgeInsets.symmetric(horizontal: r.w(2), vertical: r.h(2)),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
@@ -769,7 +771,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
                     _canResend ? "Resend Code" : "Wait $_formattedTime",
                     style: TextStyle(
                       color: _canResend ? blueAccent : Colors.black.withOpacity(0.3),
-                      fontSize: 14,
+                      fontSize: r.sp(14),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -777,9 +779,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               ),
             ],
           ),
-          
-          const SizedBox(height: 20),
-          
+
+          SizedBox(height: r.h(20)),
+
           // Change Email Link
           GestureDetector(
             onTap: () {
@@ -790,7 +792,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
               "Change email address",
               style: TextStyle(
                 color: Colors.black.withOpacity(0.4),
-                fontSize: 13,
+                fontSize: r.sp(13),
                 fontWeight: FontWeight.w600,
                 decoration: TextDecoration.underline,
               ),
@@ -801,21 +803,21 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     );
   }
 
-  Widget _buildOTPBox(int index) {
+  Widget _buildOTPBox(int index, Responsive r) {
     final hasValue = _controllers[index].text.isNotEmpty;
     final isFocused = _focusNodes[index].hasFocus;
-    
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      width: 48,
-      height: 58,
+      width: r.w(48),
+      height: r.h(58),
       decoration: BoxDecoration(
         color: hasValue
             ? _hasError
                 ? redAccent.withOpacity(0.1)
                 : blueAccent.withOpacity(0.1)
             : bgColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(r.w(14)),
         border: Border.all(
           color: _hasError
               ? redAccent
@@ -846,7 +848,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
           textAlign: TextAlign.center,
           maxLength: 6, // Allow paste
           style: TextStyle(
-            fontSize: 24,
+            fontSize: r.sp(24),
             fontWeight: FontWeight.w800,
             color: _hasError ? redAccent : darkCard,
           ),
@@ -864,14 +866,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
     );
   }
 
-  Widget _buildSuccessState() {
+  Widget _buildSuccessState(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Container(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(r.w(32)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(r.w(28)),
           border: Border.all(color: greenAccent.withOpacity(0.2)),
           boxShadow: [
             BoxShadow(
@@ -891,8 +893,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
                 return Transform.scale(
                   scale: value,
                   child: Container(
-                    width: 80,
-                    height: 80,
+                    width: r.dp(80),
+                    height: r.dp(80),
                     decoration: BoxDecoration(
                       color: greenAccent,
                       shape: BoxShape.circle,
@@ -904,35 +906,35 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> with Tick
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.check_rounded,
                       color: Colors.white,
-                      size: 45,
+                      size: r.dp(45),
                     ),
                   ),
                 );
               },
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: r.h(24)),
+            Text(
               "Email Verified!",
               style: TextStyle(
-                fontSize: 22,
+                fontSize: r.sp(22),
                 fontWeight: FontWeight.w800,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: r.h(8)),
             Text(
               "Redirecting you to the app...",
               style: TextStyle(
-                fontSize: 14,
+                fontSize: r.sp(14),
                 fontWeight: FontWeight.w500,
                 color: Colors.black.withOpacity(0.5),
               ),
             ),
-            const SizedBox(height: 20),
-            LoadingBars(color: greenAccent, height: 20),
+            SizedBox(height: r.h(20)),
+            LoadingBars(color: greenAccent, height: r.h(20)),
           ],
         ),
       ),

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/responsive.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:neuroverse/core/loading_bars.dart';
 
@@ -132,6 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
@@ -139,46 +141,46 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           child: ShimmerLoading(
             child: SingleChildScrollView(
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   // Profile avatar
-                  const SkeletonCircle(size: 90),
-                  const SizedBox(height: 16),
-                  const SkeletonLine(width: 150, height: 20),
-                  const SizedBox(height: 8),
-                  const SkeletonLine(width: 200, height: 14),
-                  const SizedBox(height: 24),
+                  SkeletonCircle(size: 90),
+                  SizedBox(height: 16),
+                  SkeletonLine(width: 150, height: 20),
+                  SizedBox(height: 8),
+                  SkeletonLine(width: 200, height: 14),
+                  SizedBox(height: 24),
                   // Stats row
-                  Row(children: const [
+                  Row(children: [
                     Expanded(child: SkeletonBox(width: double.infinity, height: 70, borderRadius: 16)),
                     SizedBox(width: 12),
                     Expanded(child: SkeletonBox(width: double.infinity, height: 70, borderRadius: 16)),
                     SizedBox(width: 12),
                     Expanded(child: SkeletonBox(width: double.infinity, height: 70, borderRadius: 16)),
                   ]),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   // Premium card
-                  const SkeletonBox(width: double.infinity, height: 120, borderRadius: 20),
-                  const SizedBox(height: 24),
+                  SkeletonBox(width: double.infinity, height: 120, borderRadius: 20),
+                  SizedBox(height: 24),
                   // Achievements
-                  const Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 130, height: 18)),
-                  const SizedBox(height: 12),
-                  Row(children: const [
+                  Align(alignment: Alignment.centerLeft, child: SkeletonLine(width: 130, height: 18)),
+                  SizedBox(height: 12),
+                  Row(children: [
                     Expanded(child: SkeletonBox(width: double.infinity, height: 90, borderRadius: 14)),
                     SizedBox(width: 8),
                     Expanded(child: SkeletonBox(width: double.infinity, height: 90, borderRadius: 14)),
                     SizedBox(width: 8),
                     Expanded(child: SkeletonBox(width: double.infinity, height: 90, borderRadius: 14)),
                   ]),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   // Menu items
                   const SkeletonListTile(),
                   const SkeletonListTile(),
                   const SkeletonListTile(),
                   const SkeletonListTile(),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                 ],
               ),
             ),
@@ -194,39 +196,39 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           physics: const BouncingScrollPhysics(),
           child: Column(
             children: [
-              const SizedBox(height: 20),
-              _buildHeader(),
-              const SizedBox(height: 30),
-              _buildProfileAvatar(),
-              const SizedBox(height: 24),
-              _buildStatsRow(),
-              const SizedBox(height: 24),
-              _buildPremiumCard(),
-              const SizedBox(height: 24),
-              _buildAchievementsCard(),
-              const SizedBox(height: 24),
-              _buildSettingsMenu(),
-              const SizedBox(height: 20),
-              _buildSignOutButton(),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
+              _buildHeader(r),
+              SizedBox(height: 30),
+              _buildProfileAvatar(r),
+              SizedBox(height: 24),
+              _buildStatsRow(r),
+              SizedBox(height: 24),
+              _buildPremiumCard(r),
+              SizedBox(height: 24),
+              _buildAchievementsCard(r),
+              SizedBox(height: 24),
+              _buildSettingsMenu(r),
+              SizedBox(height: 20),
+              _buildSignOutButton(r),
+              SizedBox(height: 20),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildBottomNav(r),
     );
   }
 
-  Widget _buildHeader() {
-    return _buildAnimatedWidget(
+  Widget _buildHeader(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.0,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Center(
-          child: const Text(
+          child: Text(
             'Profile',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: r.sp(18),
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
@@ -236,36 +238,36 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildProfileAvatar() {
+  Widget _buildProfileAvatar(Responsive r) {
     final firstName = _userData?['first_name'] ?? 'User';
     final lastName = _userData?['last_name'] ?? '';
     final email = _userData?['email'] ?? 'user@email.com';
     final initial = firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U';
     final profileImagePath = _userData?['profile_image_path'];
 
-    return _buildAnimatedWidget(
+    return _buildAnimatedWidget(r, 
       delay: 0.1,
       child: Column(
         children: [
           Container(
-            width: 100,
-            height: 100,
+            width: r.w(100),
+            height: r.h(100),
             decoration: BoxDecoration(
               color: darkCard,
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(r.dp(28)),
             ),
             clipBehavior: Clip.antiAlias,
             child: (profileImagePath != null && profileImagePath.toString().isNotEmpty)
                 ? Image.network(
                     "${ApiService.baseUrl}/uploads/$profileImagePath",
                     fit: BoxFit.cover,
-                    width: 100,
-                    height: 100,
+                    width: r.w(100),
+                    height: r.h(100),
                     errorBuilder: (context, error, stackTrace) {
                       return Center(
                         child: Text(
                           initial,
-                          style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700, color: Colors.white),
+                          style: TextStyle(fontSize: r.sp(42), fontWeight: FontWeight.w700, color: Colors.white),
                         ),
                       );
                     },
@@ -273,25 +275,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 : Center(
                     child: Text(
                       initial,
-                      style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700, color: Colors.white),
+                      style: TextStyle(fontSize: r.sp(42), fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                   ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Text(
             '$firstName $lastName',
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: r.sp(24),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: r.h(6)),
           Text(
             email,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: r.sp(14),
               fontWeight: FontWeight.w500,
               color: Colors.black.withOpacity(0.5),
             ),
@@ -301,43 +303,43 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildStatsRow() {
-    return _buildAnimatedWidget(
+  Widget _buildStatsRow(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.15,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          padding: EdgeInsets.symmetric(vertical: r.h(20), horizontal: r.w(16)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(r.dp(24)),
             border: Border.all(color: Colors.black.withOpacity(0.06)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                blurRadius: r.dp(20),
+                offset: Offset(r.w(0), r.h(8)),
               ),
             ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatItem(
+              _buildStatItem(r, 
                 icon: Icons.assignment_turned_in_outlined,
                 value: '$_totalTestsCompleted',
                 label: 'Tests\nCompleted',
                 iconBg: mintGreen,
               ),
-              _buildDivider(),
-              _buildStatItem(
+              _buildDivider(r),
+              _buildStatItem(r, 
                 icon: Icons.local_fire_department_rounded,
                 value: '$_streak days',
                 label: 'Current\nStreak',
                 iconBg: softLavender,
               ),
-              _buildDivider(),
-              _buildStatItem(
+              _buildDivider(r),
+              _buildStatItem(r, 
                 icon: Icons.calendar_month_rounded,
                 value: _memberSince.isNotEmpty ? _memberSince : 'N/A',
                 label: 'Member\nSince',
@@ -350,7 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildStatItem({
+  Widget _buildStatItem(Responsive r, {
     required IconData icon,
     required String value,
     required String label,
@@ -359,47 +361,47 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     return Column(
       children: [
         Container(
-          width: 44,
-          height: 44,
+          width: r.w(44),
+          height: r.h(44),
           decoration: BoxDecoration(
             color: iconBg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(r.dp(14)),
           ),
-          child: Icon(icon, size: 22, color: Colors.black87),
+          child: Icon(icon, size: r.dp(22), color: Colors.black87),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: r.h(12)),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: r.sp(18),
             fontWeight: FontWeight.w800,
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: r.h(4)),
         Text(
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: r.sp(12),
             fontWeight: FontWeight.w500,
             color: Colors.black.withOpacity(0.5),
-            height: 1.3,
+            height: r.h(1.3),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildDivider(Responsive r) {
     return Container(
-      width: 1,
-      height: 60,
+      width: r.w(1),
+      height: r.h(60),
       color: Colors.black.withOpacity(0.08),
     );
   }
 
-  Widget _buildAchievementsCard() {
+  Widget _buildAchievementsCard(Responsive r) {
     final badges = <Map<String, dynamic>>[];
 
     // All possible badges — unlocked ones first, then locked
@@ -429,18 +431,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
     final unlockedCount = badges.where((b) => b['unlocked'] == true).length;
 
-    return _buildAnimatedWidget(
+    return _buildAnimatedWidget(r, 
       delay: 0.22,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(r.dp(20)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(r.dp(24)),
             border: Border.all(color: Colors.black.withOpacity(0.06)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8)),
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: r.dp(20), offset: Offset(r.w(0), r.h(8))),
             ],
           ),
           child: Column(
@@ -449,18 +451,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Achievements', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.black87)),
+                  Text('Achievements', style: TextStyle(fontSize: r.sp(18), fontWeight: FontWeight.w800, color: Colors.black87)),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(5)),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF59E0B).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(r.dp(10)),
                     ),
-                    child: Text('$unlockedCount unlocked', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFF59E0B))),
+                    child: Text('$unlockedCount unlocked', style: TextStyle(fontSize: r.sp(11), fontWeight: FontWeight.w700, color: Color(0xFFF59E0B))),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               LayoutBuilder(
                 builder: (context, constraints) {
                   const spacing = 8.0;
@@ -474,24 +476,24 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       return SizedBox(
                         width: badgeWidth,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                          padding: EdgeInsets.symmetric(vertical: r.h(14), horizontal: r.w(4)),
                           decoration: BoxDecoration(
                             color: unlocked ? color.withOpacity(0.08) : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(r.dp(16)),
                             border: Border.all(color: unlocked ? color.withOpacity(0.15) : Colors.transparent),
                           ),
                           child: Column(
                             children: [
-                              Icon(badge['icon'] as IconData, size: 26, color: unlocked ? color : Colors.grey[350]),
-                              const SizedBox(height: 6),
+                              Icon(badge['icon'] as IconData, size: r.dp(26), color: unlocked ? color : Colors.grey[350]),
+                              SizedBox(height: r.h(6)),
                               Text(
                                 badge['title'] as String,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: unlocked ? Colors.black87 : Colors.grey[400]),
+                                style: TextStyle(fontSize: r.sp(10), fontWeight: FontWeight.w600, color: unlocked ? Colors.black87 : Colors.grey[400]),
                               ),
                               if (!unlocked) ...[
-                                const SizedBox(height: 2),
-                                Icon(Icons.lock_rounded, size: 10, color: Colors.grey[400]),
+                                SizedBox(height: r.h(2)),
+                                Icon(Icons.lock_rounded, size: r.dp(10), color: Colors.grey[400]),
                               ],
                             ],
                           ),
@@ -511,7 +513,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   // Premium is not active until a real payment system is integrated
   bool _isPremiumActive = false;
 
-  Widget _buildPremiumCard() {
+  Widget _buildPremiumCard(Responsive r) {
     final isActive = _isPremiumActive;
     final statusText = isActive ? 'Active' : 'Not Active';
     final subtitleText = isActive
@@ -519,20 +521,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         : 'Upgrade to unlock all premium features';
     final buttonText = isActive ? 'Manage Subscription' : 'Upgrade to Premium';
 
-    return _buildAnimatedWidget(
+    return _buildAnimatedWidget(r, 
       delay: 0.2,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(r.dp(20)),
           decoration: BoxDecoration(
             color: darkCard,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(r.dp(24)),
             boxShadow: [
               BoxShadow(
                 color: darkCard.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                blurRadius: r.dp(20),
+                offset: Offset(r.w(0), r.h(8)),
               ),
             ],
           ),
@@ -545,23 +547,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   Row(
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: r.w(44),
+                        height: r.h(44),
                         decoration: BoxDecoration(
                           color: mintGreen,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(r.dp(14)),
                         ),
                         child: Icon(
                           isActive ? Icons.workspace_premium_rounded : Icons.lock_open_rounded,
                           color: Colors.black87,
-                          size: 24,
+                          size: r.dp(24),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: r.w(12)),
                       Text(
                         isActive ? 'Premium Member' : 'Free Plan',
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: r.sp(18),
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
@@ -569,15 +571,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
                     decoration: BoxDecoration(
                       color: mintGreen,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(r.dp(20)),
                     ),
                     child: Text(
                       statusText,
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: r.sp(12),
                         fontWeight: FontWeight.w700,
                         color: Colors.black87,
                       ),
@@ -585,28 +587,28 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: r.h(12)),
               Text(
                 subtitleText,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: r.sp(14),
                   fontWeight: FontWeight.w500,
                   color: Colors.white.withOpacity(0.6),
                 ),
               ),
               if (!isActive) ...[
-                const SizedBox(height: 10),
+                SizedBox(height: r.h(10)),
                 Row(
                   children: [
-                    _buildPremiumPerk(Icons.analytics_rounded, 'Advanced XAI'),
-                    const SizedBox(width: 12),
-                    _buildPremiumPerk(Icons.picture_as_pdf_rounded, 'PDF Reports'),
-                    const SizedBox(width: 12),
-                    _buildPremiumPerk(Icons.all_inclusive_rounded, 'Unlimited'),
+                    _buildPremiumPerk(r, Icons.analytics_rounded, 'Advanced XAI'),
+                    SizedBox(width: r.w(12)),
+                    _buildPremiumPerk(r, Icons.picture_as_pdf_rounded, 'PDF Reports'),
+                    SizedBox(width: r.w(12)),
+                    _buildPremiumPerk(r, Icons.all_inclusive_rounded, 'Unlimited'),
                   ],
                 ),
               ],
-              const SizedBox(height: 18),
+              SizedBox(height: r.h(18)),
               GestureDetector(
                 onTap: () {
                   HapticFeedback.lightImpact();
@@ -616,17 +618,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(14)),
                   decoration: BoxDecoration(
                     color: isActive ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(r.dp(14)),
                     border: Border.all(color: Colors.white.withOpacity(0.2)),
                   ),
                   child: Center(
                     child: Text(
                       buttonText,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: r.sp(14),
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
@@ -641,38 +643,38 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildPremiumPerk(IconData icon, String label) {
+  Widget _buildPremiumPerk(Responsive r, IconData icon, String label) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.white38),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.45), fontWeight: FontWeight.w500)),
+        Icon(icon, size: r.dp(14), color: Colors.white38),
+        SizedBox(width: r.w(4)),
+        Text(label, style: TextStyle(fontSize: r.sp(11), color: Colors.white.withOpacity(0.45), fontWeight: FontWeight.w500)),
       ],
     );
   }
 
-  Widget _buildSettingsMenu() {
-    return _buildAnimatedWidget(
+  Widget _buildSettingsMenu(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.25,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(r.dp(24)),
             border: Border.all(color: Colors.black.withOpacity(0.06)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                blurRadius: r.dp(20),
+                offset: Offset(r.w(0), r.h(8)),
               ),
             ],
           ),
           child: Column(
             children: [
-              _buildMenuItem(
+              _buildMenuItem(r, 
                 icon: Icons.person_outline_rounded,
                 title: 'Edit Profile',
                 iconBgColor: blueAccent,
@@ -681,36 +683,36 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   Navigator.pushNamed(context, '/edit-profile');
                 },
               ),
-              _buildMenuDivider(),
-              _buildMenuItem(
+              _buildMenuDivider(r),
+              _buildMenuItem(r, 
                 icon: Icons.shield_outlined,
                 title: 'Privacy & Security',
                 iconBgColor: const Color(0xFFF97316),
                 onTap: () => _showPrivacySheet(),
               ),
-              _buildMenuDivider(),
-              _buildMenuItem(
+              _buildMenuDivider(r),
+              _buildMenuItem(r, 
                 icon: Icons.description_outlined,
                 title: 'Terms & Conditions',
                 iconBgColor: const Color(0xFF8B5CF6),
                 onTap: () => _showTermsDialog(),
               ),
-              _buildMenuDivider(),
-              _buildMenuItem(
+              _buildMenuDivider(r),
+              _buildMenuItem(r, 
                 icon: Icons.policy_outlined,
                 title: 'Privacy Policy',
                 iconBgColor: const Color(0xFF10B981),
                 onTap: () => _showPrivacyPolicyDialog(),
               ),
-              _buildMenuDivider(),
-              _buildMenuItem(
+              _buildMenuDivider(r),
+              _buildMenuItem(r, 
                 icon: Icons.help_outline_rounded,
                 title: 'Help & Support',
                 iconBgColor: blueAccent,
                 onTap: () => _showHelpSheet(),
               ),
-              _buildMenuDivider(),
-              _buildMenuItem(
+              _buildMenuDivider(r),
+              _buildMenuItem(r, 
                 icon: Icons.info_outline_rounded,
                 title: 'About App',
                 iconBgColor: const Color(0xFF6B7280),
@@ -725,6 +727,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _showPrivacySheet() {
+    final r = Responsive(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -732,7 +735,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => Container(
           height: MediaQuery.of(context).size.height * 0.65,
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -750,8 +753,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20),
+              Text(
                 'Privacy & Security',
                 style: TextStyle(
                   fontSize: 22,
@@ -759,7 +762,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Expanded(
                 child: ListView(
                   children: [
@@ -796,20 +799,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         _showSettingSavedSnackbar('Analytics ${value ? 'enabled' : 'disabled'}');
                       },
                     ),
-                    const SizedBox(height: 8),
-                    _buildPrivacyOptionWithAction(
+                    SizedBox(height: 8),
+                    _buildPrivacyOptionWithAction(r, 
                       Icons.fingerprint_rounded, 
                       'Biometric Login', 
                       'Use fingerprint or face ID',
                       onTap: () => _showComingSoonDialog('Biometric Login'),
                     ),
-                    _buildPrivacyOptionWithAction(
+                    _buildPrivacyOptionWithAction(r, 
                       Icons.lock_clock_rounded, 
                       'App Lock', 
                       'Set PIN or pattern lock',
                       onTap: () => _showComingSoonDialog('App Lock'),
                     ),
-                    _buildPrivacyOptionWithAction(
+                    _buildPrivacyOptionWithAction(r, 
                       Icons.cleaning_services_rounded, 
                       'Clear Cache', 
                       'Free up storage space',
@@ -831,12 +834,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   bool _shareAnalytics = true;
 
   void _showSettingSavedSnackbar(String message) {
+    final r = Responsive(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            SizedBox(width: 10),
             Text(message),
           ],
         ),
@@ -849,6 +853,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _showClearCacheDialog() {
+    final r = Responsive(context);
     Navigator.pop(context);
     showDialog(
       context: context,
@@ -857,18 +862,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: blueAccent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(Icons.cleaning_services_rounded, color: blueAccent, size: 24),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             const Text('Clear Cache', style: TextStyle(fontWeight: FontWeight.w700)),
           ],
         ),
-        content: const Text(
+        content: Text(
           'This will clear temporary files and cached images. Your account data and test results will not be affected.',
           style: TextStyle(color: Colors.black54, height: 1.5),
         ),
@@ -896,12 +901,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               LoadingBars(color: darkCard, height: 22),
-              const SizedBox(width: 20),
+              SizedBox(width: 20),
               const Text('Clearing cache...'),
             ],
           ),
@@ -916,7 +921,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
+          content: Row(
             children: [
               Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
               SizedBox(width: 10),
@@ -933,8 +938,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Widget _buildPrivacyToggle(IconData icon, String title, String subtitle, bool value, Function(bool) onChanged) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
@@ -950,20 +955,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             ),
             child: Icon(icon, color: blueAccent, size: 22),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: TextStyle(
@@ -984,31 +989,31 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildPrivacyOptionWithAction(IconData icon, String title, String subtitle, {required VoidCallback onTap, bool isDestructive = false}) {
+  Widget _buildPrivacyOptionWithAction(Responsive r, IconData icon, String title, String subtitle, {required VoidCallback onTap, bool isDestructive = false}) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         onTap();
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: r.h(12)),
+        padding: EdgeInsets.all(r.dp(16)),
         decoration: BoxDecoration(
           color: isDestructive ? const Color(0xFFFEE2E2) : bgColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(r.dp(16)),
         ),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: isDestructive ? Colors.white : Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(r.dp(12)),
               ),
-              child: Icon(icon, size: 22, color: isDestructive ? const Color(0xFFDC2626) : Colors.black54),
+              child: Icon(icon, size: r.dp(22), color: isDestructive ? Color(0xFFDC2626) : Colors.black54),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: r.w(14)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1016,7 +1021,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w600,
                       color: isDestructive ? const Color(0xFFDC2626) : Colors.black87,
                     ),
@@ -1024,7 +1029,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: r.sp(12),
                       color: isDestructive ? const Color(0xFFDC2626).withOpacity(0.7) : Colors.black.withOpacity(0.5),
                     ),
                   ),
@@ -1039,12 +1044,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _showComingSoonDialog(String feature) {
+    final r = Responsive(context);
     showDialog(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1055,14 +1061,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   color: softYellow,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.schedule_rounded,
                   color: Color(0xFFF59E0B),
                   size: 36,
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20),
+              Text(
                 'Coming Soon!',
                 style: TextStyle(
                   fontSize: 22,
@@ -1070,7 +1076,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 '$feature will be available in the next update. Stay tuned!',
                 textAlign: TextAlign.center,
@@ -1080,17 +1086,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     color: darkCard,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'Got it!',
                       style: TextStyle(
@@ -1110,13 +1116,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _showHelpSheet() {
+    final r = Responsive(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.52,
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -1135,8 +1142,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20),
+              Text(
                 'Help & Support',
                 style: TextStyle(
                   fontSize: 22,
@@ -1144,44 +1151,44 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 24),
-              _buildHelpOption(
+              SizedBox(height: 24),
+              _buildHelpOption(r, 
                 Icons.quiz_outlined, 
                 'FAQs', 
                 'Common questions answered',
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const FAQsScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => FAQsScreen()));
                 },
               ),
-              _buildHelpOption(
+              _buildHelpOption(r, 
                 Icons.support_agent_rounded, 
                 'Contact Support', 
                 'Get help from our team',
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactSupportScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => ContactSupportScreen()));
                 },
               ),
-              _buildHelpOption(
+              _buildHelpOption(r, 
                 Icons.menu_book_rounded, 
                 'User Guide', 
                 'Learn how to use the app',
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const UserGuideScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserGuideScreen()));
                 },
               ),
-              _buildHelpOption(
+              _buildHelpOption(r, 
                 Icons.feedback_outlined, 
                 'Submit Feedback', 
                 'Help us improve the app',
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const SubmitFeedbackScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => SubmitFeedbackScreen()));
                 },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
             ],
           ),
         ),
@@ -1189,39 +1196,39 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildHelpOption(IconData icon, String title, String subtitle, {VoidCallback? onTap}) {
+  Widget _buildHelpOption(Responsive r, IconData icon, String title, String subtitle, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         if (onTap != null) onTap();
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: r.h(12)),
+        padding: EdgeInsets.all(r.dp(16)),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(r.dp(16)),
         ),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: blueAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(r.dp(12)),
               ),
-              child: Icon(icon, size: 22, color: blueAccent),
+              child: Icon(icon, size: r.dp(22), color: blueAccent),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: r.w(14)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: TextStyle(
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
@@ -1229,7 +1236,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: r.sp(12),
                       color: Colors.black.withOpacity(0.5),
                     ),
                   ),
@@ -1244,12 +1251,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _showTermsDialog() {
+    final r = Responsive(context);
     showDialog(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           constraints: const BoxConstraints(maxHeight: 600),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1258,7 +1266,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Terms & Conditions',
                     style: TextStyle(
                       fontSize: 20,
@@ -1275,38 +1283,38 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         color: bgColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.close, size: 18),
+                      child: Icon(Icons.close, size: 18),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '1. Medical Disclaimer',
                         'NeuroVerse is a screening tool designed to assist in early detection of neurological conditions. This app does NOT provide medical diagnosis. Results should be reviewed by qualified healthcare professionals.',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '2. Data Collection & Usage',
                         'We collect neurological assessment data including speech patterns, motor function measurements, cognitive test results, and digital wellness metrics. This data is encrypted using AES-256 encryption.',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '3. AI & Machine Learning',
                         'Our AI models analyze your assessment data to generate risk scores. These models are trained on anonymized clinical data and are continuously improved.',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '4. Research Participation',
                         'Anonymized data may be used for neurodegenerative disease research to improve detection algorithms. You can opt-out in Privacy Settings.',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '5. User Responsibilities',
                         'You agree to provide accurate information, complete assessments as instructed, and use the app for its intended purpose.',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '6. Limitation of Liability',
                         'NeuroVerse and its developers are not liable for any decisions made based on app results. The app is provided "as is" without warranties.',
                       ),
@@ -1314,17 +1322,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     color: darkCard,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'I Understand',
                       style: TextStyle(
@@ -1344,12 +1352,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _showPrivacyPolicyDialog() {
+    final r = Responsive(context);
     showDialog(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           constraints: const BoxConstraints(maxHeight: 600),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1358,7 +1367,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Privacy Policy',
                     style: TextStyle(
                       fontSize: 20,
@@ -1375,38 +1384,38 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         color: bgColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.close, size: 18),
+                      child: Icon(Icons.close, size: 18),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '1. Information We Collect',
                         '• Personal Information: Name, email, phone\n• Health Data: Assessment results, risk scores\n• Device Data: Device type, OS version',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '2. How We Use Your Data',
                         '• Generate personalized health assessments\n• Improve AI detection algorithms\n• Send important notifications',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '3. Data Storage & Security',
                         'All data is encrypted in transit (TLS 1.3) and at rest (AES-256). We use HIPAA-compliant cloud infrastructure.',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '4. Data Sharing',
                         'We do NOT sell your personal data. Data may be shared with healthcare providers (with consent) and research institutions (anonymized).',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '5. Your Rights',
                         '• Access your data anytime\n• Request data deletion\n• Opt-out of research participation',
                       ),
-                      _buildTermsSection(
+                      _buildTermsSection(r, 
                         '6. Contact Us',
                         'For privacy concerns:\nEmail: privacy@neuroverse.pk',
                       ),
@@ -1414,17 +1423,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     color: darkCard,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'Close',
                       style: TextStyle(
@@ -1444,12 +1453,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _showAboutDialog() {
+    final r = Responsive(context);
     showDialog(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1467,8 +1477,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20),
+              Text(
                 'NeuroVerse',
                 style: TextStyle(
                   fontSize: 24,
@@ -1476,7 +1486,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 'Version 1.0.0',
                 style: TextStyle(
@@ -1484,7 +1494,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   color: Colors.black.withOpacity(0.5),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Text(
                 'AI-powered neurological health screening for early detection of Alzheimer\'s and Parkinson\'s disease.',
                 textAlign: TextAlign.center,
@@ -1494,17 +1504,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     color: darkCard,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'Close',
                       style: TextStyle(
@@ -1523,27 +1533,27 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildTermsSection(String title, String content) {
+  Widget _buildTermsSection(Responsive r, String title, String content) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: EdgeInsets.only(bottom: r.h(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 15,
+            style: TextStyle(
+              fontSize: r.sp(15),
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             content,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: r.sp(13),
               color: Colors.black.withOpacity(0.6),
-              height: 1.6,
+              height: r.h(1.6),
             ),
           ),
         ],
@@ -1551,7 +1561,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildMenuItem({
+  Widget _buildMenuItem(Responsive r, {
     required IconData icon,
     required String title,
     required Color iconBgColor,
@@ -1566,7 +1576,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         if (onTap != null) onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(14)),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.vertical(
             top: isFirst ? const Radius.circular(24) : Radius.zero,
@@ -1576,20 +1586,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: r.w(42),
+              height: r.h(42),
               decoration: BoxDecoration(
                 color: iconBgColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(r.dp(12)),
               ),
-              child: Icon(icon, size: 22, color: iconBgColor),
+              child: Icon(icon, size: r.dp(22), color: iconBgColor),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: r.w(14)),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontSize: r.sp(15),
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
                 ),
@@ -1597,25 +1607,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             ),
             if (badge != null) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(4)),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEF4444),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(r.dp(12)),
                 ),
                 child: Text(
                   badge,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
             ],
             Icon(
               Icons.chevron_right_rounded,
-              size: 22,
+              size: r.dp(22),
               color: Colors.black.withOpacity(0.3),
             ),
           ],
@@ -1624,21 +1634,21 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildMenuDivider() {
+  Widget _buildMenuDivider(Responsive r) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(16)),
       child: Divider(
-        height: 1,
+        height: r.h(1),
         color: Colors.black.withOpacity(0.06),
       ),
     );
   }
 
-  Widget _buildSignOutButton() {
-    return _buildAnimatedWidget(
+  Widget _buildSignOutButton(Responsive r) {
+    return _buildAnimatedWidget(r, 
       delay: 0.3,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: GestureDetector(
           onTap: () async {
             HapticFeedback.mediumImpact();
@@ -1649,27 +1659,27 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           },
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: r.h(16)),
             decoration: BoxDecoration(
               color: const Color(0xFFFEE2E2),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.dp(20)),
               border: Border.all(
                 color: const Color(0xFFFCA5A5).withOpacity(0.5),
               ),
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.logout_rounded,
-                  size: 20,
+                  size: r.dp(20),
                   color: Color(0xFFDC2626),
                 ),
-                SizedBox(width: 10),
+                SizedBox(width: r.w(10)),
                 Text(
                   'Sign Out',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: r.sp(15),
                     fontWeight: FontWeight.w700,
                     color: Color(0xFFDC2626),
                   ),
@@ -1682,34 +1692,34 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(Responsive r) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(
         color: navBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         border: Border.all(color: Colors.black.withOpacity(0.06)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: r.dp(20),
+            offset: Offset(r.w(0), r.h(4)),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(12)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(0, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
-              _buildNavItem(4, Icons.description_outlined, 'Reports'),
-              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
+              _buildNavItem(r, 0, Icons.home_rounded, 'Home'),
+              _buildNavItem(r, 1, Icons.assignment_outlined, 'Tests'),
+              _buildNavItem(r, 2, Icons.auto_awesome_rounded, 'XAI'),
+              _buildNavItem(r, 3, Icons.stars_rounded, 'Neuro'),
+              _buildNavItem(r, 4, Icons.description_outlined, 'Reports'),
+              _buildNavItem(r, 5, Icons.person_outline_rounded, 'Profile'),
             ],
           ),
         ),
@@ -1717,16 +1727,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(Responsive r, int index, IconData icon, String label) {
     final isSelected = _selectedNavIndex == index;
     return GestureDetector(
       onTap: () => _onNavItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(10)),
         decoration: BoxDecoration(
           color: isSelected ? darkCard : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(r.dp(16)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1734,14 +1744,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             Icon(
               icon,
               color: isSelected ? Colors.white : Colors.black38,
-              size: 22,
+              size: r.dp(22),
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: TextStyle(
+                  fontSize: r.sp(13),
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -1753,7 +1763,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildAnimatedWidget({required double delay, required Widget child}) {
+  Widget _buildAnimatedWidget(Responsive r, {required double delay, required Widget child}) {
     return FadeTransition(
       opacity: CurvedAnimation(
         parent: _pageController,
@@ -1761,7 +1771,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       ),
       child: SlideTransition(
         position: Tween<Offset>(
-          begin: const Offset(0, 0.15),
+          begin: Offset(r.w(0), r.h(0.15)),
           end: Offset.zero,
         ).animate(CurvedAnimation(
           parent: _pageController,
@@ -1836,12 +1846,12 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
     switch (_cardType) {
       case 'visa':
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: const Color(0xFF1A1F71),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: const Text(
+          child: Text(
             'VISA',
             style: TextStyle(
               color: Colors.white,
@@ -1878,12 +1888,12 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
         );
       case 'amex':
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
             color: const Color(0xFF006FCF),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: const Text(
+          child: Text(
             'AMEX',
             style: TextStyle(
               color: Colors.white,
@@ -1894,12 +1904,12 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
         );
       case 'discover':
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
             color: const Color(0xFFFF6600),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: const Text(
+          child: Text(
             'DISCOVER',
             style: TextStyle(
               color: Colors.white,
@@ -1935,6 +1945,7 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
@@ -1942,15 +1953,15 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
+              _buildHeader(r),
               
               // Premium Card Preview
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20),
                 child: Container(
                   width: double.infinity,
                   height: 200,
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
@@ -1966,7 +1977,7 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                       BoxShadow(
                         color: darkCard.withOpacity(0.4),
                         blurRadius: 20,
-                        offset: const Offset(0, 10),
+                        offset: Offset(0, 10),
                       ),
                     ],
                   ),
@@ -1986,10 +1997,10 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                                   color: mintGreen,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.workspace_premium_rounded, size: 22),
+                                child: Icon(Icons.workspace_premium_rounded, size: 22),
                               ),
-                              const SizedBox(width: 12),
-                              const Text(
+                              SizedBox(width: 12),
+                              Text(
                                 'NEUROVERSE',
                                 style: TextStyle(
                                   color: Colors.white,
@@ -2007,7 +2018,7 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                         _cardNumberController.text.isEmpty 
                             ? '•••• •••• •••• ••••' 
                             : _cardNumberController.text,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.w500,
@@ -2028,12 +2039,12 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                                   letterSpacing: 1,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 _nameController.text.isEmpty 
                                     ? 'YOUR NAME' 
                                     : _nameController.text.toUpperCase(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -2052,12 +2063,12 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                                   letterSpacing: 1,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 _expiryController.text.isEmpty 
                                     ? 'MM/YY' 
                                     : _expiryController.text,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -2074,24 +2085,24 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
 
               // Plan Selection
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    Expanded(child: _buildPlanCard(0, 'Monthly', '\$9.99', '/month')),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildPlanCard(1, 'Yearly', '\$79.99', '/year', savings: 'Save 33%')),
+                    Expanded(child: _buildPlanCard(r, 0, 'Monthly', '\$9.99', '/month')),
+                    SizedBox(width: 12),
+                    Expanded(child: _buildPlanCard(r, 1, 'Yearly', '\$79.99', '/year', savings: 'Save 33%')),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Card Details Form
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Payment Details',
                       style: TextStyle(
                         fontSize: 18,
@@ -2099,20 +2110,20 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    _buildInputField(
+                    SizedBox(height: 16),
+                    _buildInputField(r, 
                       controller: _nameController,
                       label: 'Cardholder Name',
                       hint: 'Enter your name',
                       icon: Icons.person_outline_rounded,
                     ),
-                    const SizedBox(height: 14),
-                    _buildCardNumberField(),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
+                    _buildCardNumberField(r),
+                    SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
-                          child: _buildInputField(
+                          child: _buildInputField(r, 
                             controller: _expiryController,
                             label: 'Expiry Date',
                             hint: 'MM/YY',
@@ -2121,9 +2132,9 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                             maxLength: 5,
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14),
                         Expanded(
-                          child: _buildInputField(
+                          child: _buildInputField(r, 
                             controller: _cvvController,
                             label: 'CVV',
                             hint: '•••',
@@ -2138,16 +2149,16 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: 30),
 
               // Purchase Button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: 20),
                 child: GestureDetector(
                   onTap: _handlePurchase,
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    padding: EdgeInsets.symmetric(vertical: 18),
                     decoration: BoxDecoration(
                       color: darkCard,
                       borderRadius: BorderRadius.circular(18),
@@ -2155,18 +2166,18 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                         BoxShadow(
                           color: darkCard.withOpacity(0.3),
                           blurRadius: 16,
-                          offset: const Offset(0, 8),
+                          offset: Offset(0, 8),
                         ),
                       ],
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.lock_rounded, color: Colors.white, size: 20),
-                        const SizedBox(width: 10),
+                        Icon(Icons.lock_rounded, color: Colors.white, size: 20),
+                        SizedBox(width: 10),
                         Text(
                           'Purchase ${_selectedPlan == 0 ? 'Monthly' : 'Yearly'} Plan',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -2177,14 +2188,14 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               // Coming Soon inline message
               AnimatedOpacity(
                 opacity: _showComingSoon ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 300),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     'Payment gateway will be available soon. Stay tuned!',
                     textAlign: TextAlign.center,
@@ -2197,7 +2208,7 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: 30),
             ],
           ),
         ),
@@ -2205,9 +2216,9 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.dp(20)),
       child: Row(
         children: [
           GestureDetector(
@@ -2216,25 +2227,25 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
               Navigator.pop(context);
             },
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          const Text(
+          SizedBox(width: r.w(16)),
+          Text(
             'Premium Subscription',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: r.sp(18),
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
@@ -2244,7 +2255,7 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
     );
   }
 
-  Widget _buildPlanCard(int index, String title, String price, String period, {String? savings}) {
+  Widget _buildPlanCard(Responsive r, int index, String title, String price, String period, {String? savings}) {
     final isSelected = _selectedPlan == index;
     return GestureDetector(
       onTap: () {
@@ -2253,10 +2264,10 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(r.dp(16)),
         decoration: BoxDecoration(
           color: isSelected ? blueAccent.withOpacity(0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(r.dp(18)),
           border: Border.all(
             color: isSelected ? blueAccent : Colors.black.withOpacity(0.08),
             width: isSelected ? 2 : 1,
@@ -2266,17 +2277,17 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
           children: [
             if (savings != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                margin: const EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(4)),
+                margin: EdgeInsets.only(bottom: r.h(8)),
                 decoration: BoxDecoration(
                   color: const Color(0xFF10B981),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(r.dp(8)),
                 ),
                 child: Text(
                   savings,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: r.sp(10),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -2284,16 +2295,16 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
             Text(
               title,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: r.sp(14),
                 fontWeight: FontWeight.w600,
                 color: isSelected ? blueAccent : Colors.black54,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: r.h(8)),
             Text(
               price,
               style: TextStyle(
-                fontSize: 24,
+                fontSize: r.sp(24),
                 fontWeight: FontWeight.w800,
                 color: isSelected ? blueAccent : Colors.black87,
               ),
@@ -2301,7 +2312,7 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
             Text(
               period,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: r.sp(12),
                 color: Colors.black.withOpacity(0.5),
               ),
             ),
@@ -2311,11 +2322,11 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
     );
   }
 
-  Widget _buildCardNumberField() {
+  Widget _buildCardNumberField(Responsive r) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(r.dp(16)),
         border: Border.all(color: Colors.black.withOpacity(0.08)),
       ),
       child: TextField(
@@ -2340,18 +2351,18 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
           counterText: '',
           prefixIcon: const Icon(Icons.credit_card_rounded, color: Colors.black38),
           suffixIcon: Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: EdgeInsets.only(right: r.w(12)),
             child: _getCardIcon(),
           ),
           suffixIconConstraints: const BoxConstraints(minWidth: 60),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
+          contentPadding: EdgeInsets.all(r.dp(16)),
         ),
       ),
     );
   }
 
-  Widget _buildInputField({
+  Widget _buildInputField(Responsive r, {
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -2363,7 +2374,7 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(r.dp(16)),
         border: Border.all(color: Colors.black.withOpacity(0.08)),
       ),
       child: TextField(
@@ -2378,7 +2389,7 @@ class _PremiumSubscriptionScreenState extends State<PremiumSubscriptionScreen> {
           counterText: '',
           prefixIcon: Icon(icon, color: Colors.black38),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
+          contentPadding: EdgeInsets.all(r.dp(16)),
         ),
       ),
     );
@@ -2486,17 +2497,18 @@ class _FAQsScreenState extends State<FAQsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(r),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20),
                 itemCount: _faqs.length,
-                itemBuilder: (context, index) => _buildFAQItem(index),
+                itemBuilder: (context, index) => _buildFAQItem(r, index),
               ),
             ),
           ],
@@ -2505,9 +2517,9 @@ class _FAQsScreenState extends State<FAQsScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.dp(20)),
       child: Row(
         children: [
           GestureDetector(
@@ -2516,26 +2528,26 @@ class _FAQsScreenState extends State<FAQsScreen> {
               Navigator.pop(context);
             },
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          const Expanded(
+          SizedBox(width: r.w(16)),
+          Expanded(
             child: Text(
               'Frequently Asked Questions',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: r.sp(18),
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),
@@ -2546,23 +2558,23 @@ class _FAQsScreenState extends State<FAQsScreen> {
     );
   }
 
-  Widget _buildFAQItem(int index) {
+  Widget _buildFAQItem(Responsive r, int index) {
     final faq = _faqs[index];
     final isExpanded = _expandedIndex == index;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: r.h(12)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(r.dp(16)),
         border: Border.all(
           color: isExpanded ? blueAccent.withOpacity(0.3) : Colors.black.withOpacity(0.06),
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: r.dp(10),
+            offset: Offset(r.w(0), r.h(4)),
           ),
         ],
       ),
@@ -2576,33 +2588,33 @@ class _FAQsScreenState extends State<FAQsScreen> {
               });
             },
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(r.dp(16)),
               child: Row(
                 children: [
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: r.w(32),
+                    height: r.h(32),
                     decoration: BoxDecoration(
                       color: isExpanded ? blueAccent.withOpacity(0.1) : mintGreen.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(r.dp(10)),
                     ),
                     child: Center(
                       child: Text(
                         '${index + 1}',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: r.sp(14),
                           fontWeight: FontWeight.w700,
                           color: isExpanded ? blueAccent : darkCard,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: r.w(12)),
                   Expanded(
                     child: Text(
                       faq['question']!,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: r.sp(14),
                         fontWeight: FontWeight.w600,
                         color: isExpanded ? blueAccent : Colors.black87,
                       ),
@@ -2626,17 +2638,17 @@ class _FAQsScreenState extends State<FAQsScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(r.dp(14)),
                 decoration: BoxDecoration(
                   color: bgColor,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(r.dp(12)),
                 ),
                 child: Text(
                   faq['answer']!,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: r.sp(13),
                     color: Colors.black.withOpacity(0.7),
-                    height: 1.6,
+                    height: r.h(1.6),
                   ),
                 ),
               ),
@@ -2652,7 +2664,7 @@ class _FAQsScreenState extends State<FAQsScreen> {
 
 // ==================== Contact Support Screen ====================
 class ContactSupportScreen extends StatelessWidget {
-  const ContactSupportScreen({super.key});
+  ContactSupportScreen({super.key});
 
   static const Color bgColor = Color(0xFFF7F7F7);
   static const Color darkCard = Color(0xFF1A1A1A);
@@ -2663,6 +2675,7 @@ class ContactSupportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
@@ -2670,11 +2683,11 @@ class ContactSupportScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context),
-              const SizedBox(height: 10),
+              _buildHeader(r, context),
+              SizedBox(height: 10),
               
-              _buildSectionTitle('General Support'),
-              _buildContactCard(
+              _buildSectionTitle(r, 'General Support'),
+              _buildContactCard(r, 
                 context,
                 icon: Icons.support_agent_rounded,
                 iconBg: blueAccent,
@@ -2684,8 +2697,8 @@ class ContactSupportScreen extends StatelessWidget {
                 description: 'For general questions, account issues, subscription queries, and basic app support.',
               ),
               
-              _buildSectionTitle('Technical Support'),
-              _buildContactCard(
+              _buildSectionTitle(r, 'Technical Support'),
+              _buildContactCard(r, 
                 context,
                 icon: Icons.code_rounded,
                 iconBg: const Color(0xFF10B981),
@@ -2694,7 +2707,7 @@ class ContactSupportScreen extends StatelessWidget {
                 email: 'naeem.dev@neuro.pk',
                 description: 'For API issues, data sync problems, AI prediction queries, and backend-related bugs.',
               ),
-              _buildContactCard(
+              _buildContactCard(r, 
                 context,
                 icon: Icons.phone_android_rounded,
                 iconBg: const Color(0xFF8B5CF6),
@@ -2704,8 +2717,8 @@ class ContactSupportScreen extends StatelessWidget {
                 description: 'For app crashes, UI/UX issues, test recording problems, and mobile app bugs.',
               ),
               
-              _buildSectionTitle('Other Issues'),
-              _buildContactCard(
+              _buildSectionTitle(r, 'Other Issues'),
+              _buildContactCard(r, 
                 context,
                 icon: Icons.business_center_rounded,
                 iconBg: const Color(0xFFF97316),
@@ -2716,13 +2729,13 @@ class ContactSupportScreen extends StatelessWidget {
               ),
               
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20),
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: softYellow,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFEAB308).withOpacity(0.3)),
+                    border: Border.all(color: Color(0xFFEAB308).withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
@@ -2733,18 +2746,18 @@ class ContactSupportScreen extends StatelessWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.schedule_rounded,
                           color: Color(0xFFEAB308),
                           size: 24,
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Response Time',
                               style: TextStyle(
                                 fontSize: 14,
@@ -2752,7 +2765,7 @@ class ContactSupportScreen extends StatelessWidget {
                                 color: Colors.black87,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               'We typically respond within 24-48 hours during business days.',
                               style: TextStyle(
@@ -2768,7 +2781,7 @@ class ContactSupportScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
             ],
           ),
         ),
@@ -2776,9 +2789,9 @@ class ContactSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(Responsive r, BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.dp(20)),
       child: Row(
         children: [
           GestureDetector(
@@ -2787,25 +2800,25 @@ class ContactSupportScreen extends StatelessWidget {
               Navigator.pop(context);
             },
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          const Text(
+          SizedBox(width: r.w(16)),
+          Text(
             'Contact Support',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: r.sp(18),
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
@@ -2815,13 +2828,13 @@ class ContactSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(Responsive r, String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Text(
         title,
         style: TextStyle(
-          fontSize: 13,
+          fontSize: r.sp(13),
           fontWeight: FontWeight.w700,
           color: Colors.black.withOpacity(0.5),
           letterSpacing: 0.5,
@@ -2830,8 +2843,7 @@ class ContactSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContactCard(
-    BuildContext context, {
+  Widget _buildContactCard(Responsive r, BuildContext context, {
     required IconData icon,
     required Color iconBg,
     required String name,
@@ -2840,18 +2852,18 @@ class ContactSupportScreen extends StatelessWidget {
     required String description,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(6)),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(r.dp(16)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(r.dp(20)),
           border: Border.all(color: Colors.black.withOpacity(0.06)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              blurRadius: r.dp(10),
+              offset: Offset(r.w(0), r.h(4)),
             ),
           ],
         ),
@@ -2861,32 +2873,32 @@ class ContactSupportScreen extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: r.w(48),
+                  height: r.h(48),
                   decoration: BoxDecoration(
                     color: iconBg.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(r.dp(14)),
                   ),
-                  child: Icon(icon, size: 24, color: iconBg),
+                  child: Icon(icon, size: r.dp(24), color: iconBg),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: r.w(14)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         name,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: r.sp(16),
                           fontWeight: FontWeight.w700,
                           color: Colors.black87,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: r.h(2)),
                       Text(
                         role,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: r.sp(12),
                           fontWeight: FontWeight.w500,
                           color: iconBg,
                         ),
@@ -2896,16 +2908,16 @@ class ContactSupportScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: r.h(12)),
             Text(
               description,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: r.sp(13),
                 color: Colors.black.withOpacity(0.6),
-                height: 1.5,
+                height: r.h(1.5),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: r.h(14)),
             GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
@@ -2915,33 +2927,33 @@ class ContactSupportScreen extends StatelessWidget {
                     content: Text('Email copied: $email'),
                     backgroundColor: darkCard,
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(r.dp(12))),
                     duration: const Duration(seconds: 2),
                   ),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: EdgeInsets.symmetric(horizontal: r.w(14), vertical: r.h(10)),
                 decoration: BoxDecoration(
                   color: iconBg.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(r.dp(12)),
                   border: Border.all(color: iconBg.withOpacity(0.2)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.email_outlined, size: 18, color: iconBg),
-                    const SizedBox(width: 8),
+                    Icon(Icons.email_outlined, size: r.dp(18), color: iconBg),
+                    SizedBox(width: r.w(8)),
                     Text(
                       email,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: r.sp(13),
                         fontWeight: FontWeight.w600,
                         color: iconBg,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.copy_rounded, size: 16, color: iconBg.withOpacity(0.7)),
+                    SizedBox(width: r.w(8)),
+                    Icon(Icons.copy_rounded, size: r.dp(16), color: iconBg.withOpacity(0.7)),
                   ],
                 ),
               ),
@@ -2955,12 +2967,13 @@ class ContactSupportScreen extends StatelessWidget {
 
 // ==================== User Guide Screen ====================
 class UserGuideScreen extends StatelessWidget {
-  const UserGuideScreen({super.key});
+  UserGuideScreen({super.key});
 
   static const Color bgColor = Color(0xFFF7F7F7);
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     final guides = [
       {
         'icon': Icons.home_rounded,
@@ -3036,7 +3049,7 @@ class UserGuideScreen extends StatelessWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               child: Row(
                 children: [
                   GestureDetector(
@@ -3049,11 +3062,11 @@ class UserGuideScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: Colors.black.withOpacity(0.08)),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                      child: Icon(Icons.arrow_back_ios_new_rounded, size: 18),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  const Text(
+                  SizedBox(width: 16),
+                  Text(
                     'User Guide',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
@@ -3067,7 +3080,7 @@ class UserGuideScreen extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final guide = guides[index];
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -3076,7 +3089,7 @@ class UserGuideScreen extends StatelessWidget {
                     child: Theme(
                       data: ThemeData().copyWith(dividerColor: Colors.transparent),
                       child: ExpansionTile(
-                        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         leading: Container(
                           width: 44,
@@ -3093,7 +3106,7 @@ class UserGuideScreen extends StatelessWidget {
                         ),
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: (guide['color'] as Color).withOpacity(0.05),
                               borderRadius: BorderRadius.circular(12),
@@ -3101,7 +3114,7 @@ class UserGuideScreen extends StatelessWidget {
                             child: Column(
                               children: (guide['steps'] as List<String>).asMap().entries.map((e) {
                                 return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
+                                  padding: EdgeInsets.only(bottom: 8),
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -3123,7 +3136,7 @@ class UserGuideScreen extends StatelessWidget {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
+                                      SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
                                           e.value,
@@ -3155,7 +3168,7 @@ class UserGuideScreen extends StatelessWidget {
 
 // ==================== Submit Feedback Screen ====================
 class SubmitFeedbackScreen extends StatefulWidget {
-  const SubmitFeedbackScreen({super.key});
+  SubmitFeedbackScreen({super.key});
 
   @override
   State<SubmitFeedbackScreen> createState() => _SubmitFeedbackScreenState();
@@ -3346,6 +3359,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
@@ -3353,7 +3367,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               child: Row(
                 children: [
                   GestureDetector(
@@ -3366,11 +3380,11 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: Colors.black.withOpacity(0.08)),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                      child: Icon(Icons.arrow_back_ios_new_rounded, size: 18),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  const Text(
+                  SizedBox(width: 16),
+                  Text(
                     'Feedback',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
@@ -3380,7 +3394,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
             
             // Tab Bar
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
+              margin: EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
@@ -3393,10 +3407,10 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
                   borderRadius: BorderRadius.circular(12),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
-                indicatorPadding: const EdgeInsets.all(4),
+                indicatorPadding: EdgeInsets.all(4),
                 labelColor: Colors.white,
                 unselectedLabelColor: Colors.black54,
-                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 dividerColor: Colors.transparent,
                 tabs: const [
                   Tab(text: 'Submit'),
@@ -3404,15 +3418,15 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Tab Content
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildSubmitTab(),
-                  _buildHistoryTab(),
+                  _buildSubmitTab(r),
+                  _buildHistoryTab(r),
                 ],
               ),
             ),
@@ -3422,19 +3436,19 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
     );
   }
 
-  Widget _buildSubmitTab() {
+  Widget _buildSubmitTab(Responsive r) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(r.dp(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Rate your experience', style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(r.dp(20)),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -3450,7 +3464,7 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
                     duration: const Duration(milliseconds: 150),
                     child: Icon(
                       isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
-                      size: 40,
+                      size: r.dp(40),
                       color: isSelected ? const Color(0xFFFBBF24) : Colors.black26,
                     ),
                   ),
@@ -3458,9 +3472,9 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
               }),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           const Text('Category', style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -3473,10 +3487,10 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(10)),
                   decoration: BoxDecoration(
                     color: isSelected ? blueAccent : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(r.dp(12)),
                     border: Border.all(color: isSelected ? blueAccent : Colors.black12),
                   ),
                   child: Text(
@@ -3490,13 +3504,13 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
               );
             }).toList(),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           const Text('Your Feedback', style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
             ),
             child: TextField(
               controller: _feedbackController,
@@ -3506,28 +3520,28 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
                 hintText: 'Tell us what you think...',
                 hintStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(16),
+                contentPadding: EdgeInsets.all(r.dp(16)),
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _isSubmitting ? null : _submitFeedback,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: EdgeInsets.symmetric(vertical: r.h(16)),
               decoration: BoxDecoration(
                 color: _isSubmitting ? Colors.black38 : darkCard,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (_isSubmitting)
-                    const LoadingBars(color: Colors.white, height: 18, barCount: 5)
+                    LoadingBars(color: Colors.white, height: r.h(18), barCount: 5)
                   else
-                    const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 10),
+                    Icon(Icons.send_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(10)),
                   Text(
                     _isSubmitting ? 'Submitting...' : 'Submit Feedback',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
@@ -3541,11 +3555,11 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
     );
   }
 
-  Widget _buildHistoryTab() {
+  Widget _buildHistoryTab(Responsive r) {
     if (_isLoadingHistory) {
       return ShimmerLoading(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(r.dp(16)),
           child: Column(
             children: const [
               SkeletonListTile(),
@@ -3564,39 +3578,39 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: r.w(80),
+              height: r.h(80),
               decoration: BoxDecoration(
                 color: softLavender.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(r.dp(24)),
               ),
-              child: Icon(Icons.feedback_outlined, size: 40, color: Colors.black.withOpacity(0.3)),
+              child: Icon(Icons.feedback_outlined, size: r.dp(40), color: Colors.black.withOpacity(0.3)),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: r.h(20)),
             Text(
               'No feedback yet',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: r.sp(18),
                 fontWeight: FontWeight.w700,
                 color: Colors.black.withOpacity(0.7),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: r.h(8)),
             Text(
               'Your submitted feedbacks will appear here',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: r.sp(14),
                 color: Colors.black.withOpacity(0.4),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: r.h(24)),
             GestureDetector(
               onTap: () => _tabController.animateTo(0),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: r.w(24), vertical: r.h(12)),
                 decoration: BoxDecoration(
                   color: blueAccent,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(r.dp(12)),
                 ),
                 child: const Text(
                   'Submit Feedback',
@@ -3612,19 +3626,19 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
     return RefreshIndicator(
       onRefresh: _loadFeedbackHistory,
       child: ListView.builder(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(r.dp(20)),
         itemCount: _feedbackHistory.length + (_currentPage < _totalPages ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == _feedbackHistory.length) {
-            return _buildLoadMoreButton();
+            return _buildLoadMoreButton(r);
           }
-          return _buildFeedbackCard(_feedbackHistory[index]);
+          return _buildFeedbackCard(r, _feedbackHistory[index]);
         },
       ),
     );
   }
 
-  Widget _buildFeedbackCard(Map<String, dynamic> feedback) {
+  Widget _buildFeedbackCard(Responsive r, Map<String, dynamic> feedback) {
     final status = feedback['status'] ?? 'pending';
     final category = feedback['category'] ?? 'general';
     final rating = feedback['rating'];
@@ -3672,11 +3686,11 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: r.h(12)),
+      padding: EdgeInsets.all(r.dp(16)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(r.dp(16)),
         border: Border.all(color: Colors.black.withOpacity(0.06)),
       ),
       child: Column(
@@ -3687,15 +3701,15 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
             children: [
               // Category chip
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(4)),
                 decoration: BoxDecoration(
                   color: blueAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(r.dp(8)),
                 ),
                 child: Text(
                   _reverseCategoryMap[category] ?? category,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w600,
                     color: blueAccent,
                   ),
@@ -3703,20 +3717,20 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
               ),
               // Status chip
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(4)),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(r.dp(8)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(statusIcon, size: 14, color: statusColor),
-                    const SizedBox(width: 4),
+                    Icon(statusIcon, size: r.dp(14), color: statusColor),
+                    SizedBox(width: r.w(4)),
                     Text(
                       statusText,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: r.sp(12),
                         fontWeight: FontWeight.w600,
                         color: statusColor,
                       ),
@@ -3726,32 +3740,32 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           // Rating stars
           if (rating != null) ...[
             Row(
               children: List.generate(5, (i) {
                 return Icon(
                   i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-                  size: 18,
+                  size: r.dp(18),
                   color: i < rating ? const Color(0xFFFBBF24) : Colors.black12,
                 );
               }),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: r.h(10)),
           ],
           // Message
           Text(
             message,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: r.sp(14),
               color: Colors.black.withOpacity(0.7),
-              height: 1.5,
+              height: r.h(1.5),
             ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           // Footer
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3759,27 +3773,27 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
               Text(
                 formattedDate,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: r.sp(12),
                   color: Colors.black.withOpacity(0.4),
                 ),
               ),
               GestureDetector(
                 onTap: () => _deleteFeedback(feedbackId),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(r.dp(8)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFDC2626)),
-                      const SizedBox(width: 4),
-                      const Text(
+                      Icon(Icons.delete_outline_rounded, size: r.dp(16), color: Color(0xFFDC2626)),
+                      SizedBox(width: r.w(4)),
+                      Text(
                         'Delete',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: r.sp(12),
                           fontWeight: FontWeight.w600,
                           color: Color(0xFFDC2626),
                         ),
@@ -3795,18 +3809,18 @@ class _SubmitFeedbackScreenState extends State<SubmitFeedbackScreen> with Single
     );
   }
 
-  Widget _buildLoadMoreButton() {
+  Widget _buildLoadMoreButton(Responsive r) {
     return GestureDetector(
       onTap: () {
         setState(() => _currentPage++);
         _loadFeedbackHistory();
       },
       child: Container(
-        margin: const EdgeInsets.only(top: 8),
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        margin: EdgeInsets.only(top: r.h(8)),
+        padding: EdgeInsets.symmetric(vertical: r.h(14)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(r.dp(12)),
           border: Border.all(color: Colors.black.withOpacity(0.08)),
         ),
         child: const Center(

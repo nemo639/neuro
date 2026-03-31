@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/responsive.dart';
 
 // Test phases
 enum TappingPhase { instructions, leftHand, rightHand, completed }
@@ -15,7 +16,7 @@ class FingerTappingTestScreen extends StatefulWidget {
 
 class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
     with TickerProviderStateMixin {
-  
+
   TappingPhase _currentPhase = TappingPhase.instructions;
 
   // Animation controllers
@@ -117,7 +118,7 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
     _rippleController.forward(from: 0);
 
     final now = DateTime.now().millisecondsSinceEpoch;
-    
+
     setState(() {
       _tapCount++;
       _tapTimestamps.add(now);
@@ -158,7 +159,7 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
     }
 
     final avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
-    
+
     // Calculate variability (standard deviation)
     double sumSquares = 0;
     for (var interval in intervals) {
@@ -226,61 +227,62 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Finger Tapping',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800),
                 ),
                 Text(
                   _getPhaseText(),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-          _buildHandIndicator(),
+          _buildHandIndicator(r),
         ],
       ),
     );
   }
 
-  Widget _buildHandIndicator() {
+  Widget _buildHandIndicator(Responsive r) {
     Color color;
     String text;
     IconData icon;
@@ -309,18 +311,18 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(r.dp(20)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 6),
+          Icon(icon, color: color, size: r.dp(16)),
+          SizedBox(width: r.w(6)),
           Text(
             text,
-            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+            style: TextStyle(color: color, fontSize: r.sp(12), fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -340,7 +342,7 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0;
     switch (_currentPhase) {
       case TappingPhase.instructions:
@@ -358,11 +360,11 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -370,20 +372,20 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [orangeAccent, redAccent]),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -392,85 +394,85 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
           ),
         ],
       ),
-      child: _buildPhaseContent(),
+      child: _buildPhaseContent(r),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case TappingPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case TappingPhase.leftHand:
       case TappingPhase.rightHand:
-        return _buildTappingPhase();
+        return _buildTappingPhase(r);
       case TappingPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.dp(80),
+            height: r.dp(80),
             decoration: BoxDecoration(
               color: orangeAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.touch_app_rounded, color: orangeAccent, size: 40),
+            child: Icon(Icons.touch_app_rounded, color: orangeAccent, size: r.dp(40)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Finger Tapping Test',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Measure your motor speed and rhythm',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: softLavender.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Column(
               children: [
-                _buildInstructionRow(Icons.touch_app, 'Tap the circle as fast as possible'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.timer, '10 seconds per hand'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.back_hand, 'Left hand first, then right hand'),
-                const SizedBox(height: 10),
-                _buildInstructionRow(Icons.speed, 'Keep a steady rhythm'),
+                _buildInstructionRow(Icons.touch_app, 'Tap the circle as fast as possible', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.timer, '10 seconds per hand', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.back_hand, 'Left hand first, then right hand', r),
+                SizedBox(height: r.h(10)),
+                _buildInstructionRow(Icons.speed, 'Keep a steady rhythm', r),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Hand order indicator
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildHandChip('Left', blueAccent, Icons.back_hand_rounded, true),
-              const SizedBox(width: 10),
-              const Icon(Icons.arrow_forward, color: Colors.grey, size: 20),
-              const SizedBox(width: 10),
-              _buildHandChip('Right', purpleAccent, Icons.front_hand_rounded, false),
+              _buildHandChip('Left', blueAccent, Icons.back_hand_rounded, true, r),
+              SizedBox(width: r.w(10)),
+              Icon(Icons.arrow_forward, color: Colors.grey, size: r.dp(20)),
+              SizedBox(width: r.w(10)),
+              _buildHandChip('Right', purpleAccent, Icons.front_hand_rounded, false, r),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _startLeftHand,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: orangeAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: orangeAccent.withOpacity(0.4),
@@ -479,14 +481,14 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Start Test',
-                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                    style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -497,35 +499,35 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
     );
   }
 
-  Widget _buildInstructionRow(IconData icon, String text) {
+  Widget _buildInstructionRow(IconData icon, String text, Responsive r) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey[600], size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey[700]))),
+        Icon(icon, color: Colors.grey[600], size: r.dp(18)),
+        SizedBox(width: r.w(10)),
+        Expanded(child: Text(text, style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700]))),
       ],
     );
   }
 
-  Widget _buildHandChip(String text, Color color, IconData icon, bool isFirst) {
+  Widget _buildHandChip(String text, Color color, IconData icon, bool isFirst, Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(10)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(r.dp(12)),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 6),
+          Icon(icon, color: color, size: r.dp(18)),
+          SizedBox(width: r.w(6)),
           Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 
-  Widget _buildTappingPhase() {
+  Widget _buildTappingPhase(Responsive r) {
     final isLeft = _currentPhase == TappingPhase.leftHand;
     final color = isLeft ? blueAccent : purpleAccent;
     final handText = isLeft ? 'LEFT HAND' : 'RIGHT HAND';
@@ -534,19 +536,19 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
       children: [
         // Hand indicator
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(10)),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(isLeft ? Icons.back_hand_rounded : Icons.front_hand_rounded, color: color, size: 20),
-              const SizedBox(width: 8),
+              Icon(isLeft ? Icons.back_hand_rounded : Icons.front_hand_rounded, color: color, size: r.dp(20)),
+              SizedBox(width: r.w(8)),
               Text(
                 handText,
-                style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1),
+                style: TextStyle(color: color, fontSize: r.sp(16), fontWeight: FontWeight.w700, letterSpacing: 1),
               ),
             ],
           ),
@@ -556,16 +558,16 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
         Text(
           '$_timeRemaining',
           style: TextStyle(
-            fontSize: 48,
+            fontSize: r.sp(48),
             fontWeight: FontWeight.w300,
             color: _timeRemaining <= 3 ? redAccent : Colors.black54,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: r.h(10)),
         // Tap count
         Text(
           '$_tapCount taps',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w700),
         ),
         const Spacer(),
         // Tap button
@@ -575,16 +577,16 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
             animation: _pulseController,
             builder: (context, child) {
               return Container(
-                width: 160 + (_pulseController.value * 10),
-                height: 160 + (_pulseController.value * 10),
+                width: r.dp(160) + (_pulseController.value * r.dp(10)),
+                height: r.dp(160) + (_pulseController.value * r.dp(10)),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Container(
-                    width: 120,
-                    height: 120,
+                    width: r.dp(120),
+                    height: r.dp(120),
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
@@ -596,12 +598,12 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
                         ),
                       ],
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'TAP',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 24,
+                          fontSize: r.sp(24),
                           fontWeight: FontWeight.w800,
                           letterSpacing: 2,
                         ),
@@ -616,14 +618,14 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
         const Spacer(),
         Text(
           'Tap as fast as you can!',
-          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+          style: TextStyle(fontSize: r.sp(14), color: Colors.grey[500]),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: r.h(20)),
       ],
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     final leftTaps = _leftHandResults['tap_count'] ?? 0;
     final rightTaps = _rightHandResults['tap_count'] ?? 0;
     final leftSpeed = (_leftHandResults['taps_per_second'] ?? 0).toStringAsFixed(1);
@@ -633,61 +635,61 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.dp(80),
+            height: r.dp(80),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_rounded, color: greenAccent, size: 45),
+            child: Icon(Icons.check_circle_rounded, color: greenAccent, size: r.dp(45)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Test Completed!',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Results comparison
           Row(
             children: [
-              Expanded(child: _buildHandResultCard('Left Hand', leftTaps, leftSpeed, blueAccent)),
-              const SizedBox(width: 12),
-              Expanded(child: _buildHandResultCard('Right Hand', rightTaps, rightSpeed, purpleAccent)),
+              Expanded(child: _buildHandResultCard('Left Hand', leftTaps, leftSpeed, blueAccent, r)),
+              SizedBox(width: r.w(12)),
+              Expanded(child: _buildHandResultCard('Right Hand', rightTaps, rightSpeed, purpleAccent, r)),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Asymmetry
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: mintGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Asymmetry Index', style: TextStyle(fontSize: 14)),
-                Text('$asymmetry%', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                Text('Asymmetry Index', style: TextStyle(fontSize: r.sp(14))),
+                Text('$asymmetry%', style: TextStyle(fontSize: r.sp(16), fontWeight: FontWeight.w700)),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _completeTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: greenAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
+                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -697,22 +699,22 @@ class _FingerTappingTestScreenState extends State<FingerTappingTestScreen>
     );
   }
 
-  Widget _buildHandResultCard(String title, int taps, String speed, Color color) {
+  Widget _buildHandResultCard(String title, int taps, String speed, Color color, Responsive r) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(r.dp(14)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(r.dp(14)),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         children: [
-          Text(title, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Text('$taps', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: color)),
-          Text('taps', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          const SizedBox(height: 4),
-          Text('$speed/sec', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+          Text(title, style: TextStyle(fontSize: r.sp(12), color: color, fontWeight: FontWeight.w600)),
+          SizedBox(height: r.h(8)),
+          Text('$taps', style: TextStyle(fontSize: r.sp(28), fontWeight: FontWeight.w800, color: color)),
+          Text('taps', style: TextStyle(fontSize: r.sp(12), color: Colors.grey[600])),
+          SizedBox(height: r.h(4)),
+          Text('$speed/sec', style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w600, color: Colors.grey[700])),
         ],
       ),
     );

@@ -121,7 +121,17 @@
       "Bash(flutter build:*)",
       "Bash(ls -la \"C:\\\\Users\\\\naeem\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--neuroverse\\\\1e77bf5a-7391-49ff-ab42-f5cb6907d518\\\\tasks\"\" 2>/dev/null || echo \"dir not found \")",
       "Bash(dart run:*)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(grep -r \"ClinicalNote\\\\|clinical_note\" /d/neuroverse/neuroverse-backend/app/models/*.py)",
+      "Bash(ls /d/neuroverse/lib/features/Labs/gait*)",
+      "Bash(python convert_responsive.py lib/features/Labs/tests/resting_tremor_test.dart lib/features/Labs/tests/stroop_test.dart lib/features/Labs/tests/word_recall_test.dart lib/features/Labs/tests/picture_description_test.dart lib/features/Labs/tests/gait_assessment_test.dart lib/features/Labs/tests/facial_analysis_test.dart lib/features/Chat/neuro_chat_screen.dart)",
+      "Bash(python convert_responsive.py lib/features/XAI/XAI.dart lib/features/Profile/profile.dart)",
+      "Bash(python fix_responsive.py lib/features/Labs/tests/resting_tremor_test.dart lib/features/Labs/tests/stroop_test.dart lib/features/Labs/tests/word_recall_test.dart lib/features/Labs/tests/picture_description_test.dart lib/features/Labs/tests/gait_assessment_test.dart lib/features/Labs/tests/facial_analysis_test.dart lib/features/Chat/neuro_chat_screen.dart lib/features/XAI/XAI.dart lib/features/Profile/profile.dart)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Bash(grep -oP '\\\\w+$')",
+      "Bash(grep -r \"uvicorn\\\\|FastAPI\" /d/neuroverse/neuroverse-backend/*.py)"
     ]
   }
 }

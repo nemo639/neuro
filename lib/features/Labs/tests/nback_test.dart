@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:neuroverse/core/responsive.dart';
 
 // Test phases
 enum NBackPhase { instructions, practice, test, completed }
@@ -419,53 +420,54 @@ class _NBackTestScreenState extends State<NBackTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
-            if (_currentPhase == NBackPhase.practice || 
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
+            if (_currentPhase == NBackPhase.practice ||
                 _currentPhase == NBackPhase.test)
-              _buildBottomSection(),
+              _buildBottomSection(r),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.w(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'N-Back Memory',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: r.sp(20), fontWeight: FontWeight.w800),
                 ),
                 Text(
                   _getPhaseText(),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -475,17 +477,17 @@ class _NBackTestScreenState extends State<NBackTestScreen>
             duration: const Duration(milliseconds: 300),
             child: Container(
               key: ValueKey(_nBack), // Animate when N changes
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
               decoration: BoxDecoration(
                 color: orangeAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(r.w(20)),
                 border: Border.all(color: orangeAccent.withOpacity(0.3)),
               ),
               child: Text(
                 '$_nBack-Back', // Shows current Level
-                style: const TextStyle(
+                style: TextStyle(
                   color: orangeAccent,
-                  fontSize: 12,
+                  fontSize: r.sp(12),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -510,12 +512,11 @@ class _NBackTestScreenState extends State<NBackTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0;
     if (_currentPhase == NBackPhase.practice) {
       progress = _currentTrial / _practiceTrials * 0.1;
     } else if (_currentPhase == NBackPhase.test) {
-      // Calculate total progress based on blocks
       int totalTrialsCompleted = ((_currentBlock - 1) * _trialsPerBlock) + _currentTrial;
       int totalTrialsTotal = _totalBlocks * _trialsPerBlock;
       progress = 0.1 + (totalTrialsCompleted / totalTrialsTotal * 0.9);
@@ -524,11 +525,11 @@ class _NBackTestScreenState extends State<NBackTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.w(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -536,7 +537,7 @@ class _NBackTestScreenState extends State<NBackTestScreen>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [orangeAccent, redAccent]),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.w(3)),
           ),
         ),
       ),
@@ -545,19 +546,17 @@ class _NBackTestScreenState extends State<NBackTestScreen>
 
   // ... (Rest of UI widgets: _buildContent, _buildInstructionsPhase, etc. remain the same)
   
-  // NOTE: Ensure _buildTestPhase uses _nBack in the hint text:
-  Widget _buildTestPhase() {
+  Widget _buildTestPhase(Responsive r) {
     return Column(
       children: [
-        // Feedback indicator (Same as before)
         if (_lastResponseCorrect != null)
            Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(8)),
             decoration: BoxDecoration(
-              color: _lastResponseCorrect! 
-                  ? greenAccent.withOpacity(0.1) 
+              color: _lastResponseCorrect!
+                  ? greenAccent.withOpacity(0.1)
                   : redAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.w(20)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -565,14 +564,14 @@ class _NBackTestScreenState extends State<NBackTestScreen>
                 Icon(
                   _lastResponseCorrect! ? Icons.check : Icons.close,
                   color: _lastResponseCorrect! ? greenAccent : redAccent,
-                  size: 18,
+                  size: r.dp(18),
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: r.w(6)),
                 Text(
                   _lastResponseCorrect! ? 'Correct!' : 'Wrong',
                   style: TextStyle(
                     color: _lastResponseCorrect! ? greenAccent : redAccent,
-                    fontSize: 13,
+                    fontSize: r.sp(13),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -581,40 +580,38 @@ class _NBackTestScreenState extends State<NBackTestScreen>
           )
         else
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(8)),
             decoration: BoxDecoration(
               color: _isPractice ? Colors.orange.withOpacity(0.1) : blueAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.w(20)),
             ),
             child: Text(
-              _isPractice ? '🎯 Practice (1-Back)' : '📝 Test (Adaptive)',
+              _isPractice ? 'Practice (1-Back)' : 'Test (Adaptive)',
               style: TextStyle(
                 color: _isPractice ? Colors.orange : blueAccent,
-                fontSize: 13,
+                fontSize: r.sp(13),
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-        const SizedBox(height: 20),
-        // Main grid
+        SizedBox(height: r.h(20)),
         Expanded(
           child: Center(
             child: AspectRatio(
               aspectRatio: 1,
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 250, maxHeight: 250),
-                child: _buildGrid(),
+                constraints: BoxConstraints(maxWidth: r.w(250), maxHeight: r.h(250)),
+                child: _buildGrid(r),
               ),
             ),
           ),
         ),
-        // DYNAMIC HINT
         if (_currentTrial >= _nBack)
           Text(
             'Same as $_nBack positions ago?',
-            style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+            style: TextStyle(fontSize: r.sp(13), color: Colors.grey[500]),
           ),
-        const SizedBox(height: 10),
+        SizedBox(height: r.h(10)),
       ],
     );
   }
@@ -701,7 +698,7 @@ class _NBackTestScreenState extends State<NBackTestScreen>
   }
 
   // Grid builder
-  Widget _buildGrid() {
+  Widget _buildGrid(Responsive r) {
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -736,7 +733,7 @@ class _NBackTestScreenState extends State<NBackTestScreen>
     );
   }
 
-  Widget _buildBottomSection() {
+  Widget _buildBottomSection(Responsive r) {
     return Column(
       children: [
         // Match button
@@ -964,7 +961,7 @@ class _NBackTestScreenState extends State<NBackTestScreen>
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
@@ -979,17 +976,17 @@ class _NBackTestScreenState extends State<NBackTestScreen>
           ),
         ],
       ),
-      child: _buildPhaseContent(),
+      child: _buildPhaseContent(r),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case NBackPhase.instructions:
         return _buildInstructionsPhase();
       case NBackPhase.practice:
       case NBackPhase.test:
-        return _buildTestPhase();
+        return _buildTestPhase(r);
       case NBackPhase.completed:
         return _buildCompletedPhase();
     }

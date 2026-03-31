@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/responsive.dart';
 
 // Test phases
 enum StroopPhase { instructions, practice, practiceComplete, test, completed }
@@ -373,72 +374,73 @@ class _StroopTestScreenState extends State<StroopTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
-            Expanded(child: _buildContent()),
+            _buildHeader(r),
+            _buildProgressBar(r),
+            Expanded(child: _buildContent(r)),
             if (_currentPhase == StroopPhase.practice || 
                 _currentPhase == StroopPhase.test)
-              _buildMetricsBar(),
+              _buildMetricsBar(r),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: r.dp(18)),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Stroop Test',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: r.sp(20),
                     fontWeight: FontWeight.w800,
                     color: Colors.black87,
                   ),
                 ),
                 Text(
                   _getPhaseText(),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
             decoration: BoxDecoration(
               color: purpleAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.dp(20)),
             ),
             child: Text(
               _isPractice ? 'Practice' : '${_currentTrial}/$_testTrials',
-              style: const TextStyle(
+              style: TextStyle(
                 color: purpleAccent,
-                fontSize: 12,
+                fontSize: r.sp(12),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -463,7 +465,7 @@ class _StroopTestScreenState extends State<StroopTestScreen>
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0;
     if (_currentPhase == StroopPhase.practice) {
       progress = _currentTrial / _practiceTrials * 0.15;
@@ -476,11 +478,11 @@ class _StroopTestScreenState extends State<StroopTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -488,74 +490,74 @@ class _StroopTestScreenState extends State<StroopTestScreen>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [purpleAccent, blueAccent]),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: r.dp(20),
+            offset: Offset(r.w(0), r.h(4)),
           ),
         ],
       ),
-      child: _buildPhaseContent(),
+      child: _buildPhaseContent(r),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case StroopPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case StroopPhase.practice:
       case StroopPhase.test:
-        return _buildTestPhase();
+        return _buildTestPhase(r);
       case StroopPhase.practiceComplete:
-        return _buildPracticeCompletePhase();
+        return _buildPracticeCompletePhase(r);
       case StroopPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildPracticeCompletePhase() {
+  Widget _buildPracticeCompletePhase(Responsive r) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30),
+        padding: EdgeInsets.symmetric(horizontal: r.w(30)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: r.w(80),
+              height: r.h(80),
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_rounded, color: Color(0xFF10B981), size: 40),
+              child: Icon(Icons.check_rounded, color: Color(0xFF10B981), size: r.dp(40)),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: r.h(24)),
+            Text(
               'Practice Complete!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.black87),
+              style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800, color: Colors.black87),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: r.h(12)),
             Text(
               'Great job! You\'re now familiar with the test.\nThe actual test will begin next — your responses will be recorded.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.black.withOpacity(0.5), height: 1.5),
+              style: TextStyle(fontSize: r.sp(14), color: Colors.black.withOpacity(0.5), height: r.h(1.5)),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: r.h(32)),
             GestureDetector(
               onTap: () {
                 HapticFeedback.mediumImpact();
@@ -563,15 +565,15 @@ class _StroopTestScreenState extends State<StroopTestScreen>
               },
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: r.h(16)),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(r.dp(16)),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     'Start Test',
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                    style: TextStyle(color: Colors.white, fontSize: r.sp(16), fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -582,64 +584,64 @@ class _StroopTestScreenState extends State<StroopTestScreen>
     );
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.w(80),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: purpleAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.palette_rounded, color: purpleAccent, size: 40),
+            child: Icon(Icons.palette_rounded, color: purpleAccent, size: r.dp(40)),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Stroop Color Test',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(24), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Test your attention and processing speed',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Example
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(r.dp(16)),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
               border: Border.all(color: Colors.grey[200]!),
             ),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'Example:',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: r.sp(14), fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 12),
-                const Text(
+                SizedBox(height: r.h(12)),
+                Text(
                   'RED',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: r.sp(32),
                     fontWeight: FontWeight.w900,
                     color: Color(0xFF3B82F6), // Blue color
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: r.h(8)),
                 Text(
                   'The word says "RED" but the ink is BLUE',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: r.sp(12), color: Colors.grey[600]),
                 ),
-                const SizedBox(height: 4),
-                const Text(
+                SizedBox(height: r.h(4)),
+                Text(
                   'Tap BLUE (the ink color)',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: r.sp(14),
                     fontWeight: FontWeight.w700,
                     color: greenAccent,
                   ),
@@ -647,71 +649,71 @@ class _StroopTestScreenState extends State<StroopTestScreen>
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Important note about button positions
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: Colors.amber.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
               border: Border.all(color: Colors.amber.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.shuffle_rounded, color: Colors.amber, size: 20),
-                const SizedBox(width: 10),
+                Icon(Icons.shuffle_rounded, color: Colors.amber, size: r.dp(20)),
+                SizedBox(width: r.w(10)),
                 Expanded(
                   child: Text(
                     'Button positions change each trial - look carefully!',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: r.sp(12), color: Colors.grey[700]),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: softLavender.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Column(
               children: [
-                _buildInstructionRow(Icons.visibility, 'Look at the word displayed'),
-                const SizedBox(height: 8),
-                _buildInstructionRow(Icons.touch_app, 'Tap the INK COLOR, not the word'),
-                const SizedBox(height: 8),
-                _buildInstructionRow(Icons.speed, 'Be quick but accurate'),
+                _buildInstructionRow(r, Icons.visibility, 'Look at the word displayed'),
+                SizedBox(height: r.h(8)),
+                _buildInstructionRow(r, Icons.touch_app, 'Tap the INK COLOR, not the word'),
+                SizedBox(height: r.h(8)),
+                _buildInstructionRow(r, Icons.speed, 'Be quick but accurate'),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _startPractice,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: purpleAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: purpleAccent.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    blurRadius: r.dp(20),
+                    offset: Offset(r.w(0), r.h(8)),
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Start Practice',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -719,60 +721,60 @@ class _StroopTestScreenState extends State<StroopTestScreen>
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildInstructionRow(IconData icon, String text) {
+  Widget _buildInstructionRow(Responsive r, IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey[600], size: 18),
-        const SizedBox(width: 10),
+        Icon(icon, color: Colors.grey[600], size: r.dp(18)),
+        SizedBox(width: r.w(10)),
         Expanded(
-          child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+          child: Text(text, style: TextStyle(fontSize: r.sp(13), color: Colors.grey[700])),
         ),
       ],
     );
   }
 
-  Widget _buildTestPhase() {
+  Widget _buildTestPhase(Responsive r) {
     return Column(
       children: [
-        const SizedBox(height: 10),
+        SizedBox(height: r.h(10)),
         // Phase indicator
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(8)),
               decoration: BoxDecoration(
                 color: _isPractice ? Colors.orange.withOpacity(0.1) : greenAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(r.dp(20)),
               ),
               child: Text(
                 _isPractice ? 'Practice Round' : 'Test Round',
                 style: TextStyle(
                   color: _isPractice ? Colors.orange : greenAccent,
-                  fontSize: 13,
+                  fontSize: r.sp(13),
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             if (!_isPractice && _showingStimulus && !_showingFeedback) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: r.w(10), vertical: r.h(6)),
                 decoration: BoxDecoration(
                   color: _trialType == 'incongruent' 
                       ? purpleAccent.withOpacity(0.1) 
                       : blueAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(r.dp(12)),
                 ),
                 child: Text(
                   _trialType == 'incongruent' ? '⚡' : '✓',
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: r.sp(12)),
                 ),
               ),
             ],
@@ -781,35 +783,35 @@ class _StroopTestScreenState extends State<StroopTestScreen>
         const Spacer(),
         // Stimulus or Feedback
         if (_showingFeedback)
-          _buildFeedback()
+          _buildFeedback(r)
         else if (_showingStimulus)
-          _buildStimulus(),
+          _buildStimulus(r),
         const Spacer(),
         // Shuffled color buttons
-        _buildColorButtons(),
-        const SizedBox(height: 10),
+        _buildColorButtons(r),
+        SizedBox(height: r.h(10)),
       ],
     );
   }
 
-  Widget _buildStimulus() {
+  Widget _buildStimulus(Responsive r) {
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+          padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(30)),
           decoration: BoxDecoration(
             color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(r.dp(20)),
             border: Border.all(
               color: Colors.grey[300]!,
-              width: 2,
+              width: r.w(2),
             ),
           ),
           child: Text(
             _currentWord,
             style: TextStyle(
-              fontSize: 48,
+              fontSize: r.sp(48),
               fontWeight: FontWeight.w900,
               color: _currentColor,
               letterSpacing: 4,
@@ -820,27 +822,27 @@ class _StroopTestScreenState extends State<StroopTestScreen>
     );
   }
 
-  Widget _buildFeedback() {
+  Widget _buildFeedback(Responsive r) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(r.dp(24)),
       decoration: BoxDecoration(
         color: _lastAnswerCorrect! 
             ? greenAccent.withOpacity(0.1) 
             : redAccent.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(r.dp(20)),
       ),
       child: Column(
         children: [
           Icon(
             _lastAnswerCorrect! ? Icons.check_circle_rounded : Icons.cancel_rounded,
             color: _lastAnswerCorrect! ? greenAccent : redAccent,
-            size: 50,
+            size: r.dp(50),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Text(
             _lastAnswerCorrect! ? 'Correct!' : 'Wrong!',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: r.sp(20),
               fontWeight: FontWeight.w700,
               color: _lastAnswerCorrect! ? greenAccent : redAccent,
             ),
@@ -848,17 +850,17 @@ class _StroopTestScreenState extends State<StroopTestScreen>
           if (!_lastAnswerCorrect!)
             Text(
               'Answer was: $_correctAnswer',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: r.sp(13), color: Colors.grey[600]),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildColorButtons() {
+  Widget _buildColorButtons(Responsive r) {
     final isActive = _showingStimulus && !_showingFeedback;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(16)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: List.generate(_shuffledColors.length, (index) {
@@ -871,25 +873,25 @@ class _StroopTestScreenState extends State<StroopTestScreen>
             child: GestureDetector(
               onTap: isActive ? () => _handleResponse(colorName) : null,
               child: Container(
-                width: 68,
-                height: 68,
+                width: r.w(68),
+                height: r.h(68),
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(r.dp(16)),
                   boxShadow: [
                     BoxShadow(
                       color: color.withOpacity(0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      blurRadius: r.dp(10),
+                      offset: Offset(r.w(0), r.h(4)),
                     ),
                   ],
                 ),
                 child: Center(
                   child: Text(
                     colorName.substring(0, 1),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: r.sp(24),
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -902,7 +904,7 @@ class _StroopTestScreenState extends State<StroopTestScreen>
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     final data = _getTestData();
     final accuracy = (data['accuracy'] * 100).toStringAsFixed(0);
     final avgRT = (data['avg_reaction_time_ms'] as double).toStringAsFixed(0);
@@ -913,81 +915,81 @@ class _StroopTestScreenState extends State<StroopTestScreen>
     return SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.w(80),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_rounded, color: greenAccent, size: 45),
+            child: Icon(Icons.check_circle_rounded, color: greenAccent, size: r.dp(45)),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: r.h(16)),
+          Text(
             'Test Completed!',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: r.sp(22), fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Results
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: mintGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
             ),
             child: Column(
               children: [
-                _buildResultRow('Accuracy', '$accuracy%'),
-                const Divider(height: 16),
-                _buildResultRow('Correct', '${data['correct']}/$_testTrials'),
-                const Divider(height: 16),
-                _buildResultRow('Avg Reaction Time', '${avgRT}ms'),
+                _buildResultRow(r, 'Accuracy', '$accuracy%'),
+                Divider(height: r.h(16)),
+                _buildResultRow(r, 'Correct', '${data['correct']}/$_testTrials'),
+                Divider(height: r.h(16)),
+                _buildResultRow(r, 'Avg Reaction Time', '${avgRT}ms'),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           // Stroop-specific metrics
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: softLavender.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Stroop Metrics',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: r.h(10)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildMetricCard('Congruent', '${congruentRT}ms', blueAccent),
-                    _buildMetricCard('Incongruent', '${incongruentRT}ms', purpleAccent),
+                    _buildMetricCard(r, 'Congruent', '${congruentRT}ms', blueAccent),
+                    _buildMetricCard(r, 'Incongruent', '${incongruentRT}ms', purpleAccent),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: r.h(10)),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(10),
+                  padding: EdgeInsets.all(r.dp(10)),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(r.dp(10)),
                   ),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Interference Score',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                        style: TextStyle(fontSize: r.sp(11), color: Colors.grey),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: r.h(4)),
                       Text(
                         '${interference}ms',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: r.sp(20),
                           fontWeight: FontWeight.w800,
                           color: double.parse(interference) < 100 ? greenAccent : 
                                  double.parse(interference) < 200 ? Colors.orange : redAccent,
@@ -996,7 +998,7 @@ class _StroopTestScreenState extends State<StroopTestScreen>
                       Text(
                         double.parse(interference) < 100 ? 'Excellent' :
                         double.parse(interference) < 200 ? 'Normal' : 'Elevated',
-                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: r.sp(10), color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -1004,105 +1006,105 @@ class _StroopTestScreenState extends State<StroopTestScreen>
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           GestureDetector(
             onTap: _completeTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: greenAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
+                  Text('Continue', style: TextStyle(color: Colors.white, fontSize: r.sp(15), fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildMetricCard(String label, String value, Color color) {
+  Widget _buildMetricCard(Responsive r, String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(10)),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(r.dp(10)),
       ),
       child: Column(
         children: [
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-          const SizedBox(height: 4),
+          Text(label, style: TextStyle(fontSize: r.sp(11), color: Colors.grey[600])),
+          SizedBox(height: r.h(4)),
           Text(
             value,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color),
+            style: TextStyle(fontSize: r.sp(16), fontWeight: FontWeight.w700, color: color),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildResultRow(String label, String value) {
+  Widget _buildResultRow(Responsive r, String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        Text(label, style: TextStyle(fontSize: r.sp(14), color: Colors.grey[700])),
+        Text(value, style: TextStyle(fontSize: r.sp(16), fontWeight: FontWeight.w700)),
       ],
     );
   }
 
-  Widget _buildMetricsBar() {
+  Widget _buildMetricsBar(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(14)),
       decoration: BoxDecoration(
         color: darkCard,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(r.dp(18)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildMiniMetric('CORRECT', '$_correctCount', greenAccent),
-          Container(width: 1, height: 36, color: Colors.white.withOpacity(0.1)),
-          _buildMiniMetric('ERRORS', '$_errorCount', redAccent),
-          Container(width: 1, height: 36, color: Colors.white.withOpacity(0.1)),
-          _buildMiniMetric('TRIAL', '$_currentTrial/${_isPractice ? _practiceTrials : _testTrials}', blueAccent),
+          _buildMiniMetric(r, 'CORRECT', '$_correctCount', greenAccent),
+          Container(width: r.w(1), height: r.h(36), color: Colors.white.withOpacity(0.1)),
+          _buildMiniMetric(r, 'ERRORS', '$_errorCount', redAccent),
+          Container(width: r.w(1), height: r.h(36), color: Colors.white.withOpacity(0.1)),
+          _buildMiniMetric(r, 'TRIAL', '$_currentTrial/${_isPractice ? _practiceTrials : _testTrials}', blueAccent),
         ],
       ),
     );
   }
 
-  Widget _buildMiniMetric(String label, String value, Color color) {
+  Widget _buildMiniMetric(Responsive r, String label, String value, Color color) {
     return Column(
       children: [
         Text(
           label,
           style: TextStyle(
             color: Colors.white.withOpacity(0.5),
-            fontSize: 10,
+            fontSize: r.sp(10),
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: r.h(4)),
         Row(
           children: [
             Container(
-              width: 8,
-              height: 8,
+              width: r.w(8),
+              height: r.h(8),
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: r.w(6)),
             Text(
               value,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+              style: TextStyle(color: Colors.white, fontSize: r.sp(16), fontWeight: FontWeight.w700),
             ),
           ],
         ),

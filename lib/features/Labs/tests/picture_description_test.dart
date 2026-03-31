@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/audio_recorder_service.dart';
+import '../../../core/responsive.dart';
 
 // Test phases - must be outside class
 enum PictureDescPhase { instructions, viewing, recording, completed }
@@ -138,7 +139,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
       _viewingProgress = 0.0;
     });
 
-    _viewingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _viewingTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _viewingSeconds++;
         _viewingProgress = _viewingSeconds / _viewingDurationSeconds;
@@ -180,7 +181,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
       _recordingStartTime = DateTime.now();
     });
 
-    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _recordingTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _recordingSeconds++;
 
@@ -270,67 +271,68 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildProgressBar(),
+            _buildHeader(r),
+            _buildProgressBar(r),
             Expanded(
-              child: _buildTestArea(),
+              child: _buildTestArea(r),
             ),
             if (_currentPhase == PictureDescPhase.viewing || 
                 _currentPhase == PictureDescPhase.recording)
-              _buildMetricsBar(),
+              _buildMetricsBar(r),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           // Back button
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.w(44),
+              height: r.h(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           // Title
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Picture Description',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: r.sp(20),
                     fontWeight: FontWeight.w800,
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: r.h(2)),
                 Text(
                   _getPhaseText(),
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: r.sp(13),
                     color: Colors.grey[600],
                   ),
                 ),
@@ -339,10 +341,10 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
           ),
           // Trial counter
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
             decoration: BoxDecoration(
               color: (_currentImage['color'] as Color).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.dp(20)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -354,9 +356,9 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
                   color: _currentPhase == PictureDescPhase.completed
                       ? greenAccent
                       : _currentImage['color'] as Color,
-                  size: 16,
+                  size: r.dp(16),
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: r.w(6)),
                 Text(
                   _currentPhase == PictureDescPhase.completed
                       ? 'Done'
@@ -365,7 +367,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
                     color: _currentPhase == PictureDescPhase.completed
                         ? greenAccent
                         : _currentImage['color'] as Color,
-                    fontSize: 12,
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -390,7 +392,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = (_currentTrial / _totalTrials);
     if (_currentPhase == PictureDescPhase.viewing) {
       progress += (_viewingProgress * 0.3 / _totalTrials);
@@ -401,11 +403,11 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -415,60 +417,60 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
             gradient: LinearGradient(
               colors: [greenAccent, orangeAccent, purpleAccent],
             ),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTestArea() {
+  Widget _buildTestArea(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: r.dp(20),
+            offset: Offset(r.w(0), r.h(4)),
           ),
         ],
       ),
-      child: _buildPhaseContent(),
+      child: _buildPhaseContent(r),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case PictureDescPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case PictureDescPhase.viewing:
-        return _buildViewingPhase();
+        return _buildViewingPhase(r);
       case PictureDescPhase.recording:
-        return _buildRecordingPhase();
+        return _buildRecordingPhase(r);
       case PictureDescPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     final imageColor = _currentImage['color'] as Color;
     
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           // Image preview thumbnail
           Container(
-            width: 100,
-            height: 100,
+            width: r.w(100),
+            height: r.h(100),
             decoration: BoxDecoration(
               color: imageColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.dp(20)),
               border: Border.all(color: imageColor.withOpacity(0.3)),
             ),
             clipBehavior: Clip.antiAlias,
@@ -479,50 +481,50 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
                 return Icon(
                   _currentImage['icon'] as IconData,
                   color: imageColor,
-                  size: 40,
+                  size: r.dp(40),
                 );
               },
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Title
           Text(
             'Image ${_currentTrial + 1}: ${_currentImage['title']}',
-            style: const TextStyle(
-              fontSize: 22,
+            style: TextStyle(
+              fontSize: r.sp(22),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             _currentImage['description'],
             style: TextStyle(
-              fontSize: 13,
+              fontSize: r.sp(13),
               color: Colors.grey[600],
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Instructions card
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: imageColor.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
               border: Border.all(color: imageColor.withOpacity(0.2)),
             ),
             child: Column(
               children: [
-                _buildInstructionRow(Icons.visibility_rounded, 'Study the image for 30 seconds'),
-                const SizedBox(height: 8),
-                _buildInstructionRow(Icons.mic_rounded, 'Then describe everything you see'),
-                const SizedBox(height: 8),
-                _buildInstructionRow(Icons.checklist_rounded, 'Include people, objects, actions'),
+                _buildInstructionRow(r, Icons.visibility_rounded, 'Study the image for 30 seconds'),
+                SizedBox(height: r.h(8)),
+                _buildInstructionRow(r, Icons.mic_rounded, 'Then describe everything you see'),
+                SizedBox(height: r.h(8)),
+                _buildInstructionRow(r, Icons.checklist_rounded, 'Include people, objects, actions'),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Trial indicators
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -532,7 +534,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               final trialColor = _images[index]['color'] as Color;
               
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 6),
+                margin: EdgeInsets.symmetric(horizontal: r.w(6)),
                 width: isCurrent ? 36 : 28,
                 height: isCurrent ? 36 : 28,
                 decoration: BoxDecoration(
@@ -541,12 +543,12 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
                       : (isCurrent ? trialColor : Colors.grey[200]),
                   shape: BoxShape.circle,
                   border: isCurrent 
-                      ? Border.all(color: trialColor, width: 3)
+                      ? Border.all(color: trialColor, width: r.w(3))
                       : null,
                 ),
                 child: Center(
                   child: isCompleted
-                      ? const Icon(Icons.check, color: Colors.white, size: 16)
+                      ? Icon(Icons.check, color: Colors.white, size: r.dp(16))
                       : Icon(
                           _images[index]['icon'] as IconData,
                           size: isCurrent ? 18 : 14,
@@ -556,7 +558,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               );
             }),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Start button
           GestureDetector(
             onTap: () {
@@ -564,28 +566,28 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               _startViewing();
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: imageColor,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: imageColor.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    blurRadius: r.dp(20),
+                    offset: Offset(r.w(0), r.h(8)),
                   ),
                 ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
-                  const SizedBox(width: 8),
+                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     _currentTrial == 0 ? 'View Image' : 'Next Image',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -593,22 +595,22 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildInstructionRow(IconData icon, String text) {
+  Widget _buildInstructionRow(Responsive r, IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey[600], size: 18),
-        const SizedBox(width: 10),
+        Icon(icon, color: Colors.grey[600], size: r.dp(18)),
+        SizedBox(width: r.w(10)),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: r.sp(12),
               color: Colors.grey[700],
             ),
           ),
@@ -617,46 +619,46 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
     );
   }
 
-  Widget _buildViewingPhase() {
+  Widget _buildViewingPhase(Responsive r) {
     final imageColor = _currentImage['color'] as Color;
     
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           // Timer badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(8)),
             decoration: BoxDecoration(
               color: imageColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.dp(20)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.visibility_rounded, color: imageColor, size: 18),
-                const SizedBox(width: 8),
+                Icon(Icons.visibility_rounded, color: imageColor, size: r.dp(18)),
+                SizedBox(width: r.w(8)),
                 Text(
                   'Study Time: ${_viewingDurationSeconds - _viewingSeconds}s',
                   style: TextStyle(
                     color: imageColor,
-                    fontSize: 14,
+                    fontSize: r.sp(14),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Clinical scene image
           Container(
-            height: 220,
+            height: r.h(220),
             width: double.infinity,
             decoration: BoxDecoration(
               color: imageColor.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: imageColor.withOpacity(0.3), width: 2),
+              borderRadius: BorderRadius.circular(r.dp(16)),
+              border: Border.all(color: imageColor.withOpacity(0.3), width: r.w(2)),
             ),
             clipBehavior: Clip.antiAlias,
             child: Image.asset(
@@ -670,35 +672,35 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
                     Icon(
                       _currentImage['icon'] as IconData,
                       color: imageColor,
-                      size: 60,
+                      size: r.dp(60),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: r.h(12)),
                     Text(
                       _currentImage['title'] as String,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: r.sp(16),
                         fontWeight: FontWeight.w700,
                         color: imageColor,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: r.h(4)),
                     Text(
                       'Add image to ${_currentImage['asset']}',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: r.sp(11), color: Colors.grey[500]),
                     ),
                   ],
                 );
               },
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Progress bar
           Container(
             width: double.infinity,
-            height: 6,
+            height: r.h(6),
             decoration: BoxDecoration(
               color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(r.dp(3)),
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
@@ -706,28 +708,28 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               child: Container(
                 decoration: BoxDecoration(
                   color: imageColor,
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(r.dp(3)),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Tips
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(r.dp(12)),
             decoration: BoxDecoration(
               color: creamBeige.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Row(
               children: [
-                Icon(Icons.lightbulb_outline_rounded, color: orangeAccent, size: 18),
-                const SizedBox(width: 10),
+                Icon(Icons.lightbulb_outline_rounded, color: orangeAccent, size: r.dp(18)),
+                SizedBox(width: r.w(10)),
                 Expanded(
                   child: Text(
                     'Notice: people, objects, colors, actions, positions',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: r.sp(11),
                       color: Colors.grey[700],
                     ),
                   ),
@@ -735,7 +737,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Skip button
           TextButton(
             onPressed: () {
@@ -746,7 +748,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               'Ready to describe →',
               style: TextStyle(
                 color: imageColor,
-                fontSize: 13,
+                fontSize: r.sp(13),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -756,95 +758,95 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
     );
   }
 
-  Widget _buildRecordingPhase() {
+  Widget _buildRecordingPhase(Responsive r) {
     final imageColor = _currentImage['color'] as Color;
     
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           // Recording indicator
           AnimatedBuilder(
             animation: _pulseController,
             builder: (context, child) {
               return Container(
-                width: 90 + (_pulseController.value * 20),
-                height: 90 + (_pulseController.value * 20),
+                width: r.w(90) + (_pulseController.value * 20),
+                height: r.h(90) + (_pulseController.value * 20),
                 decoration: BoxDecoration(
                   color: redAccent.withOpacity(0.1 + _pulseController.value * 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Container(
-                  margin: const EdgeInsets.all(18),
+                  margin: EdgeInsets.all(r.dp(18)),
                   decoration: BoxDecoration(
                     color: redAccent,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
                         color: redAccent.withOpacity(0.4),
-                        blurRadius: 20,
-                        spreadRadius: 3,
+                        blurRadius: r.dp(20),
+                        spreadRadius: r.dp(3),
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.mic_rounded,
                     color: Colors.white,
-                    size: 28,
+                    size: r.dp(28),
                   ),
                 ),
               );
             },
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Recording text
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 10,
-                height: 10,
+                width: r.w(10),
+                height: r.h(10),
                 decoration: const BoxDecoration(
                   color: redAccent,
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: r.w(8)),
+              Text(
                 'Describe the image',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: r.sp(18),
                   fontWeight: FontWeight.w700,
                   color: Colors.black87,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: r.h(6)),
           Text(
             'Tell us everything you remember seeing',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: r.sp(12),
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Timer
           Text(
             _formatTime(_recordingSeconds),
-            style: const TextStyle(
-              fontSize: 36,
+            style: TextStyle(
+              fontSize: r.sp(36),
               fontWeight: FontWeight.w300,
               color: Colors.black87,
               fontFamily: 'monospace',
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Waveform
           Container(
-            height: 50,
-            margin: const EdgeInsets.symmetric(horizontal: 10),
+            height: r.h(50),
+            margin: EdgeInsets.symmetric(horizontal: r.w(10)),
             child: AnimatedBuilder(
               animation: _waveController,
               builder: (context, child) {
@@ -858,23 +860,23 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               },
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Small image reminder
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(r.dp(10)),
             decoration: BoxDecoration(
               color: imageColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(_currentImage['icon'] as IconData, color: imageColor, size: 20),
-                const SizedBox(width: 8),
+                Icon(_currentImage['icon'] as IconData, color: imageColor, size: r.dp(20)),
+                SizedBox(width: r.w(8)),
                 Text(
                   _currentImage['title'],
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w600,
                     color: imageColor,
                   ),
@@ -882,7 +884,7 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           // Stop button
           GestureDetector(
             onTap: () {
@@ -890,21 +892,21 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               _stopRecording();
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: r.w(36), vertical: r.h(12)),
               decoration: BoxDecoration(
                 color: darkCard,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.stop_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
+                  Icon(Icons.stop_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Done Describing',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: r.sp(14),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -917,50 +919,50 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           // Success icon
           Container(
-            width: 80,
-            height: 80,
+            width: r.w(80),
+            height: r.h(80),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle_rounded,
               color: greenAccent,
-              size: 45,
+              size: r.dp(45),
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'All Images Described!',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: r.sp(22),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: r.h(6)),
           Text(
             'Your descriptions have been recorded',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: r.sp(13),
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Results summary
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: mintGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Column(
               children: [
@@ -972,24 +974,24 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
                     child: Row(
                       children: [
                         Container(
-                          width: 32,
-                          height: 32,
+                          width: r.w(32),
+                          height: r.h(32),
                           decoration: BoxDecoration(
                             color: imageColor.withOpacity(0.15),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             _images[index]['icon'] as IconData,
-                            size: 16,
+                            size: r.dp(16),
                             color: imageColor,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: r.w(10)),
                         Expanded(
                           child: Text(
                             trial['image_title'],
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: TextStyle(
+                              fontSize: r.sp(13),
                               fontWeight: FontWeight.w600,
                               color: Colors.black87,
                             ),
@@ -998,16 +1000,16 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
                         Text(
                           '${(trial['recording_duration_ms'] / 1000).toStringAsFixed(0)}s',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: r.sp(13),
                             fontWeight: FontWeight.w700,
                             color: Colors.grey[700],
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        const Icon(
+                        SizedBox(width: r.w(6)),
+                        Icon(
                           Icons.check_circle_rounded,
                           color: greenAccent,
-                          size: 18,
+                          size: r.dp(18),
                         ),
                       ],
                     ),
@@ -1016,33 +1018,33 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Continue button
           GestureDetector(
             onTap: _completeTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: greenAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: greenAccent.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    blurRadius: r.dp(20),
+                    offset: Offset(r.w(0), r.h(8)),
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Continue',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1050,26 +1052,26 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           GestureDetector(
             onTap: _retakeRecording,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 border: Border.all(color: Colors.black.withOpacity(0.1)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.refresh_rounded, color: Colors.grey[700], size: 20),
-                  const SizedBox(width: 8),
+                  Icon(Icons.refresh_rounded, color: Colors.grey[700], size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Retake Recording',
                     style: TextStyle(
                       color: Colors.grey[700],
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1077,26 +1079,26 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildMetricsBar() {
+  Widget _buildMetricsBar(Responsive r) {
     final imageColor = _currentImage['color'] as Color;
     
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(14)),
       decoration: BoxDecoration(
         color: darkCard,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(r.dp(18)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildMiniMetric(
+          _buildMiniMetric(r, 
             _currentPhase == PictureDescPhase.viewing ? 'VIEWING' : 'RECORDING',
             _currentPhase == PictureDescPhase.viewing 
                 ? '${_viewingSeconds}s'
@@ -1104,45 +1106,45 @@ class _PictureDescriptionTestScreenState extends State<PictureDescriptionTestScr
             _currentPhase == PictureDescPhase.viewing ? blueAccent : redAccent,
           ),
           Container(
-            width: 1,
-            height: 36,
+            width: r.w(1),
+            height: r.h(36),
             color: Colors.white.withOpacity(0.1),
           ),
-          _buildMiniMetric('IMAGE', '${_currentTrial + 1}/$_totalTrials', imageColor),
+          _buildMiniMetric(r, 'IMAGE', '${_currentTrial + 1}/$_totalTrials', imageColor),
         ],
       ),
     );
   }
 
-  Widget _buildMiniMetric(String label, String value, Color color) {
+  Widget _buildMiniMetric(Responsive r, String label, String value, Color color) {
     return Column(
       children: [
         Text(
           label,
           style: TextStyle(
             color: Colors.white.withOpacity(0.5),
-            fontSize: 10,
+            fontSize: r.sp(10),
             fontWeight: FontWeight.w600,
             letterSpacing: 1,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: r.h(4)),
         Row(
           children: [
             Container(
-              width: 8,
-              height: 8,
+              width: r.w(8),
+              height: r.h(8),
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: r.w(6)),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: r.sp(16),
                 fontWeight: FontWeight.w700,
               ),
             ),

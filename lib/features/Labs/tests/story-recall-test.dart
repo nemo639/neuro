@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:neuroverse/core/audio_recorder_service.dart';
+import '../../../core/responsive.dart';
 
 class StoryRecallTestScreen extends StatefulWidget {
   const StoryRecallTestScreen({super.key});
@@ -332,65 +333,66 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildMobileHeader(),
-            _buildProgressBar(),
+            _buildMobileHeader(r),
+            _buildProgressBar(r),
             Expanded(
-              child: _buildTestArea(),
+              child: _buildTestArea(r),
             ),
             if (_currentPhase != TestPhase.instructions &&
                 _currentPhase != TestPhase.completed)
-              _buildMobileMetrics(),
+              _buildMobileMetrics(r),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMobileHeader() {
+  Widget _buildMobileHeader(Responsive r) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: _exitTest,
             child: Container(
-              width: 44,
-              height: 44,
+              width: r.dp(44),
+              height: r.dp(44),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(r.dp(14)),
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: Colors.black87,
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: r.w(16)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Story Recall',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: r.sp(20),
                     fontWeight: FontWeight.w800,
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: r.h(2)),
                 Text(
                   _getPhaseText(),
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: r.sp(13),
                     color: Colors.grey[600],
                   ),
                 ),
@@ -398,12 +400,12 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(6)),
             decoration: BoxDecoration(
               color: _currentPhase == TestPhase.completed
                   ? greenAccent.withOpacity(0.1)
                   : blueAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(r.dp(20)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -415,16 +417,16 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
                   color: _currentPhase == TestPhase.completed
                       ? greenAccent
                       : blueAccent,
-                  size: 16,
+                  size: r.dp(16),
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: r.w(6)),
                 Text(
                   _currentPhase == TestPhase.completed ? 'Done' : '5 min',
                   style: TextStyle(
                     color: _currentPhase == TestPhase.completed
                         ? greenAccent
                         : blueAccent,
-                    fontSize: 12,
+                    fontSize: r.sp(12),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -436,7 +438,7 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
     );
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(Responsive r) {
     double progress = 0.0;
     switch (_currentPhase) {
       case TestPhase.instructions:
@@ -454,11 +456,11 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 6,
+      margin: EdgeInsets.symmetric(horizontal: r.w(20)),
+      height: r.h(6),
       decoration: BoxDecoration(
         color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(r.dp(3)),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -468,20 +470,20 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
             gradient: const LinearGradient(
               colors: [blueAccent, greenAccent],
             ),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(r.dp(3)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildMobileMetrics() {
+  Widget _buildMobileMetrics(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(16)),
       decoration: BoxDecoration(
         color: darkCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(r.dp(20)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -494,51 +496,53 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
                 ? _formatTime(_recordingSeconds)
                 : '${_playbackSeconds}s',
             _isRecording ? redAccent : blueAccent,
+            r,
           ),
           Container(
-            width: 1,
-            height: 40,
+            width: r.w(1),
+            height: r.h(40),
             color: Colors.white.withOpacity(0.1),
           ),
           _buildMiniMetric(
             'PHASE',
             '${_currentPhase.index + 1}/4',
             greenAccent,
+            r,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMiniMetric(String label, String value, Color color) {
+  Widget _buildMiniMetric(String label, String value, Color color, Responsive r) {
     return Column(
       children: [
         Text(
           label,
           style: TextStyle(
             color: Colors.white.withOpacity(0.5),
-            fontSize: 10,
+            fontSize: r.sp(10),
             fontWeight: FontWeight.w600,
             letterSpacing: 1,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: r.h(4)),
         Row(
           children: [
             Container(
-              width: 8,
-              height: 8,
+              width: r.dp(8),
+              height: r.dp(8),
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: r.w(6)),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: r.sp(18),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -561,13 +565,13 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
     }
   }
 
-  Widget _buildTestArea() {
+  Widget _buildTestArea(Responsive r) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(24),
+      margin: EdgeInsets.all(r.dp(20)),
+      padding: EdgeInsets.all(r.dp(24)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -576,105 +580,105 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
           ),
         ],
       ),
-      child: _buildPhaseContent(),
+      child: _buildPhaseContent(r),
     );
   }
 
-  Widget _buildPhaseContent() {
+  Widget _buildPhaseContent(Responsive r) {
     switch (_currentPhase) {
       case TestPhase.instructions:
-        return _buildInstructionsPhase();
+        return _buildInstructionsPhase(r);
       case TestPhase.listening:
-        return _buildListeningPhase();
+        return _buildListeningPhase(r);
       case TestPhase.recording:
-        return _buildRecordingPhase();
+        return _buildRecordingPhase(r);
       case TestPhase.completed:
-        return _buildCompletedPhase();
+        return _buildCompletedPhase(r);
     }
   }
 
-  Widget _buildInstructionsPhase() {
+  Widget _buildInstructionsPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 80,
-            height: 80,
+            width: r.dp(80),
+            height: r.dp(80),
             decoration: BoxDecoration(
               color: blueAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.headphones_rounded,
               color: blueAccent,
-              size: 40,
+              size: r.dp(40),
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Story Recall Test',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: r.sp(24),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           // Story title badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: r.w(14), vertical: r.h(6)),
             decoration: BoxDecoration(
               color: purpleAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(r.dp(12)),
             ),
             child: Text(
               '"${_selectedStory['title']}"',
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: r.sp(13),
                 fontWeight: FontWeight.w600,
                 color: purpleAccent,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: r.h(16)),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(r.dp(16)),
             decoration: BoxDecoration(
               color: softLavender.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(r.dp(16)),
             ),
             child: Column(
               children: [
                 _buildInstructionItem(
-                    1, 'The phone will read a short story aloud'),
-                const SizedBox(height: 10),
+                    1, 'The phone will read a short story aloud', r),
+                SizedBox(height: r.h(10)),
                 _buildInstructionItem(
-                    2, 'Listen carefully — remember as many details as possible'),
-                const SizedBox(height: 10),
+                    2, 'Listen carefully — remember as many details as possible', r),
+                SizedBox(height: r.h(10)),
                 _buildInstructionItem(
-                    3, 'After the story ends, repeat it in your own words'),
+                    3, 'After the story ends, repeat it in your own words', r),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.volume_up_rounded, color: Colors.grey[600], size: 18),
-              const SizedBox(width: 6),
+              Icon(Icons.volume_up_rounded, color: Colors.grey[600], size: r.dp(18)),
+              SizedBox(width: r.w(6)),
               Text(
                 'Make sure your volume is turned up',
                 style: TextStyle(
                   color: Colors.grey[600],
-                  fontSize: 13,
+                  fontSize: r.sp(13),
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _ttsReady
                 ? () {
@@ -683,10 +687,10 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
                   }
                 : null,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: _ttsReady ? blueAccent : Colors.grey,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: blueAccent.withOpacity(_ttsReady ? 0.4 : 0),
@@ -698,14 +702,14 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.play_arrow_rounded,
-                      color: Colors.white, size: 22),
-                  const SizedBox(width: 8),
+                  Icon(Icons.play_arrow_rounded,
+                      color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     _ttsReady ? 'Start Listening' : 'Preparing...',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -713,18 +717,18 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildInstructionItem(int number, String text) {
+  Widget _buildInstructionItem(int number, String text, Responsive r) {
     return Row(
       children: [
         Container(
-          width: 28,
-          height: 28,
+          width: r.dp(28),
+          height: r.dp(28),
           decoration: const BoxDecoration(
             color: blueAccent,
             shape: BoxShape.circle,
@@ -732,20 +736,20 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
           child: Center(
             child: Text(
               '$number',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: r.sp(14),
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: r.w(12)),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 15,
+            style: TextStyle(
+              fontSize: r.sp(15),
               color: Colors.black87,
             ),
           ),
@@ -754,57 +758,57 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
     );
   }
 
-  Widget _buildListeningPhase() {
+  Widget _buildListeningPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           AnimatedBuilder(
             animation: _pulseController,
             builder: (context, child) {
               return Container(
-                width: 90 + (_pulseController.value * 15),
-                height: 90 + (_pulseController.value * 15),
+                width: r.dp(90) + (_pulseController.value * r.dp(15)),
+                height: r.dp(90) + (_pulseController.value * r.dp(15)),
                 decoration: BoxDecoration(
                   color: blueAccent
                       .withOpacity(0.1 + _pulseController.value * 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.volume_up_rounded,
                   color: blueAccent,
-                  size: 45,
+                  size: r.dp(45),
                 ),
               );
             },
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Reading Story Aloud...',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: r.sp(20),
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: r.h(6)),
           Text(
             'Listen carefully and try to remember the details',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: r.sp(13),
               color: Colors.grey[600],
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Progress bar
           Container(
             width: double.infinity,
-            height: 6,
+            height: r.h(6),
             decoration: BoxDecoration(
               color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(r.dp(3)),
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
@@ -814,41 +818,41 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
                   gradient: const LinearGradient(
                     colors: [blueAccent, purpleAccent],
                   ),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(r.dp(3)),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Text(
             '${_playbackSeconds}s',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: r.sp(13),
               color: Colors.grey[600],
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           // Tip card
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.dp(14)),
             decoration: BoxDecoration(
               color: softLavender.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.tips_and_updates_rounded,
                   color: purpleAccent,
-                  size: 20,
+                  size: r.dp(20),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: r.w(10)),
                 Expanded(
                   child: Text(
                     'Focus on key details: names, places, numbers, and sequence of events',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: r.sp(12),
                       color: Colors.grey[700],
                       height: 1.3,
                     ),
@@ -857,31 +861,31 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildRecordingPhase() {
+  Widget _buildRecordingPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           AnimatedBuilder(
             animation: _pulseController,
             builder: (context, child) {
               return Container(
-                width: 100 + (_pulseController.value * 20),
-                height: 100 + (_pulseController.value * 20),
+                width: r.dp(100) + (_pulseController.value * r.dp(20)),
+                height: r.dp(100) + (_pulseController.value * r.dp(20)),
                 decoration: BoxDecoration(
                   color: redAccent
                       .withOpacity(0.1 + _pulseController.value * 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Container(
-                  margin: const EdgeInsets.all(20),
+                  margin: EdgeInsets.all(r.dp(20)),
                   decoration: BoxDecoration(
                     color: redAccent,
                     shape: BoxShape.circle,
@@ -893,66 +897,66 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.mic_rounded,
                     color: Colors.white,
-                    size: 32,
+                    size: r.dp(32),
                   ),
                 ),
               );
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 10,
-                height: 10,
+                width: r.dp(10),
+                height: r.dp(10),
                 decoration: const BoxDecoration(
                   color: redAccent,
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: r.w(8)),
+              Text(
                 'Recording...',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: r.sp(20),
                   fontWeight: FontWeight.w700,
                   color: Colors.black87,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: r.h(6)),
           Text(
             'Repeat the story in your own words',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: r.sp(13),
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           Text(
             _formatTime(_recordingSeconds),
-            style: const TextStyle(
-              fontSize: 40,
+            style: TextStyle(
+              fontSize: r.sp(40),
               fontWeight: FontWeight.w300,
               color: Colors.black87,
               fontFamily: 'monospace',
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
           // Waveform
           Container(
-            height: 60,
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            height: r.h(60),
+            margin: EdgeInsets.symmetric(horizontal: r.w(20)),
             child: AnimatedBuilder(
               animation: _waveController,
               builder: (context, child) {
                 return CustomPaint(
-                  size: const Size(double.infinity, 60),
+                  size: Size(double.infinity, r.h(60)),
                   painter: WaveformPainter(
                     animation: _waveController.value,
                     color: redAccent,
@@ -961,17 +965,17 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
               },
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: () {
               HapticFeedback.heavyImpact();
               _stopRecording();
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: darkCard,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: darkCard.withOpacity(0.4),
@@ -980,16 +984,16 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.stop_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                  Icon(Icons.stop_rounded, color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Stop Recording',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -997,76 +1001,76 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: r.h(20)),
         ],
       ),
     );
   }
 
-  Widget _buildCompletedPhase() {
+  Widget _buildCompletedPhase(Responsive r) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
           Container(
-            width: 90,
-            height: 90,
+            width: r.dp(90),
+            height: r.dp(90),
             decoration: BoxDecoration(
               color: greenAccent.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle_rounded,
               color: greenAccent,
-              size: 50,
+              size: r.dp(50),
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: r.h(20)),
+          Text(
             'Test Completed!',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: r.sp(22),
               fontWeight: FontWeight.w800,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: r.h(8)),
           Text(
             'Your recording has been saved successfully',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: r.sp(13),
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(r.dp(16)),
             decoration: BoxDecoration(
               color: mintGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(r.dp(14)),
             ),
             child: Column(
               children: [
                 _buildSummaryRow('Story',
-                    '"${_selectedStory['title']}"'),
-                const SizedBox(height: 10),
+                    '"${_selectedStory['title']}"', r),
+                SizedBox(height: r.h(10)),
                 _buildSummaryRow('Story Duration',
-                    '${(_testData['story_duration_ms'] / 1000).toStringAsFixed(1)}s'),
-                const SizedBox(height: 10),
+                    '${(_testData['story_duration_ms'] / 1000).toStringAsFixed(1)}s', r),
+                SizedBox(height: r.h(10)),
                 _buildSummaryRow('Recording Duration',
-                    '${(_testData['recording_duration_ms'] / 1000).toStringAsFixed(1)}s'),
+                    '${(_testData['recording_duration_ms'] / 1000).toStringAsFixed(1)}s', r),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: r.h(24)),
           GestureDetector(
             onTap: _completeTest,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: greenAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 boxShadow: [
                   BoxShadow(
                     color: greenAccent.withOpacity(0.4),
@@ -1075,17 +1079,17 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.arrow_forward_rounded,
-                      color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                      color: Colors.white, size: r.dp(22)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Continue',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1093,27 +1097,27 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.h(12)),
           GestureDetector(
             onTap: _retakeRecording,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: r.w(40), vertical: r.h(14)),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
                 border: Border.all(color: Colors.black.withOpacity(0.1)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.refresh_rounded,
-                      color: Colors.grey[700], size: 20),
-                  const SizedBox(width: 8),
+                      color: Colors.grey[700], size: r.dp(20)),
+                  SizedBox(width: r.w(8)),
                   Text(
                     'Retake Recording',
                     style: TextStyle(
                       color: Colors.grey[700],
-                      fontSize: 15,
+                      fontSize: r.sp(15),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1121,27 +1125,27 @@ class _StoryRecallTestScreenState extends State<StoryRecallTestScreen>
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: r.h(10)),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
+  Widget _buildSummaryRow(String label, String value, Responsive r) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: r.sp(14),
             color: Colors.grey[700],
           ),
         ),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: r.sp(16),
             fontWeight: FontWeight.w700,
             color: Colors.black87,
           ),

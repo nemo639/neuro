@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
 import 'package:neuroverse/core/loading_bars.dart';
+import '../../core/responsive.dart';
 
 class NeuroChatScreen extends StatefulWidget {
   const NeuroChatScreen({super.key});
@@ -227,7 +228,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -242,53 +243,53 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Container(
               width: 56, height: 56,
               decoration: BoxDecoration(
                 color: const Color(0xFFFEE2E2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 28),
+              child: Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 28),
             ),
-            const SizedBox(height: 16),
-            const Text('Clear All Conversations',
+            SizedBox(height: 16),
+            Text('Clear All Conversations',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
             ),
-            const SizedBox(height: 8),
-            const Text('This will permanently delete all conversations.\nThis action cannot be undone.',
+            SizedBox(height: 8),
+            Text('This will permanently delete all conversations.\nThis action cannot be undone.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), height: 1.4),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
                   child: GestureDetector(
                     onTap: () => Navigator.pop(ctx, false),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF3F4F6),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text('Cancel', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: GestureDetector(
                     onTap: () => Navigator.pop(ctx, true),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEF4444),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text('Clear All', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
                       ),
                     ),
@@ -296,7 +297,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
           ],
         ),
       ),
@@ -316,7 +317,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 150), () {
+    Future.delayed(Duration(milliseconds: 150), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent + 100,
@@ -345,6 +346,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       backgroundColor: bgColor,
@@ -353,7 +355,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
           // Main chat content
           Column(
             children: [
-              _buildHeader(),
+              _buildHeader(r),
               Expanded(
                 child: _isLoading
                     ? Center(
@@ -361,18 +363,18 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             LoadingDots(color: darkCard, size: 10),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text('Loading conversation...',
                               style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
                           ],
                         ),
                       )
                     : _messages.isEmpty
-                        ? _buildEmptyState()
-                        : _buildMessageList(),
+                        ? _buildEmptyState(r)
+                        : _buildMessageList(r),
               ),
-              _buildInputBar(),
-              if (!keyboardOpen) _buildBottomNav(),
+              _buildInputBar(r),
+              if (!keyboardOpen) _buildBottomNav(r),
             ],
           ),
           // Conversation drawer overlay
@@ -384,7 +386,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                 color: Colors.black.withValues(alpha: 0.4),
               ),
             ),
-            _buildConversationDrawer(),
+            _buildConversationDrawer(r),
           ],
         ],
       ),
@@ -395,7 +397,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
   // HEADER
   // ═══════════════════════════════════════════
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return Container(
       decoration: const BoxDecoration(
         color: darkCard,
@@ -411,26 +413,26 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
               GestureDetector(
                 onTap: () => setState(() => _isDrawerOpen = !_isDrawerOpen),
                 child: Container(
-                  width: 40, height: 40,
+                  width: r.w(40), height: r.h(40),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(r.dp(12)),
                   ),
-                  child: Icon(Icons.menu_rounded, color: Colors.white.withValues(alpha: 0.8), size: 22),
+                  child: Icon(Icons.menu_rounded, color: Colors.white.withValues(alpha: 0.8), size: r.dp(22)),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: r.w(12)),
               // Neuro avatar
               Container(
-                width: 40,
-                height: 40,
+                width: r.w(40),
+                height: r.h(40),
                 decoration: BoxDecoration(
                   color: mintGreen,
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(r.dp(13)),
                 ),
-                child: const Icon(Icons.stars_rounded, color: Color(0xFF1A1A1A), size: 22),
+                child: Icon(Icons.stars_rounded, color: Color(0xFF1A1A1A), size: r.dp(22)),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: r.w(12)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -439,31 +441,31 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                       _conversationTitle ?? 'Neuro',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 17,
+                      style: TextStyle(
+                        fontSize: r.sp(17),
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                         letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: r.h(2)),
                     Row(
                       children: [
                         Container(
-                          width: 6, height: 6,
+                          width: r.w(6), height: r.h(6),
                           decoration: BoxDecoration(
                             color: mintGreen,
                             shape: BoxShape.circle,
                             boxShadow: [
-                              BoxShadow(color: mintGreen.withValues(alpha: 0.5), blurRadius: 6),
+                              BoxShadow(color: mintGreen.withValues(alpha: 0.5), blurRadius: r.dp(6)),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: r.w(6)),
                         Text(
                           'AI Health Companion',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: r.sp(11),
                             color: Colors.white.withValues(alpha: 0.5),
                             letterSpacing: 0.2,
                           ),
@@ -477,12 +479,12 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
               GestureDetector(
                 onTap: _startNewChat,
                 child: Container(
-                  width: 40, height: 40,
+                  width: r.w(40), height: r.h(40),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(r.dp(12)),
                   ),
-                  child: Icon(Icons.edit_square, color: Colors.white.withValues(alpha: 0.8), size: 20),
+                  child: Icon(Icons.edit_square, color: Colors.white.withValues(alpha: 0.8), size: r.dp(20)),
                 ),
               ),
             ],
@@ -496,21 +498,21 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
   // CONVERSATION DRAWER (like ChatGPT sidebar)
   // ═══════════════════════════════════════════
 
-  Widget _buildConversationDrawer() {
+  Widget _buildConversationDrawer(Responsive r) {
     return Positioned(
       left: 0, top: 0, bottom: 0,
       child: SafeArea(
         child: Container(
           width: MediaQuery.of(context).size.width * 0.78,
-          margin: const EdgeInsets.only(left: 8, top: 8, bottom: 8),
+          margin: EdgeInsets.only(left: r.w(8), top: r.h(8), bottom: r.h(8)),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(r.dp(24)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 30,
-                offset: const Offset(4, 0),
+                blurRadius: r.dp(30),
+                offset: Offset(r.w(4), r.h(0)),
               ),
             ],
           ),
@@ -522,28 +524,28 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                 child: Row(
                   children: [
                     Container(
-                      width: 38, height: 38,
+                      width: r.w(38), height: r.h(38),
                       decoration: BoxDecoration(
                         color: darkCard,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(r.dp(12)),
                       ),
-                      child: const Icon(Icons.stars_rounded, color: Color(0xFFB8E8D1), size: 20),
+                      child: Icon(Icons.stars_rounded, color: Color(0xFFB8E8D1), size: r.dp(20)),
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    SizedBox(width: r.w(12)),
+                    Expanded(
                       child: Text('Conversations',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+                        style: TextStyle(fontSize: r.sp(18), fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
                       ),
                     ),
                     GestureDetector(
                       onTap: () => setState(() => _isDrawerOpen = false),
                       child: Container(
-                        width: 34, height: 34,
+                        width: r.w(34), height: r.h(34),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF3F4F6),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(r.dp(10)),
                         ),
-                        child: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF6B7280)),
+                        child: Icon(Icons.close_rounded, size: r.dp(18), color: Color(0xFF6B7280)),
                       ),
                     ),
                   ],
@@ -551,29 +553,29 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
               ),
               // New chat button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(4)),
                 child: GestureDetector(
                   onTap: _startNewChat,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    padding: EdgeInsets.symmetric(vertical: r.h(13)),
                     decoration: BoxDecoration(
                       color: darkCard,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(r.dp(14)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add_rounded, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
+                        Icon(Icons.add_rounded, color: Colors.white, size: r.dp(20)),
+                        SizedBox(width: r.w(8)),
                         Text('New Chat',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                          style: TextStyle(fontSize: r.sp(14), fontWeight: FontWeight.w600, color: Colors.white),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: r.h(8)),
               // Conversation list
               Expanded(
                 child: _conversations.isEmpty
@@ -581,26 +583,26 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.chat_bubble_outline_rounded, size: 40, color: Colors.grey.shade300),
-                            const SizedBox(height: 12),
+                            Icon(Icons.chat_bubble_outline_rounded, size: r.dp(40), color: Colors.grey.shade300),
+                            SizedBox(height: r.h(12)),
                             Text('No conversations yet',
-                              style: TextStyle(fontSize: 14, color: Colors.grey.shade400, fontWeight: FontWeight.w500),
+                              style: TextStyle(fontSize: r.sp(14), color: Colors.grey.shade400, fontWeight: FontWeight.w500),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: r.h(4)),
                             Text('Start a new chat to begin',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade300),
+                              style: TextStyle(fontSize: r.sp(12), color: Colors.grey.shade300),
                             ),
                           ],
                         ),
                       )
                     : ListView.builder(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(4)),
                         itemCount: _conversations.length,
                         itemBuilder: (context, index) {
                           final conv = _conversations[index];
                           final isActive = conv['id'] == _conversationId;
-                          return _buildConversationTile(conv, isActive);
+                          return _buildConversationTile(r, conv, isActive);
                         },
                       ),
               ),
@@ -614,18 +616,18 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                       _clearAllChats();
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(vertical: r.h(12)),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFEE2E2),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(r.dp(12)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
-                          SizedBox(width: 8),
+                          Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: r.dp(18)),
+                          SizedBox(width: r.w(8)),
                           Text('Clear All Conversations',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFEF4444)),
+                            style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w600, color: Color(0xFFEF4444)),
                           ),
                         ],
                       ),
@@ -639,29 +641,29 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
     );
   }
 
-  Widget _buildConversationTile(Map<String, dynamic> conv, bool isActive) {
+  Widget _buildConversationTile(Responsive r, Map<String, dynamic> conv, bool isActive) {
     final title = conv['title'] ?? 'Chat';
     final time = _timeAgo(conv['updated_at'] ?? conv['created_at']);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: EdgeInsets.only(bottom: r.h(4)),
       child: GestureDetector(
         onTap: () => _loadConversation(conv['id'], title),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: r.w(14), vertical: r.h(12)),
           decoration: BoxDecoration(
             color: isActive ? darkCard : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(r.dp(14)),
           ),
           child: Row(
             children: [
               Icon(
                 Icons.chat_bubble_outline_rounded,
-                size: 18,
+                size: r.dp(18),
                 color: isActive ? mintGreen : Colors.grey.shade400,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: r.w(12)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -671,16 +673,16 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: r.sp(13.5),
                         fontWeight: FontWeight.w600,
                         color: isActive ? Colors.white : const Color(0xFF374151),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: r.h(2)),
                     Text(
                       time,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: r.sp(11),
                         color: isActive ? Colors.white.withValues(alpha: 0.5) : Colors.grey.shade400,
                       ),
                     ),
@@ -691,10 +693,10 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
               GestureDetector(
                 onTap: () => _deleteConversation(conv['id']),
                 child: Padding(
-                  padding: const EdgeInsets.all(4),
+                  padding: EdgeInsets.all(r.dp(4)),
                   child: Icon(
                     Icons.close_rounded,
-                    size: 16,
+                    size: r.dp(16),
                     color: isActive ? Colors.white.withValues(alpha: 0.4) : Colors.grey.shade300,
                   ),
                 ),
@@ -710,43 +712,43 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
   // EMPTY STATE
   // ═══════════════════════════════════════════
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(Responsive r) {
     return FadeTransition(
       opacity: _animController,
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(r.dp(24)),
         child: Column(
           children: [
-            const SizedBox(height: 32),
+            SizedBox(height: r.h(32)),
             // Hero illustration
             Container(
-              width: 88,
-              height: 88,
+              width: r.w(88),
+              height: r.h(88),
               decoration: BoxDecoration(
                 color: darkCard,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(r.dp(28)),
                 boxShadow: [
                   BoxShadow(
                     color: darkCard.withValues(alpha: 0.3),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
+                    blurRadius: r.dp(24),
+                    offset: Offset(r.w(0), r.h(10)),
                   ),
                 ],
               ),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Icon(Icons.stars_rounded, color: mintGreen, size: 40),
+                  Icon(Icons.stars_rounded, color: mintGreen, size: r.dp(40)),
                   Positioned(
                     right: 12, top: 12,
                     child: Container(
-                      width: 12, height: 12,
+                      width: r.w(12), height: r.h(12),
                       decoration: BoxDecoration(
                         color: mintGreen,
                         shape: BoxShape.circle,
                         boxShadow: [
-                          BoxShadow(color: mintGreen.withValues(alpha: 0.6), blurRadius: 8),
+                          BoxShadow(color: mintGreen.withValues(alpha: 0.6), blurRadius: r.dp(8)),
                         ],
                       ),
                     ),
@@ -754,56 +756,56 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: r.h(24)),
+            Text(
               'Hi! I\'m Neuro',
               style: TextStyle(
-                fontSize: 26,
+                fontSize: r.sp(26),
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF1A1A1A),
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: r.h(8)),
             Text(
               'Your personal AI health companion.\nAsk about your results, brain health, or wellness tips.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14.5,
+                fontSize: r.sp(14.5),
                 color: Colors.grey.shade600,
-                height: 1.5,
+                height: r.h(1.5),
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: r.h(32)),
 
             // Info card
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(r.dp(16)),
               decoration: BoxDecoration(
                 color: mintGreen.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.dp(16)),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 36, height: 36,
+                    width: r.w(36), height: r.h(36),
                     decoration: BoxDecoration(
                       color: mintGreen,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(r.dp(10)),
                     ),
-                    child: const Icon(Icons.shield_outlined, size: 18, color: Color(0xFF1A1A1A)),
+                    child: Icon(Icons.shield_outlined, size: r.dp(18), color: Color(0xFF1A1A1A)),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: r.w(12)),
                   Expanded(
                     child: Text(
                       'Neuro uses your test data for personalized responses. Your conversations are private.',
-                      style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700, height: 1.4),
+                      style: TextStyle(fontSize: r.sp(12.5), color: Colors.grey.shade700, height: r.h(1.4)),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 28),
+            SizedBox(height: r.h(28)),
 
             // Suggestions
             Align(
@@ -811,19 +813,19 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
               child: Text(
                 'SUGGESTED QUESTIONS',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: r.sp(11),
                   fontWeight: FontWeight.w700,
                   color: Colors.grey.shade400,
                   letterSpacing: 1.2,
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: r.h(14)),
             ...List.generate(_suggestions.length, (i) {
               final s = _suggestions[i];
               return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _buildSuggestionTile(
+                padding: EdgeInsets.only(bottom: r.h(10)),
+                child: _buildSuggestionTile(r, 
                   s['text'] as String,
                   s['icon'] as IconData,
                   s['color'] as Color,
@@ -836,40 +838,40 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
     );
   }
 
-  Widget _buildSuggestionTile(String text, IconData icon, Color color) {
+  Widget _buildSuggestionTile(Responsive r, String text, IconData icon, Color color) {
     return GestureDetector(
       onTap: () => _sendMessage(text),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(14)),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(r.dp(16)),
           border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+              blurRadius: r.dp(10),
+              offset: Offset(r.w(0), r.h(2)),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 36, height: 36,
+              width: r.w(36), height: r.h(36),
               decoration: BoxDecoration(
                 color: color,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(r.dp(10)),
               ),
-              child: Icon(icon, size: 18, color: const Color(0xFF374151)),
+              child: Icon(icon, size: r.dp(18), color: Color(0xFF374151)),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: r.w(14)),
             Expanded(
               child: Text(text,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF374151)),
+                style: TextStyle(fontSize: r.sp(14), fontWeight: FontWeight.w500, color: Color(0xFF374151)),
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey.shade300),
+            Icon(Icons.arrow_forward_ios_rounded, size: r.dp(14), color: Colors.grey.shade300),
           ],
         ),
       ),
@@ -880,7 +882,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
   // MESSAGES
   // ═══════════════════════════════════════════
 
-  Widget _buildMessageList() {
+  Widget _buildMessageList(Responsive r) {
     return ListView.builder(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(),
@@ -888,40 +890,40 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
       itemCount: _messages.length + (_isSending ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == _messages.length && _isSending) {
-          return _buildTypingIndicator();
+          return _buildTypingIndicator(r);
         }
-        return _buildMessageBubble(_messages[index]);
+        return _buildMessageBubble(r, _messages[index]);
       },
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessageBubble(Responsive r, ChatMessage message) {
     final isUser = message.role == 'user';
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: r.h(14)),
       child: Row(
         mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
             Container(
-              width: 34, height: 34,
-              margin: const EdgeInsets.only(top: 2),
+              width: r.w(34), height: r.h(34),
+              margin: EdgeInsets.only(top: r.h(2)),
               decoration: BoxDecoration(
                 color: darkCard,
-                borderRadius: BorderRadius.circular(11),
+                borderRadius: BorderRadius.circular(r.dp(11)),
               ),
-              child: const Icon(Icons.stars_rounded, color: Color(0xFFB8E8D1), size: 17),
+              child: Icon(Icons.stars_rounded, color: Color(0xFFB8E8D1), size: r.dp(17)),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: r.w(10)),
           ],
           Flexible(
             child: Container(
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.78,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+              padding: EdgeInsets.symmetric(horizontal: r.w(16), vertical: r.h(13)),
               decoration: BoxDecoration(
                 color: isUser ? darkCard : Colors.white,
                 borderRadius: BorderRadius.only(
@@ -933,8 +935,8 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: isUser ? 0.12 : 0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
+                    blurRadius: r.dp(12),
+                    offset: Offset(r.w(0), r.h(3)),
                   ),
                 ],
               ),
@@ -943,10 +945,10 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                 children: [
                   if (!isUser)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
+                      padding: EdgeInsets.only(bottom: r.h(4)),
                       child: Text('Neuro',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: r.sp(11),
                           fontWeight: FontWeight.w700,
                           color: Colors.grey.shade400,
                           letterSpacing: 0.3,
@@ -956,9 +958,9 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                   SelectableText(
                     message.content,
                     style: TextStyle(
-                      fontSize: 14.5,
+                      fontSize: r.sp(14.5),
                       color: isUser ? Colors.white : const Color(0xFF1F2937),
-                      height: 1.55,
+                      height: r.h(1.55),
                     ),
                   ),
                 ],
@@ -970,24 +972,24 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
     );
   }
 
-  Widget _buildTypingIndicator() {
+  Widget _buildTypingIndicator(Responsive r) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: r.h(14)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 34, height: 34,
-            margin: const EdgeInsets.only(top: 2),
+            width: r.w(34), height: r.h(34),
+            margin: EdgeInsets.only(top: r.h(2)),
             decoration: BoxDecoration(
               color: darkCard,
-              borderRadius: BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(r.dp(11)),
             ),
-            child: const Icon(Icons.stars_rounded, color: Color(0xFFB8E8D1), size: 17),
+            child: Icon(Icons.stars_rounded, color: Color(0xFFB8E8D1), size: r.dp(17)),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: r.w(10)),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(16)),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: const BorderRadius.only(
@@ -999,8 +1001,8 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
+                  blurRadius: r.dp(12),
+                  offset: Offset(r.w(0), r.h(3)),
                 ),
               ],
             ),
@@ -1018,7 +1020,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
   // INPUT BAR
   // ═══════════════════════════════════════════
 
-  Widget _buildInputBar() {
+  Widget _buildInputBar(Responsive r) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       decoration: BoxDecoration(
@@ -1026,7 +1028,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
+            blurRadius: r.dp(10),
             offset: const Offset(0, -2),
           ),
         ],
@@ -1037,7 +1039,7 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(r.dp(22)),
               ),
               child: TextField(
                 controller: _messageController,
@@ -1045,32 +1047,32 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                 textCapitalization: TextCapitalization.sentences,
                 maxLines: 4,
                 minLines: 1,
-                style: const TextStyle(fontSize: 15, color: Color(0xFF1F2937)),
+                style: TextStyle(fontSize: r.sp(15), color: Color(0xFF1F2937)),
                 decoration: InputDecoration(
                   hintText: 'Ask Neuro anything...',
-                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14.5),
+                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: r.sp(14.5)),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  contentPadding: EdgeInsets.symmetric(horizontal: r.w(20), vertical: r.h(12)),
                 ),
                 onSubmitted: (_) => _sendMessage(_messageController.text),
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: r.w(10)),
           GestureDetector(
             onTap: _isSending ? null : () => _sendMessage(_messageController.text),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 46,
-              height: 46,
+              width: r.w(46),
+              height: r.h(46),
               decoration: BoxDecoration(
                 color: _isSending ? Colors.grey.shade300 : darkCard,
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(r.dp(15)),
               ),
               child: Icon(
                 _isSending ? Icons.more_horiz_rounded : Icons.arrow_upward_rounded,
                 color: Colors.white,
-                size: 22,
+                size: r.dp(22),
               ),
             ),
           ),
@@ -1107,34 +1109,34 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
     }
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(Responsive r) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(
         color: navBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(r.dp(24)),
         border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: r.dp(20),
+            offset: Offset(r.w(0), r.h(4)),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(12)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(0, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
-              _buildNavItem(4, Icons.description_outlined, 'Reports'),
-              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
+              _buildNavItem(r, 0, Icons.home_rounded, 'Home'),
+              _buildNavItem(r, 1, Icons.assignment_outlined, 'Tests'),
+              _buildNavItem(r, 2, Icons.auto_awesome_rounded, 'XAI'),
+              _buildNavItem(r, 3, Icons.stars_rounded, 'Neuro'),
+              _buildNavItem(r, 4, Icons.description_outlined, 'Reports'),
+              _buildNavItem(r, 5, Icons.person_outline_rounded, 'Profile'),
             ],
           ),
         ),
@@ -1142,25 +1144,25 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(Responsive r, int index, IconData icon, String label) {
     final isSelected = _selectedNavIndex == index;
     return GestureDetector(
       onTap: () => _onNavItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(10)),
         decoration: BoxDecoration(
           color: isSelected ? darkCard : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(r.dp(16)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: isSelected ? Colors.white : Colors.black38, size: 22),
+            Icon(icon, color: isSelected ? Colors.white : Colors.black38, size: r.dp(22)),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: r.w(8)),
               Text(label,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ],
           ],
@@ -1211,7 +1213,7 @@ class _BouncingDotState extends State<_BouncingDot>
       builder: (context, child) {
         final bounce = math.sin(_ctrl.value * math.pi * 2) * 4;
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 3),
+          margin: EdgeInsets.symmetric(horizontal: 3),
           child: Transform.translate(
             offset: Offset(0, -bounce.abs()),
             child: Container(

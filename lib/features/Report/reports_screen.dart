@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/responsive.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -219,6 +220,8 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final r = Responsive(context);
+
     if (_isLoading) {
       return Scaffold(
         backgroundColor: bgColor,
@@ -226,33 +229,33 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
           child: ShimmerLoading(
             child: SingleChildScrollView(
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: r.w(20)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
+                  SizedBox(height: r.h(16)),
                   // Header
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
-                    SkeletonLine(width: 120, height: 22),
-                    SkeletonCircle(size: 40),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    SkeletonLine(width: r.w(120), height: r.h(22)),
+                    SkeletonCircle(size: r.dp(40)),
                   ]),
-                  const SizedBox(height: 8),
-                  const SkeletonLine(width: 200, height: 14),
-                  const SizedBox(height: 24),
+                  SizedBox(height: r.h(8)),
+                  SkeletonLine(width: r.w(200), height: r.h(14)),
+                  SizedBox(height: r.h(24)),
                   // Stats row
-                  Row(children: const [
-                    Expanded(child: SkeletonBox(width: double.infinity, height: 80, borderRadius: 16)),
-                    SizedBox(width: 12),
-                    Expanded(child: SkeletonBox(width: double.infinity, height: 80, borderRadius: 16)),
+                  Row(children: [
+                    Expanded(child: SkeletonBox(width: double.infinity, height: r.h(80), borderRadius: r.w(16))),
+                    SizedBox(width: r.w(12)),
+                    Expanded(child: SkeletonBox(width: double.infinity, height: r.h(80), borderRadius: r.w(16))),
                   ]),
-                  const SizedBox(height: 24),
+                  SizedBox(height: r.h(24)),
                   // Report list
                   const SkeletonListTile(),
                   const SkeletonListTile(),
                   const SkeletonListTile(),
                   const SkeletonListTile(),
                   const SkeletonListTile(),
-                  const SizedBox(height: 24),
+                  SizedBox(height: r.h(24)),
                 ],
               ),
             ),
@@ -272,16 +275,16 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20),
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-                    _buildStatsCard(),
-                    const SizedBox(height: 24),
+                    SizedBox(height: r.h(20)),
+                    _buildHeader(r),
+                    SizedBox(height: r.h(24)),
+                    _buildStatsCard(r),
+                    SizedBox(height: r.h(24)),
                     if (reports.isEmpty)
-                      _buildEmptyState()
+                      _buildEmptyState(r)
                     else
-                      _buildReportsList(),
-                    const SizedBox(height: 100),
+                      _buildReportsList(r),
+                    SizedBox(height: r.h(100)),
                   ],
                 ),
               ),
@@ -289,15 +292,15 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildBottomNav(r),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Responsive r) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -305,20 +308,20 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'My Reports',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: r.sp(28),
                       fontWeight: FontWeight.w800,
                       color: Colors.black87,
                       letterSpacing: -1,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: r.h(6)),
                   Text(
                     'Reports shared by your doctor',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: r.sp(14),
                       fontWeight: FontWeight.w500,
                       color: Colors.black.withOpacity(0.5),
                     ),
@@ -326,18 +329,18 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: r.w(12)),
             Container(
-              width: 48,
-              height: 48,
+              width: r.dp(48),
+              height: r.dp(48),
               decoration: BoxDecoration(
                 color: darkCard,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(r.w(16)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.description_rounded,
                 color: Colors.white,
-                size: 24,
+                size: r.dp(24),
               ),
             ),
           ],
@@ -346,7 +349,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildStatsCard() {
+  Widget _buildStatsCard(Responsive r) {
     // Calculate dynamic stats
     final totalReports = reports.length;
     
@@ -377,12 +380,12 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     return _buildAnimatedWidget(
       delay: 0.1,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: r.w(20)),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(r.w(20)),
           decoration: BoxDecoration(
             color: darkCard,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(r.w(24)),
             boxShadow: [
               BoxShadow(
                 color: darkCard.withOpacity(0.3),
@@ -400,42 +403,42 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
                   Text(
                     'Total Reports Received',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: r.sp(13),
                       fontWeight: FontWeight.w500,
                       color: Colors.white.withOpacity(0.6),
                     ),
                   ),
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: r.dp(40),
+                    height: r.dp(40),
                     decoration: BoxDecoration(
                       color: mintGreen,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(r.w(12)),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.insert_chart_rounded,
                       color: Colors.black87,
-                      size: 20,
+                      size: r.dp(20),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: r.h(8)),
               Text(
                 '$totalReports',
-                style: const TextStyle(
-                  fontSize: 48,
+                style: TextStyle(
+                  fontSize: r.sp(48),
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: -2,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: r.h(16)),
               Row(
                 children: [
-                  _buildMiniStat('This Month', '$thisMonthReports', mintGreen),
-                  const SizedBox(width: 16),
-                  _buildMiniStat('Available', '$availableReports', softLavender),
+                  _buildMiniStat('This Month', '$thisMonthReports', mintGreen, r),
+                  SizedBox(width: r.w(16)),
+                  _buildMiniStat('Available', '$availableReports', softLavender, r),
                 ],
               ),
             ],
@@ -445,7 +448,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildMiniStat(String label, String value, Color bgColor) {
+  Widget _buildMiniStat(String label, String value, Color bgColor, Responsive r) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -477,7 +480,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(Responsive r) {
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Center(
@@ -511,7 +514,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildReportsList() {
+  Widget _buildReportsList(Responsive r) {
     return Column(
       children: reports.asMap().entries.map((entry) {
         int index = entry.key;
@@ -799,7 +802,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
   }
 
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(Responsive r) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(
