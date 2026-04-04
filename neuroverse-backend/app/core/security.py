@@ -29,12 +29,17 @@ security = HTTPBearer()
 
 
 # ==================== PASSWORD ====================
+def _truncate(password: str) -> str:
+    """Bcrypt only uses the first 72 bytes — truncate to avoid errors."""
+    return password[:72]
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(_truncate(plain_password), hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return pwd_context.hash(_truncate(password))
 
 
 # ==================== JWT ====================
