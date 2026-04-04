@@ -1,5 +1,7 @@
 [build]
+builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
+watchPatterns = ["app/**", "requirements.txt", "Dockerfile"]
 
 [deploy]
 healthcheckPath = "/health"
