@@ -25,7 +25,7 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.1-70b-versatile"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 # System prompt that makes the LLM a neuro health companion
 SYSTEM_PROMPT = """You are Neuro, an AI health companion inside the NeuroVerse app — a smartphone-based multimodal screening platform for Alzheimer's Disease (AD) and Parkinson's Disease (PD).
