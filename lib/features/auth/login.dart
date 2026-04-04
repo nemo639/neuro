@@ -642,46 +642,33 @@ bool _validateEmailSimple(String email) {
       delay: 0.0,
       child: Center(
         child: Container(
-          width: r.dp(72),
-          height: r.dp(72),
+          width: r.dp(44),
+          height: r.dp(44),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(r.w(20)),
+            borderRadius: BorderRadius.circular(r.dp(14)),
             border: Border.all(color: Colors.black.withOpacity(0.08)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: r.dp(16),
-                offset: Offset(0, r.h(6)),
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: r.dp(8),
+                offset: Offset(0, r.h(2)),
               ),
             ],
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Animated pulse ring
-              AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) {
-                  return Container(
-                    width: r.dp(48) + (_pulseController.value * r.dp(8)),
-                    height: r.dp(48) + (_pulseController.value * r.dp(8)),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF10B981).withOpacity(0.25 - _pulseController.value * 0.2),
-                        width: 1.5,
-                      ),
-                    ),
-                  );
-                },
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: EdgeInsets.all(r.dp(4)),
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Center(
+                child: CustomPaint(
+                  size: Size(r.dp(24), r.dp(24)),
+                  painter: _LoginBrainIconPainter(),
+                ),
               ),
-              // Brain icon (matching home header style)
-              CustomPaint(
-                size: Size(r.dp(36), r.dp(36)),
-                painter: _LoginBrainIconPainter(),
-              ),
-            ],
+            ),
           ),
         ),
       ),
