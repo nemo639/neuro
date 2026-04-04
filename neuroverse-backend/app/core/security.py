@@ -11,8 +11,8 @@ from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, OAuth2PasswordBearer
+import bcrypt as _bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -23,23 +23,19 @@ from app.models.doctor_model import Doctor
 from app.models.user import User
 
 # ==================== SETUP ====================
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 security = HTTPBearer()
 
 
 # ==================== PASSWORD ====================
-def _truncate(password: str) -> str:
-    """Bcrypt only uses the first 72 bytes — truncate to avoid errors."""
-    return password[:72]
-
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(_truncate(plain_password), hashed_password)
+    pw = plain_password.encode("utf-8")[:72]
+    return _bcrypt.checkpw(pw, hashed_password.encode("utf-8"))
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(_truncate(password))
+    pw = password.encode("utf-8")[:72]
+    return _bcrypt.hashpw(pw, _bcrypt.gensalt()).decode("utf-8")
 
 
 # ==================== JWT ====================
