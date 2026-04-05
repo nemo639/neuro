@@ -8,9 +8,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiService {
 
   static String get baseUrl {
-  // ngrok tunnel → forwards to localhost:8000
-  // Update URL when ngrok restarts (free plan gives new URL)
-  const url = 'https://phenological-briana-frondescent.ngrok-free.dev';
+  // Railway production server (permanent URL)
+  const url = 'https://neuro-production-8577.up.railway.app';
   return url;
 }
 
@@ -714,7 +713,7 @@ static const _storage = FlutterSecureStorage();
   static Future<Map<String, dynamic>> getNotifications({int limit = 20}) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl$apiVersion/notifications?limit=$limit'),
+        Uri.parse('$baseUrl$apiVersion/notifications/?limit=$limit'),
         headers: _headers,
       );
       return _handleResponse(response);

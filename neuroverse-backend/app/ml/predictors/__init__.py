@@ -19,27 +19,25 @@ def _init_predictors():
         return
     _initialized = True
 
-    try:
-        from app.ml.predictors.speech_predictor import SpeechPredictor
-        from app.ml.predictors.cognitive_predictor import CognitivePredictor
-        from app.ml.predictors.motor_predictor import MotorPredictor
-        from app.ml.predictors.facial_predictor import FacialPredictor
-        from app.ml.predictors.gait_predictor import GaitPredictor
+    # Load each predictor independently so one failure doesn't break others
+    _predictor_imports = {
+        "speech": ("app.ml.predictors.speech_predictor", "SpeechPredictor"),
+        "cognitive": ("app.ml.predictors.cognitive_predictor", "CognitivePredictor"),
+        "motor": ("app.ml.predictors.motor_predictor", "MotorPredictor"),
+        "facial": ("app.ml.predictors.facial_predictor", "FacialPredictor"),
+        "gait": ("app.ml.predictors.gait_predictor", "GaitPredictor"),
+    }
 
-        _PREDICTORS.update({
-            "speech": SpeechPredictor(),
-            "cognitive": CognitivePredictor(),
-            "motor": MotorPredictor(),
-            "facial": FacialPredictor(),
-            "gait": GaitPredictor(),
-        })
-
-        # Attempt to load model weights
-        for name, pred in _PREDICTORS.items():
+    for category, (module_path, class_name) in _predictor_imports.items():
+        try:
+            import importlib
+            module = importlib.import_module(module_path)
+            predictor_class = getattr(module, class_name)
+            pred = predictor_class()
             pred.load()
-
-    except ImportError as exc:
-        logger.warning("ML predictors unavailable (missing dependency: %s). Using heuristic-only mode.", exc)
+            _PREDICTORS[category] = pred
+        except Exception as exc:
+            logger.warning("Predictor '%s' unavailable: %s. Heuristic fallback will be used.", category, exc)
 
 
 class _HeuristicFallback:
