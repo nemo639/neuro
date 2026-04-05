@@ -114,6 +114,12 @@ class SHAPExplainer:
             "drawing_tremor_score", "drawing_speed_variability",
             "jitter", "shimmer", "balance_sway",
             "hypomimia_score", "muscle_tone",
+            # Motor extended
+            "meander_tremor", "meander_deviation",
+            "tremor_amplitude", "tremor_rms", "tremor_jerk",
+            "tremor_gyro_rms", "tremor_pd_freq_match", "tremor_asymmetry",
+            "spiral_tremor_score", "meander_tremor_score",
+            "tapping_asymmetry",
         }
         pd_negative = {
             "tapping_rate", "tapping_regularity", "vowel_stability",
@@ -121,6 +127,8 @@ class SHAPExplainer:
             "hnr", "blink_rate", "smile_velocity", "smile_intensity",
             "smile_symmetry", "expression_range", "facial_symmetry",
             "facial_expressivity", "symmetry_composite",
+            # Motor extended
+            "meander_smoothness",
         }
 
         skip = {"category", "items_processed"}
@@ -175,6 +183,14 @@ class SHAPExplainer:
             "muscle_tone": (0, 100), "facial_expressivity": (0, 100),
             "symmetry_composite": (0, 100),
             "avg_blink_duration_ms": (50, 500),
+            # Motor extended
+            "meander_tremor": (0, 1), "meander_deviation": (0, 1),
+            "meander_smoothness": (0, 1), "spiral_tightness": (0, 1),
+            "tremor_amplitude": (0, 2), "tremor_rms": (0, 5),
+            "tremor_jerk": (0, 10), "tremor_gyro_rms": (0, 5),
+            "tremor_frequency": (0, 12), "tremor_pd_freq_match": (0, 1),
+            "tremor_asymmetry": (0, 1), "tapping_asymmetry": (0, 1),
+            "spiral_tremor_score": (0, 1), "meander_tremor_score": (0, 1),
         }
         if key in ranges:
             lo, hi = ranges[key]

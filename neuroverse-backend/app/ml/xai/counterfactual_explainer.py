@@ -212,6 +212,8 @@ class CounterfactualExplainer:
         not_modifiable = {
             "tmt_a_time", "tmt_b_time", "jitter", "shimmer",
             "spiral_tremor", "spiral_deviation",
+            "meander_tremor", "meander_deviation",
+            "tremor_amplitude", "tremor_rms", "tremor_jerk",
         }
 
         if feature in modifiable:

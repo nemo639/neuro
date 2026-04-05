@@ -177,11 +177,16 @@ class SaliencyGenerator:
 
         feature_bars = []
         motor_features = {
+            "Tremor Amplitude": features.get("tremor_amplitude", 0),
+            "Spiral Tremor": features.get("spiral_tremor", 0),
+            "Meander Tremor": features.get("meander_tremor", 0),
+            "Spiral Deviation": features.get("spiral_deviation", 0),
+            "Meander Deviation": features.get("meander_deviation", 0),
+            "Spiral Tightness": features.get("spiral_tightness", 0),
+            "Meander Smoothness": features.get("meander_smoothness", 0),
             "Tapping Rate": features.get("tapping_rate", 0),
             "Tapping Regularity": features.get("tapping_regularity", 0),
             "Motor Fatigue": features.get("tapping_fatigue", 0),
-            "Tremor Score": features.get("drawing_tremor_score", 0),
-            "Speed Variability": features.get("drawing_speed_variability", 0),
         }
         for name, val in motor_features.items():
             feature_bars.append({"feature": name, "weight": round(float(val), 4)})
@@ -190,7 +195,25 @@ class SaliencyGenerator:
         if features.get("spiral_tremor", 0) > 0.5:
             highlights.append({
                 "type": "tremor_detected",
-                "description": "Tremor pattern identified in drawing trajectory",
+                "description": "Tremor pattern identified in spiral drawing",
+                "severity": "warning",
+            })
+        if features.get("meander_tremor", 0) > 0.5:
+            highlights.append({
+                "type": "meander_tremor",
+                "description": "Tremor pattern identified in meander drawing",
+                "severity": "warning",
+            })
+        if features.get("tremor_amplitude", 0) > 0.5:
+            highlights.append({
+                "type": "resting_tremor",
+                "description": "Elevated resting tremor detected from accelerometer",
+                "severity": "warning",
+            })
+        if features.get("tremor_pd_freq_match", 0) > 0.5:
+            highlights.append({
+                "type": "pd_frequency",
+                "description": "Tremor frequency (4-6 Hz) matches Parkinsonian pattern",
                 "severity": "warning",
             })
         if features.get("tapping_fatigue", 0) > 0.4:

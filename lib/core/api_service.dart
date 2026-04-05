@@ -475,7 +475,7 @@ static const _storage = FlutterSecureStorage();
       final response = await http.post(
         Uri.parse('$baseUrl$apiVersion/tests/$sessionId/complete'),
         headers: _headers,
-      );
+      ).timeout(const Duration(seconds: 120));
       return _handleResponse(response);
     } catch (e) {
       return {'success': false, 'error': 'Connection failed: $e'};

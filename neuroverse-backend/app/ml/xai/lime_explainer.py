@@ -192,8 +192,13 @@ class LIMEExplainer:
             # Motor
             "tapping_rate": -0.6, "tapping_regularity": -0.5, "tapping_fatigue": 0.5,
             "spiral_tremor": 0.7, "spiral_deviation": 0.4,
-            # Gait
-            "step_regularity": -0.5, "gait_speed": -0.4, "balance_stability": -0.5,
+            "meander_tremor": 0.7, "meander_deviation": 0.4, "meander_smoothness": -0.5,
+            "spiral_tightness": -0.5, "tremor_amplitude": 0.8, "tremor_rms": 0.6,
+            "tremor_jerk": 0.5, "tremor_gyro_rms": 0.5, "tremor_frequency": 0.3,
+            "tremor_pd_freq_match": 0.8, "tremor_asymmetry": 0.4,
+            "spiral_tremor_score": 0.7, "meander_tremor_score": 0.7,
+            "tapping_asymmetry": 0.4,
+            "drawing_tremor_score": 0.6, "drawing_speed_variability": 0.4,
             # Facial
             "blink_rate": -0.4, "smile_velocity": -0.5, "smile_intensity": -0.5,
             "smile_symmetry": -0.3, "expression_range": -0.5,
