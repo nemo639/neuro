@@ -9,7 +9,7 @@ class ApiService {
 
   static String get baseUrl {
   // Railway production server (permanent URL)
-  const url = 'https://neuro-production-8577.up.railway.app';
+  const url = 'https://neuroverse-backend-1062386359354.us-central1.run.app';
   return url;
 }
 
