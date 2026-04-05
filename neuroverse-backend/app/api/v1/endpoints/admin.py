@@ -1084,7 +1084,6 @@ async def get_analytics(
         "cognitive": "Cognitive",
         "speech": "Speech",
         "motor": "Motor",
-        "gait": "Gait",
         "facial": "Facial",
     }
     assessment_data = []

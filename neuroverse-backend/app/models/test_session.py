@@ -14,7 +14,6 @@ class TestCategory(str, enum.Enum):
     COGNITIVE = "cognitive"
     SPEECH = "speech"
     MOTOR = "motor"
-    GAIT = "gait"
     FACIAL = "facial"
 
 
@@ -31,7 +30,7 @@ class TestSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    # Category: cognitive, speech, motor, gait, facial
+    # Category: cognitive, speech, motor, facial
     category = Column(String, nullable=False, index=True)
 
     # Status tracking

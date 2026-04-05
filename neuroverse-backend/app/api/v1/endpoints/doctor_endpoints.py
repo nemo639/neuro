@@ -387,7 +387,6 @@ async def _build_dashboard_analytics(db: AsyncSession):
         "cognitive": "#C6E94B",
         "speech": "#6366F1",
         "motor": "#A855F7",
-        "gait": "#FB923C",
         "facial": "#EC4899",
     }
     cat_rows = (await db.execute(

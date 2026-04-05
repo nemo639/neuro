@@ -527,8 +527,6 @@ class FusionService:
             results = await self._assess_speech(features)
         elif category == "motor":
             results = await self._assess_motor(features)
-        elif category == "gait":
-            results = await self._assess_gait(features)
         elif category == "facial":
             results = await self._assess_facial(features)
         else:

@@ -441,7 +441,6 @@ CATEGORY_DISPLAY = {
     "speech": "Speech & Language",
     "motor": "Motor Functions",
     "facial": "Facial Analysis",
-    "gait": "Gait & Movement",
 }
 
 

@@ -25,7 +25,6 @@ def _init_predictors():
         "cognitive": ("app.ml.predictors.cognitive_predictor", "CognitivePredictor"),
         "motor": ("app.ml.predictors.motor_predictor", "MotorPredictor"),
         "facial": ("app.ml.predictors.facial_predictor", "FacialPredictor"),
-        "gait": ("app.ml.predictors.gait_predictor", "GaitPredictor"),
     }
 
     for category, (module_path, class_name) in _predictor_imports.items():

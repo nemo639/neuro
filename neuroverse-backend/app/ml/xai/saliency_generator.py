@@ -47,8 +47,6 @@ class SaliencyGenerator:
             return self._cognitive_saliency(features, predictions)
         elif category == "motor":
             return self._motor_saliency(features, predictions, model, input_tensor)
-        elif category == "gait":
-            return self._gait_saliency(features, predictions)
         elif category == "facial":
             return self._facial_saliency(features, predictions)
         return None

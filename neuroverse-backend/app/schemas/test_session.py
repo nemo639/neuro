@@ -14,7 +14,6 @@ class TestCategory(str, Enum):
     COGNITIVE = "cognitive"
     SPEECH = "speech"
     MOTOR = "motor"
-    GAIT = "gait"
     FACIAL = "facial"
 
 

@@ -356,7 +356,7 @@ class DatasetRequestCreate(BaseModel):
     purpose: str
     research_title: Optional[str] = None
     institution: Optional[str] = None
-    data_types: List[str] = ["cognitive", "motor", "speech", "gait", "facial"]
+    data_types: List[str] = ["cognitive", "motor", "speech", "facial"]
     date_range_start: Optional[datetime] = None
     date_range_end: Optional[datetime] = None
     min_samples: int = Field(default=100, ge=10, le=10000)
