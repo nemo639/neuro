@@ -25,23 +25,38 @@ from app.ml.predictors.base_predictor import BasePredictor, MODELS_DIR, torch_av
 
 logger = logging.getLogger(__name__)
 
-# Feature order must match training. These are the AU+landmark features
-# extracted by FacialExtractor in the same order as UFNet training.
+# Feature order must match training exactly (from facial_model_info.txt).
+# These are the 42 smile task AU features from UFNet training.
 FACIAL_FEATURE_KEYS = [
-    "au01_mean", "au01_var", "au01_entropy",
-    "au06_mean", "au06_var", "au06_entropy",
-    "au12_mean", "au12_var", "au12_entropy",
-    "au25_mean", "au25_var", "au25_entropy",
-    "au45_mean", "au45_var", "au45_entropy",
-    "eye_open_mean", "eye_raise_mean",
-    "mouth_open_mean", "mouth_width_mean",
-    "jaw_open_mean",
-    "blink_rate", "blink_count", "avg_blink_duration_ms",
-    "smile_velocity", "smile_symmetry", "smile_intensity",
-    "expression_range", "hypomimia_score",
-    "facial_symmetry", "muscle_tone",
-    "facial_expressivity", "symmetry_composite",
+    "smile_AU01_mean", "smile_AU01_var", "smile_AU01_entropy",
+    "smile_AU06_mean", "smile_AU06_var", "smile_AU06_entropy",
+    "smile_AU12_mean", "smile_AU12_var", "smile_AU12_entropy",
+    "smile_AU14_mean", "smile_AU14_var", "smile_AU14_entropy",
+    "smile_AU25_mean", "smile_AU25_var", "smile_AU25_entropy",
+    "smile_AU26_mean", "smile_AU26_var", "smile_AU26_entropy",
+    "smile_AU45_mean", "smile_AU45_var", "smile_AU45_entropy",
+    "smile_eye-open-right_mean", "smile_eye-open-right_var", "smile_eye-open-right_entropy",
+    "smile_eye-open-left_mean", "smile_eye-open-left_var", "smile_eye-open-left_entropy",
+    "smile_eye-raise-right_mean", "smile_eye-raise-right_var", "smile_eye-raise-right_entropy",
+    "smile_eye-raise-left_mean", "smile_eye-raise-left_var", "smile_eye-raise-left_entropy",
+    "smile_mouth-open_mean", "smile_mouth-open_var", "smile_mouth-open_entropy",
+    "smile_mouth-width_mean", "smile_mouth-width_var", "smile_mouth-width_entropy",
+    "smile_jaw-open_mean", "smile_jaw-open_var", "smile_jaw-open_entropy",
 ]
+
+# Mapping from extractor feature names to training feature names
+_EXTRACTOR_TO_TRAINING = {
+    "au01_mean": "smile_AU01_mean", "au01_var": "smile_AU01_var", "au01_entropy": "smile_AU01_entropy",
+    "au06_mean": "smile_AU06_mean", "au06_var": "smile_AU06_var", "au06_entropy": "smile_AU06_entropy",
+    "au12_mean": "smile_AU12_mean", "au12_var": "smile_AU12_var", "au12_entropy": "smile_AU12_entropy",
+    "au25_mean": "smile_AU25_mean", "au25_var": "smile_AU25_var", "au25_entropy": "smile_AU25_entropy",
+    "au45_mean": "smile_AU45_mean", "au45_var": "smile_AU45_var", "au45_entropy": "smile_AU45_entropy",
+    "eye_open_mean": "smile_eye-open-right_mean",
+    "eye_raise_mean": "smile_eye-raise-right_mean",
+    "mouth_open_mean": "smile_mouth-open_mean",
+    "mouth_width_mean": "smile_mouth-width_mean",
+    "jaw_open_mean": "smile_jaw-open_mean",
+}
 
 
 class ShallowANN(nn.Module):
@@ -132,10 +147,53 @@ class FacialPredictor(BasePredictor):
             return False
 
     def _prepare_features(self, features: dict) -> np.ndarray:
-        """Convert feature dict to numpy array in correct order."""
+        """Convert feature dict to numpy array in correct order.
+
+        Maps extractor feature names to training feature names,
+        and mirrors single-side values to left/right where needed.
+        """
+        # First, remap extractor keys to training keys
+        mapped = {}
+        for ext_key, train_key in _EXTRACTOR_TO_TRAINING.items():
+            if ext_key in features:
+                mapped[train_key] = features[ext_key]
+
+        # Mirror right→left for eye features (app doesn't distinguish sides)
+        for side_pair in [
+            ("smile_eye-open-right_", "smile_eye-open-left_"),
+            ("smile_eye-raise-right_", "smile_eye-raise-left_"),
+        ]:
+            for suffix in ("mean", "var", "entropy"):
+                r_key = side_pair[0] + suffix
+                l_key = side_pair[1] + suffix
+                if r_key in mapped and l_key not in mapped:
+                    mapped[l_key] = mapped[r_key]
+
+        # Fill variance/entropy for mouth/jaw from extractor if available
+        for base in ("mouth_open", "mouth_width", "jaw_open"):
+            ext_var = features.get(f"{base}_var", features.get(f"au25_var", 0.0))
+            ext_ent = features.get(f"{base}_entropy", features.get(f"au25_entropy", 0.0))
+            train_base = f"smile_{base.replace('_', '-')}"
+            if f"{train_base}_var" not in mapped:
+                mapped[f"{train_base}_var"] = float(ext_var)
+            if f"{train_base}_entropy" not in mapped:
+                mapped[f"{train_base}_entropy"] = float(ext_ent)
+
+        # AU14 (dimpler) ≈ smile symmetry inverse, AU26 (jaw drop) ≈ jaw_open
+        if "smile_AU14_mean" not in mapped:
+            sym = features.get("smile_symmetry", 85.0)
+            mapped["smile_AU14_mean"] = max(0, (100.0 - float(sym)) / 100.0)
+            mapped["smile_AU14_var"] = mapped.get("smile_AU12_var", 0.0)
+            mapped["smile_AU14_entropy"] = mapped.get("smile_AU12_entropy", 0.0)
+        if "smile_AU26_mean" not in mapped:
+            mapped["smile_AU26_mean"] = features.get("jaw_open_mean", mapped.get("smile_jaw-open_mean", 0.0))
+            mapped["smile_AU26_var"] = mapped.get("smile_jaw-open_var", 0.0)
+            mapped["smile_AU26_entropy"] = mapped.get("smile_jaw-open_entropy", 0.0)
+
+        # Build final array
         arr = np.zeros(self._n_features, dtype=np.float32)
         for i, key in enumerate(FACIAL_FEATURE_KEYS[:self._n_features]):
-            arr[i] = float(features.get(key, 0.0))
+            arr[i] = float(mapped.get(key, features.get(key, 0.0)))
 
         # Apply scaler if available
         if self._scaler is not None:
