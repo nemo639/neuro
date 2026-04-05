@@ -7,7 +7,7 @@ import 'package:neuroverse/core/responsive.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 
@@ -112,8 +112,8 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
 
     try {
       // Get auth token for authenticated download
-      const storage = FlutterSecureStorage();
-      final token = await storage.read(key: 'auth_token');
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
 
       final response = await http.get(
         Uri.parse(url),

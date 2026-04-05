@@ -20,6 +20,7 @@ from app.core.security import (
 )
 from app.core.config import settings
 from app.services.email_service import EmailService
+from app.services.notification_helper import notify_signup, notify_login
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
 
@@ -63,13 +64,20 @@ class AuthService:
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
-        
+
+        # Welcome notification
+        try:
+            await notify_signup(self.db, user.id, user.first_name)
+            await self.db.commit()
+        except Exception:
+            pass
+
         # Send OTP email (async, don't wait)
         try:
             await self.email_service.send_otp_email(user.email, otp, user.first_name)
         except Exception as e:
             print(f"Failed to send OTP email: {e}")
-        
+
         return user
     
     async def verify_otp(self, data: VerifyOTPRequest) -> User:
@@ -148,7 +156,14 @@ class AuthService:
         # Generate tokens
         access_token = create_access_token({"sub": str(user.id)})
         refresh_token = create_refresh_token({"sub": str(user.id)})
-        
+
+        # Login alert notification
+        try:
+            await notify_login(self.db, user.id, user.first_name)
+            await self.db.commit()
+        except Exception:
+            pass
+
         return user, access_token, refresh_token
 
     async def google_login(self, token: str) -> tuple[User, str, str]:
@@ -196,6 +211,13 @@ class AuthService:
 
         access_token = create_access_token({"sub": str(user.id)})
         refresh_token = create_refresh_token({"sub": str(user.id)})
+
+        # Login alert notification
+        try:
+            await notify_login(self.db, user.id, user.first_name)
+            await self.db.commit()
+        except Exception:
+            pass
 
         return user, access_token, refresh_token
 

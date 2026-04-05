@@ -12,6 +12,7 @@ import os
 
 from app.models.user import User
 from app.models.report import Report
+from app.services.notification_helper import notify_report_generated
 from app.models.test_session import TestSession
 from app.models.test_result import TestResult
 from app.schemas.report import (
@@ -320,9 +321,16 @@ class ReportService:
             # Update report
             report.pdf_path = filepath
             report.is_ready = True
-            
+
             await self.db.commit()
             await self.db.refresh(report)
+
+            # Notification for report ready
+            try:
+                await notify_report_generated(self.db, report.user_id, report.id)
+                await self.db.commit()
+            except Exception:
+                pass
             
         except Exception as e:
             print(f"Error generating PDF: {e}")

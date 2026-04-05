@@ -14,6 +14,7 @@ from app.models.user import User
 from app.models.test_session import TestSession, SessionStatus
 from app.models.test_item import TestItem
 from app.models.test_result import TestResult
+from app.services.notification_helper import notify_test_complete
 from app.schemas.test_session import (
     TestSessionCreate, TestSessionResponse, TestSessionDetailResponse,
     TestDashboardResponse, CategoryTestInfo
@@ -199,7 +200,14 @@ class TestService:
         
         await self.db.commit()
         await self.db.refresh(test_result)
-        
+
+        # Notification for test completion
+        try:
+            await notify_test_complete(self.db, user_id, session.category, session.id)
+            await self.db.commit()
+        except Exception:
+            pass
+
         return TestResultDetailResponse(
             id=test_result.id,
             session_id=test_result.session_id,
