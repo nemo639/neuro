@@ -202,10 +202,32 @@ class FacialPredictor(BasePredictor):
         return arr
 
     async def predict(self, features: Dict[str, Any]) -> Dict[str, Any]:
-        """Predict PD risk from facial analysis features."""
+        """Predict PD risk from facial analysis features.
+
+        The ShallowANN was trained on real Action Unit data from UFNet.
+        Flutter sends simplified metrics (blink_rate, smile_velocity, etc.)
+        which are approximated to AU format.  We use clinical heuristics
+        calibrated for the Flutter feature ranges, then blend with the
+        ML model output to get a more reliable prediction.
+        """
+        heuristic_result = self._heuristic(features)
+
         if self._loaded and self._model is not None:
-            return self._model_predict(features)
-        return self._heuristic(features)
+            ml_result = self._model_predict(features)
+            # Blend: 70% heuristic (calibrated for Flutter) + 30% ML model
+            blended_pd = heuristic_result["pd_risk"] * 0.7 + ml_result["pd_risk"] * 0.3
+            blended_ad = heuristic_result["ad_risk"] * 0.7 + ml_result["ad_risk"] * 0.3
+            return {
+                "ad_risk": round(blended_ad, 2),
+                "pd_risk": round(blended_pd, 2),
+                "confidence": round(ml_result["confidence"] * 0.6 + heuristic_result["confidence"] * 0.4, 3),
+                "classification": "PD" if blended_pd > 50 else "Healthy",
+                "class_probabilities": ml_result.get("class_probabilities", {}),
+                "source": "facial_model",
+                "model_ref": "facial",
+                "_xai_tensor": ml_result.get("_xai_tensor"),
+            }
+        return heuristic_result
 
     def _model_predict(self, features: dict) -> Dict[str, Any]:
         """Run ShallowANN inference."""
