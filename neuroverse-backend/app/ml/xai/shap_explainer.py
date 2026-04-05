@@ -116,6 +116,8 @@ class SHAPExplainer:
             "zcr_mean", "energy_std",
             # N-Back (higher false alarms = worse)
             "nback_false_alarms",
+            # TMT kinematics (higher = worse motor control)
+            "acceleration_std", "jerk_mean", "curvature_std",
         }
         ad_negative = {
             "stroop_accuracy", "nback_accuracy", "nback_dprime",
@@ -125,7 +127,7 @@ class SHAPExplainer:
             "speech_rate", "cognitive_composite", "speech_silence_ratio",
             # TMT (higher = better)
             "velocity_mean", "path_efficiency", "spatial_accuracy",
-            "straightness_ratio",
+            "straightness_ratio", "acceleration_mean", "curvature_mean",
             # CDT (higher = better)
             "shulman_score", "number_accuracy", "numbers_correct",
             "clock_contour", "hands_present",
@@ -141,7 +143,7 @@ class SHAPExplainer:
             # Motor extended
             "meander_tremor", "meander_deviation",
             "tremor_amplitude", "tremor_rms", "tremor_jerk",
-            "tremor_gyro_rms", "tremor_pd_freq_match", "tremor_asymmetry",
+            "tremor_gyro_rms", "tremor_pd_freq_match", "tremor_asymmetry", "tremor_frequency",
             "spiral_tremor_score", "meander_tremor_score",
             "tapping_asymmetry",
         }
@@ -212,7 +214,11 @@ class SHAPExplainer:
             "tmt_a_time": (20, 120), "tmt_b_time": (40, 300),
             "tmt_ba_ratio": (1, 5), "time_per_circle_a": (1, 10),
             "time_per_circle_b": (2, 20), "errors_a": (0, 5), "errors_b": (0, 10),
-            "sequence_errors_b": (0, 5), "velocity_mean": (0, 200),
+            "sequence_errors_b": (0, 5), "velocity_mean": (0, 200), "velocity_std": (0, 100),
+            "acceleration_mean": (0, 500), "acceleration_std": (0, 300),
+            "jerk_mean": (0, 1000), "curvature_mean": (0, 0.5), "curvature_std": (0, 0.5),
+            "stroop_error_rate": (0, 1), "recall_intrusions": (0, 5),
+            "recall_first_time": (0, 30000),
             "path_efficiency": (0, 1), "spatial_accuracy": (0, 1),
             "straightness_ratio": (0, 1), "pen_lifts": (0, 30),
             "hover_time": (0, 30), "total_pause_duration": (0, 60),

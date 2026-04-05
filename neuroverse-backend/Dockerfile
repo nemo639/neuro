@@ -18,7 +18,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir -r requirements.txt
 
-# Copy application code (v12 - full XAI coverage all categories)
+# Copy application code (v13 - complete XAI feature coverage)
 COPY app/ ./app/
 
 # Create uploads directory

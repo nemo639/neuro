@@ -191,7 +191,9 @@ class LIMEExplainer:
             "tmt_a_time": 0.4, "tmt_b_time": 0.7, "errors_b": 0.6,
             "path_efficiency": -0.5, "pen_lifts": 0.3,
             "tmt_ba_ratio": 0.6, "errors_a": 0.3, "sequence_errors_b": 0.5,
-            "velocity_mean": -0.4, "straightness_ratio": -0.4,
+            "velocity_mean": -0.4, "velocity_std": 0.3, "straightness_ratio": -0.4,
+            "acceleration_mean": -0.3, "acceleration_std": 0.3,
+            "jerk_mean": 0.3, "curvature_mean": -0.3, "curvature_std": 0.3,
             "spatial_accuracy": -0.4, "hover_time": 0.3,
             "total_pause_duration": 0.4, "distance_variability": 0.3,
             # CDT

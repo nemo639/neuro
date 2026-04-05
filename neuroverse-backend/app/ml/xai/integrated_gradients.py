@@ -214,7 +214,9 @@ class IntegratedGradientsExplainer:
             # TMT
             "tmt_a_time": 0.5, "tmt_b_time": 0.6, "tmt_ba_ratio": 0.6,
             "errors_a": 0.3, "errors_b": 0.7, "sequence_errors_b": 0.5,
-            "velocity_mean": -0.4, "path_efficiency": -0.5,
+            "velocity_mean": -0.4, "velocity_std": 0.3, "path_efficiency": -0.5,
+            "acceleration_mean": -0.3, "acceleration_std": 0.3,
+            "jerk_mean": 0.3, "curvature_mean": -0.3, "curvature_std": 0.3,
             "straightness_ratio": -0.4, "spatial_accuracy": -0.4,
             "pen_lifts": 0.4, "hover_time": 0.3,
             "total_pause_duration": 0.4, "distance_variability": 0.3,
