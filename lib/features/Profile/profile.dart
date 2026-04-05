@@ -679,8 +679,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 title: 'Edit Profile',
                 iconBgColor: blueAccent,
                 isFirst: true,
-                onTap: () {
-                  Navigator.pushNamed(context, '/edit-profile');
+                onTap: () async {
+                  await Navigator.pushNamed(context, '/edit-profile');
+                  if (mounted) _loadUserData();
                 },
               ),
               _buildMenuDivider(r),

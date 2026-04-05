@@ -242,7 +242,7 @@ void _showResultsDialog(Map<String, dynamic> resultData) {
         ElevatedButton.icon(
           onPressed: () {
             Navigator.pop(ctx);
-            Navigator.pushReplacementNamed(context, '/XAI', arguments: {'result': resultData});
+            Navigator.pushReplacementNamed(context, '/XAI', arguments: {'result': {...resultData, 'category': 'speech'}});
           },
           icon: const Icon(Icons.auto_awesome_rounded, size: 18, color: Colors.white),
           label: const Text('View AI Analysis', style: TextStyle(color: Colors.white)),

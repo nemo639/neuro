@@ -195,7 +195,11 @@ class LIMEExplainer:
             # Gait
             "step_regularity": -0.5, "gait_speed": -0.4, "balance_stability": -0.5,
             # Facial
-            "blink_rate": -0.3,
+            "blink_rate": -0.4, "smile_velocity": -0.5, "smile_intensity": -0.5,
+            "smile_symmetry": -0.3, "expression_range": -0.5,
+            "hypomimia_score": 0.6, "facial_symmetry": -0.3,
+            "facial_expressivity": -0.5, "symmetry_composite": -0.3,
+            "muscle_tone": 0.3, "avg_blink_duration_ms": 0.2,
         }
 
         skip = {"category", "items_processed"}

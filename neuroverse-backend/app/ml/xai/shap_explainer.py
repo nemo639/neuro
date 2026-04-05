@@ -113,11 +113,14 @@ class SHAPExplainer:
             "spiral_tremor", "spiral_deviation", "tapping_fatigue",
             "drawing_tremor_score", "drawing_speed_variability",
             "jitter", "shimmer", "balance_sway",
+            "hypomimia_score", "muscle_tone",
         }
         pd_negative = {
             "tapping_rate", "tapping_regularity", "vowel_stability",
             "spiral_tightness", "step_regularity", "balance_stability",
-            "hnr", "gait_speed",
+            "hnr", "blink_rate", "smile_velocity", "smile_intensity",
+            "smile_symmetry", "expression_range", "facial_symmetry",
+            "facial_expressivity", "symmetry_composite",
         }
 
         skip = {"category", "items_processed"}
@@ -164,8 +167,14 @@ class SHAPExplainer:
             "tapping_fatigue": (0, 1), "spiral_tremor": (0, 1),
             "spiral_deviation": (0, 1), "vowel_stability": (0, 1),
             "blink_rate": (5, 30), "step_regularity": (0, 1),
-            "balance_stability": (0, 1), "gait_speed": (0.3, 1.5),
+            "balance_stability": (0, 1),
             "jitter": (0, 0.05), "shimmer": (0, 0.15),
+            "smile_velocity": (0, 1), "smile_intensity": (0, 1),
+            "smile_symmetry": (0, 100), "expression_range": (0, 100),
+            "hypomimia_score": (0, 100), "facial_symmetry": (0, 100),
+            "muscle_tone": (0, 100), "facial_expressivity": (0, 100),
+            "symmetry_composite": (0, 100),
+            "avg_blink_duration_ms": (50, 500),
         }
         if key in ranges:
             lo, hi = ranges[key]

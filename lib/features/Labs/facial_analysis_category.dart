@@ -187,7 +187,7 @@ class _FacialAnalysisCategoryScreenState
             onPressed: () {
               Navigator.pop(ctx);
               Navigator.pushReplacementNamed(context, '/XAI',
-                  arguments: {'result': resultData});
+                  arguments: {'result': {...resultData, 'category': 'facial'}});
             },
             icon: const Icon(Icons.auto_awesome_rounded,
                 size: 18, color: Colors.white),

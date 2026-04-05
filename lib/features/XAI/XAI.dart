@@ -114,8 +114,16 @@ class _XAIScreenState extends State<XAIScreen> with TickerProviderStateMixin {
     Map<String, dynamic>? xai;
 
     if (_resultData!.containsKey('xai_explanation')) {
-      // Shape 1: single result with nested per-category XAI
-      xai = _resultData!['xai_explanation'] as Map<String, dynamic>?;
+      final rawXai = _resultData!['xai_explanation'] as Map<String, dynamic>?;
+      if (rawXai != null && rawXai.containsKey('shap_values')) {
+        // Shape 1b: single test result with flat XAI (not nested by category)
+        // Detect category from result data or default
+        final cat = (_resultData!['category'] ?? 'cognitive').toString().toLowerCase();
+        xai = {cat: rawXai};
+      } else {
+        // Shape 1a: single result with nested per-category XAI
+        xai = rawXai;
+      }
     } else {
       // Shape 2: per-category results, each with its own xai_explanation
       xai = {};

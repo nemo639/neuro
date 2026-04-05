@@ -211,7 +211,11 @@ class IntegratedGradientsExplainer:
             "spiral_tremor": 0.9, "spiral_deviation": 0.5,
             "tmt_b_time": 0.6, "errors_b": 0.7, "path_efficiency": -0.5,
             "step_regularity": -0.5, "gait_speed": -0.4, "balance_stability": -0.5,
-            "blink_rate": -0.3, "smile_intensity": -0.2,
+            "blink_rate": -0.4, "smile_velocity": -0.5, "smile_intensity": -0.5,
+            "smile_symmetry": -0.3, "expression_range": -0.5,
+            "hypomimia_score": 0.6, "facial_symmetry": -0.3,
+            "facial_expressivity": -0.5, "symmetry_composite": -0.3,
+            "muscle_tone": 0.3,
         }
 
         skip = {"category", "items_processed"}

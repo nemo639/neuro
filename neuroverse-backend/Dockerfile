@@ -18,7 +18,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir -r requirements.txt
 
-# Copy application code (v8 - force rebuild)
+# Copy application code (v9 - force rebuild)
 COPY app/ ./app/
 
 # Create uploads directory
