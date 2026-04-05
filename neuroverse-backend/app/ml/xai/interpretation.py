@@ -47,13 +47,28 @@ CLINICAL_RANGES = {
     "spiral_deviation": {"normal": (0, 0.3), "mild": (0.3, 0.5), "label": "Spiral Deviation"},
     "meander_deviation": {"normal": (0, 0.3), "mild": (0.3, 0.5), "label": "Meander Deviation"},
 
-    # Gait
-    "step_regularity": {"normal": (0.7, 1.0), "mild": (0.5, 0.7), "label": "Step Regularity"},
-    "gait_speed": {"normal": (0.9, 1.5), "mild": (0.6, 0.9), "label": "Gait Speed (m/s)"},
-    "balance_stability": {"normal": (0.7, 1.0), "mild": (0.5, 0.7), "label": "Balance Control"},
+    # Motor (extended)
+    "meander_smoothness": {"normal": (0.6, 1.0), "mild": (0.3, 0.6), "label": "Meander Smoothness"},
+    "spiral_tightness": {"normal": (0.6, 1.0), "mild": (0.3, 0.6), "label": "Spiral Tightness"},
+    "tremor_amplitude": {"normal": (0, 0.3), "mild": (0.3, 0.8), "label": "Tremor Amplitude"},
+
+    # Speech (acoustic)
+    "hnr": {"normal": (15, 35), "mild": (10, 15), "label": "Harmonics-to-Noise Ratio"},
+    "f0_mean": {"normal": (100, 250), "mild": (80, 100), "label": "Pitch (Hz)"},
+    "f0_std": {"normal": (15, 50), "mild": (5, 15), "label": "Pitch Variation"},
+    "pause_rate": {"normal": (0, 0.3), "mild": (0.3, 0.5), "label": "Pause Rate"},
+    "pause_count": {"normal": (0, 8), "mild": (8, 15), "label": "Speech Pauses"},
 
     # Facial
     "blink_rate": {"normal": (12, 22), "mild": (8, 12), "label": "Blink Rate (/min)"},
+    "smile_velocity": {"normal": (0.4, 1.0), "mild": (0.2, 0.4), "label": "Smile Speed"},
+    "smile_intensity": {"normal": (0.5, 1.0), "mild": (0.2, 0.5), "label": "Smile Intensity"},
+    "expression_range": {"normal": (50, 100), "mild": (30, 50), "label": "Expression Range"},
+    "hypomimia_score": {"normal": (0, 30), "mild": (30, 60), "label": "Facial Masking Score"},
+    "facial_symmetry": {"normal": (80, 100), "mild": (60, 80), "label": "Facial Symmetry"},
+    "facial_expressivity": {"normal": (50, 100), "mild": (25, 50), "label": "Facial Expressivity"},
+    "smile_symmetry": {"normal": (75, 100), "mild": (50, 75), "label": "Smile Symmetry"},
+    "symmetry_composite": {"normal": (75, 100), "mild": (50, 75), "label": "Symmetry Composite"},
 }
 
 

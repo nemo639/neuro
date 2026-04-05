@@ -236,14 +236,44 @@ class SaliencyGenerator:
     def _facial_saliency(self, features: dict, predictions: Optional[dict]) -> Dict[str, Any]:
         metrics = {
             "Blink Rate": features.get("blink_rate", 15),
-            "Smile Intensity": features.get("smile_intensity", 0),
+            "Smile Speed": features.get("smile_velocity", 0.5),
+            "Smile Intensity": features.get("smile_intensity", 0.5),
+            "Expression Range": features.get("expression_range", 70),
+            "Facial Masking": features.get("hypomimia_score", 30),
+            "Facial Symmetry": features.get("facial_symmetry", 90),
+            "Expressivity": features.get("facial_expressivity", 60),
+            "Smile Symmetry": features.get("smile_symmetry", 85),
         }
-        feature_bars = [{"feature": k, "weight": round(v, 4)} for k, v in metrics.items()]
+        feature_bars = [{"feature": k, "weight": round(float(v), 4)} for k, v in metrics.items()]
         highlights = []
         if features.get("blink_rate", 15) < 10:
             highlights.append({
                 "type": "hypomimia",
-                "description": "Reduced blink rate may indicate facial masking",
+                "description": "Reduced blink rate may indicate facial masking (hypomimia)",
+                "severity": "warning",
+            })
+        if features.get("smile_velocity", 0.5) < 0.3:
+            highlights.append({
+                "type": "bradykinesia",
+                "description": "Slow smile movement may indicate facial bradykinesia",
+                "severity": "warning",
+            })
+        if features.get("expression_range", 70) < 40:
+            highlights.append({
+                "type": "reduced_expression",
+                "description": "Limited facial expression range detected",
+                "severity": "info",
+            })
+        if features.get("hypomimia_score", 30) > 60:
+            highlights.append({
+                "type": "facial_masking",
+                "description": "High facial masking score — reduced spontaneous expression",
+                "severity": "warning",
+            })
+        if features.get("facial_symmetry", 90) < 70:
+            highlights.append({
+                "type": "asymmetry",
+                "description": "Facial asymmetry detected — may indicate unilateral motor involvement",
                 "severity": "info",
             })
         return {"type": "facial_regions", "data": {"feature_bars": feature_bars}, "highlights": highlights}

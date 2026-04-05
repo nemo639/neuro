@@ -47,13 +47,28 @@ HEALTHY_TARGETS = {
     "spiral_tremor": {"target": 0.10, "direction": "lower_better", "label": "Tremor Score"},
     "spiral_deviation": {"target": 0.20, "direction": "lower_better", "label": "Drawing Deviation"},
 
-    # Gait
-    "step_regularity": {"target": 0.85, "direction": "higher_better", "label": "Step Regularity"},
-    "gait_speed": {"target": 1.1, "direction": "higher_better", "label": "Walking Speed"},
-    "balance_stability": {"target": 0.80, "direction": "higher_better", "label": "Balance"},
+    # Motor (meander)
+    "meander_tremor": {"target": 0.10, "direction": "lower_better", "label": "Meander Tremor"},
+    "meander_deviation": {"target": 0.20, "direction": "lower_better", "label": "Meander Deviation"},
+    "meander_smoothness": {"target": 0.80, "direction": "higher_better", "label": "Meander Smoothness"},
+    "spiral_tightness": {"target": 0.80, "direction": "higher_better", "label": "Spiral Tightness"},
+    "tremor_amplitude": {"target": 0.05, "direction": "lower_better", "label": "Tremor Amplitude"},
+
+    # Speech (acoustic)
+    "hnr": {"target": 20.0, "direction": "higher_better", "label": "Harmonics-to-Noise"},
+    "f0_mean": {"target": 150.0, "direction": "higher_better", "label": "Pitch (F0)"},
+    "f0_std": {"target": 30.0, "direction": "higher_better", "label": "Pitch Variation"},
 
     # Facial
     "blink_rate": {"target": 17, "direction": "higher_better", "label": "Blink Rate"},
+    "smile_velocity": {"target": 0.6, "direction": "higher_better", "label": "Smile Speed"},
+    "smile_intensity": {"target": 0.7, "direction": "higher_better", "label": "Smile Intensity"},
+    "expression_range": {"target": 70, "direction": "higher_better", "label": "Expression Range"},
+    "hypomimia_score": {"target": 20, "direction": "lower_better", "label": "Facial Masking"},
+    "facial_symmetry": {"target": 90, "direction": "higher_better", "label": "Facial Symmetry"},
+    "facial_expressivity": {"target": 70, "direction": "higher_better", "label": "Facial Expressivity"},
+    "smile_symmetry": {"target": 85, "direction": "higher_better", "label": "Smile Symmetry"},
+    "symmetry_composite": {"target": 87, "direction": "higher_better", "label": "Symmetry Composite"},
 }
 
 
