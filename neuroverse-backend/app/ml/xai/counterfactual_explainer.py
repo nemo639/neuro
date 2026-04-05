@@ -25,20 +25,34 @@ HEALTHY_TARGETS = {
     "processing_speed_ms": {"target": 800, "direction": "lower_better", "label": "Processing Speed"},
     "stroop_interference": {"target": 20, "direction": "lower_better", "label": "Stroop Interference"},
 
+    # Cognitive extended
+    "recall_delayed_accuracy": {"target": 0.70, "direction": "higher_better", "label": "Delayed Recall"},
+    "recall_retention_rate": {"target": 0.80, "direction": "higher_better", "label": "Retention Rate"},
+    "nback_dprime": {"target": 2.0, "direction": "higher_better", "label": "Signal Detection (d')"},
+
     # TMT
     "tmt_a_time": {"target": 40, "direction": "lower_better", "label": "TMT-A Time"},
     "tmt_b_time": {"target": 90, "direction": "lower_better", "label": "TMT-B Time"},
     "errors_b": {"target": 1, "direction": "lower_better", "label": "TMT-B Errors"},
     "path_efficiency": {"target": 0.80, "direction": "higher_better", "label": "Path Efficiency"},
+    "pen_lifts": {"target": 3, "direction": "lower_better", "label": "Pen Lifts"},
+    "spatial_accuracy": {"target": 0.85, "direction": "higher_better", "label": "Spatial Accuracy"},
+
+    # CDT
+    "shulman_score": {"target": 4, "direction": "higher_better", "label": "Clock Drawing Score"},
+    "number_accuracy": {"target": 0.95, "direction": "higher_better", "label": "Number Placement"},
 
     # Speech
     "speech_rate": {"target": 130, "direction": "higher_better", "label": "Speech Rate"},
     "pause_count": {"target": 5, "direction": "lower_better", "label": "Speech Pauses"},
     "pause_rate": {"target": 0.2, "direction": "lower_better", "label": "Pause Rate"},
     "story_recall_accuracy": {"target": 0.75, "direction": "higher_better", "label": "Story Recall"},
+    "story_coherence": {"target": 0.80, "direction": "higher_better", "label": "Story Coherence"},
     "vowel_stability": {"target": 0.70, "direction": "higher_better", "label": "Voice Stability"},
     "jitter": {"target": 0.01, "direction": "lower_better", "label": "Voice Jitter"},
     "shimmer": {"target": 0.03, "direction": "lower_better", "label": "Voice Shimmer"},
+    "word_count": {"target": 100, "direction": "higher_better", "label": "Word Count"},
+    "unique_words": {"target": 60, "direction": "higher_better", "label": "Unique Words"},
 
     # Motor
     "tapping_rate": {"target": 5.5, "direction": "higher_better", "label": "Tapping Speed"},

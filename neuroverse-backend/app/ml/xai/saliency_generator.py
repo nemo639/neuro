@@ -57,7 +57,7 @@ class SaliencyGenerator:
     def _speech_saliency(self, features: dict, predictions: Optional[dict]) -> Dict[str, Any]:
         attn = (predictions or {}).get("attention_weights", {})
 
-        # Top contributing features
+        # Top contributing features from attention weights
         feature_bars = []
         for feat, val in sorted(attn.items(), key=lambda x: abs(x[1]), reverse=True)[:10]:
             feature_bars.append({
@@ -66,6 +66,24 @@ class SaliencyGenerator:
                 "value": round(float(features.get(feat, 0)), 4),
                 "direction": "risk" if val > 0.5 else "protective",
             })
+
+        # Fallback: if no attention weights, build bars from key speech features
+        if not feature_bars:
+            speech_metrics = {
+                "Speech Rate": features.get("speech_rate", 0),
+                "Pause Count": features.get("pause_count", 0),
+                "Pause Rate": features.get("pause_rate", 0),
+                "Voice Jitter": features.get("jitter", 0),
+                "Voice Shimmer": features.get("shimmer", 0),
+                "HNR": features.get("hnr", 0),
+                "Pitch (F0)": features.get("f0_mean", 0),
+                "Pitch Variation": features.get("f0_std", 0),
+                "Voice Stability": features.get("vowel_stability", 0),
+                "Story Recall": features.get("story_recall_accuracy", 0),
+            }
+            for name, val in speech_metrics.items():
+                if val != 0:
+                    feature_bars.append({"feature": name, "weight": round(float(val), 4)})
 
         highlights = []
         # Highlight pauses (AD indicator)
@@ -80,6 +98,20 @@ class SaliencyGenerator:
             highlights.append({
                 "type": "voice_quality",
                 "description": "Voice irregularity detected – potential motor speech issue",
+                "severity": "info",
+            })
+        # Highlight low HNR (PD indicator)
+        if 0 < features.get("hnr", 20) < 10:
+            highlights.append({
+                "type": "low_hnr",
+                "description": "Low harmonics-to-noise ratio suggests breathy or hoarse voice",
+                "severity": "info",
+            })
+        # Highlight reduced pitch variation (PD monotone speech)
+        if 0 < features.get("f0_std", 30) < 10:
+            highlights.append({
+                "type": "monotone_speech",
+                "description": "Reduced pitch variation – possible monotone speech pattern",
                 "severity": "info",
             })
 

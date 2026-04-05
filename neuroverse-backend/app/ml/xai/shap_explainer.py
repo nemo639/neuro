@@ -100,14 +100,38 @@ class SHAPExplainer:
         # Clinical direction map: positive = increases risk when high
         ad_positive = {
             "stroop_interference", "stroop_avg_rt", "stroop_error_rate",
+            "stroop_congruent_rt", "stroop_incongruent_rt",
             "recall_intrusions", "recall_first_time", "pause_count",
             "pause_rate", "mean_pause_duration", "max_pause_duration",
             "processing_speed_ms",
+            # TMT (higher = worse)
+            "tmt_a_time", "tmt_b_time", "tmt_ba_ratio",
+            "time_per_circle_a", "time_per_circle_b",
+            "errors_a", "errors_b", "sequence_errors_b",
+            "total_pause_duration", "hover_time", "pen_lifts",
+            "distance_variability",
+            # CDT (lower shulman = worse, handled via ad_negative)
+            "center_deviation", "drawing_time",
+            # Speech acoustic (higher = worse voice quality for AD)
+            "zcr_mean", "energy_std",
+            # N-Back (higher false alarms = worse)
+            "nback_false_alarms",
         }
         ad_negative = {
             "stroop_accuracy", "nback_accuracy", "nback_dprime",
-            "recall_accuracy", "story_recall_accuracy", "story_coherence",
+            "nback_hits",
+            "recall_accuracy", "recall_delayed_accuracy", "recall_retention_rate",
+            "story_recall_accuracy", "story_coherence",
             "speech_rate", "cognitive_composite", "speech_silence_ratio",
+            # TMT (higher = better)
+            "velocity_mean", "path_efficiency", "spatial_accuracy",
+            "straightness_ratio",
+            # CDT (higher = better)
+            "shulman_score", "number_accuracy", "numbers_correct",
+            "clock_contour", "hands_present",
+            # Speech (higher = better)
+            "vowel_stability", "hnr", "f0_std",
+            "word_count", "unique_words",
         }
         pd_positive = {
             "spiral_tremor", "spiral_deviation", "tapping_fatigue",
@@ -124,7 +148,8 @@ class SHAPExplainer:
         pd_negative = {
             "tapping_rate", "tapping_regularity", "vowel_stability",
             "spiral_tightness", "step_regularity", "balance_stability",
-            "hnr", "blink_rate", "smile_velocity", "smile_intensity",
+            "hnr", "f0_std", "f0_mean",
+            "blink_rate", "smile_velocity", "smile_intensity",
             "smile_symmetry", "expression_range", "facial_symmetry",
             "facial_expressivity", "symmetry_composite",
             # Motor extended
@@ -183,6 +208,29 @@ class SHAPExplainer:
             "muscle_tone": (0, 100), "facial_expressivity": (0, 100),
             "symmetry_composite": (0, 100),
             "avg_blink_duration_ms": (50, 500),
+            # Cognitive TMT/CDT
+            "tmt_a_time": (20, 120), "tmt_b_time": (40, 300),
+            "tmt_ba_ratio": (1, 5), "time_per_circle_a": (1, 10),
+            "time_per_circle_b": (2, 20), "errors_a": (0, 5), "errors_b": (0, 10),
+            "sequence_errors_b": (0, 5), "velocity_mean": (0, 200),
+            "path_efficiency": (0, 1), "spatial_accuracy": (0, 1),
+            "straightness_ratio": (0, 1), "pen_lifts": (0, 30),
+            "hover_time": (0, 30), "total_pause_duration": (0, 60),
+            "distance_variability": (0, 1), "center_deviation": (0, 50),
+            "drawing_time": (0, 300), "shulman_score": (0, 5),
+            "number_accuracy": (0, 1), "numbers_correct": (0, 12),
+            "nback_hits": (0, 20), "nback_false_alarms": (0, 20),
+            "recall_delayed_accuracy": (0, 1), "recall_retention_rate": (0, 1),
+            "stroop_congruent_rt": (200, 1500), "stroop_incongruent_rt": (200, 2000),
+            "word_count": (0, 200), "unique_words": (0, 150),
+            # Speech acoustic
+            "f0_mean": (80, 300), "f0_std": (5, 60),
+            "hnr": (5, 35), "zcr_mean": (0, 0.3),
+            "spectral_centroid_mean": (500, 4000),
+            "spectral_rolloff_mean": (1000, 8000),
+            "energy_std": (0, 0.5), "vowel_stability": (0, 1),
+            "pause_count": (0, 30), "pause_rate": (0, 1),
+            "mean_pause_duration": (0, 5), "max_pause_duration": (0, 10),
             # Motor extended
             "meander_tremor": (0, 1), "meander_deviation": (0, 1),
             "meander_smoothness": (0, 1), "spiral_tightness": (0, 1),

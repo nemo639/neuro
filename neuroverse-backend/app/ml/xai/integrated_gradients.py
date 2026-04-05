@@ -202,11 +202,36 @@ class IntegratedGradientsExplainer:
 
         # Direction weights (positive = increases risk, negative = protective)
         directions = {
+            # Cognitive
             "stroop_accuracy": -1.0, "nback_accuracy": -1.0, "recall_accuracy": -1.0,
             "cognitive_composite": -1.0, "story_recall_accuracy": -1.0,
             "stroop_interference": 1.0, "processing_speed_ms": 0.5,
+            "stroop_avg_rt": 0.5, "stroop_error_rate": 0.6,
+            "stroop_congruent_rt": 0.3, "stroop_incongruent_rt": 0.4,
+            "nback_dprime": -0.7, "nback_hits": -0.5, "nback_false_alarms": 0.5,
+            "recall_delayed_accuracy": -0.8, "recall_retention_rate": -0.7,
+            "recall_intrusions": 0.6,
+            # TMT
+            "tmt_a_time": 0.5, "tmt_b_time": 0.6, "tmt_ba_ratio": 0.6,
+            "errors_a": 0.3, "errors_b": 0.7, "sequence_errors_b": 0.5,
+            "velocity_mean": -0.4, "path_efficiency": -0.5,
+            "straightness_ratio": -0.4, "spatial_accuracy": -0.4,
+            "pen_lifts": 0.4, "hover_time": 0.3,
+            "total_pause_duration": 0.4, "distance_variability": 0.3,
+            # CDT
+            "shulman_score": -0.8, "number_accuracy": -0.6,
+            "center_deviation": 0.4, "drawing_time": 0.3,
+            "clock_contour": -0.3, "numbers_correct": -0.5,
+            # Speech
             "speech_rate": -0.5, "pause_count": 0.8, "pause_rate": 0.7,
+            "mean_pause_duration": 0.5, "max_pause_duration": 0.4,
             "jitter": 0.8, "shimmer": 0.7, "vowel_stability": -0.6,
+            "hnr": -0.5, "f0_mean": -0.3, "f0_std": -0.4,
+            "story_coherence": -0.5, "word_count": -0.3, "unique_words": -0.3,
+            "zcr_mean": 0.2, "energy_std": 0.2,
+            "vowel_duration": -0.3, "vowel_amplitude_var": 0.3,
+            "f1_mean": -0.2, "f2_mean": -0.2, "f3_mean": -0.2,
+            # Motor
             "tapping_rate": -0.7, "tapping_regularity": -0.6, "tapping_fatigue": 0.7,
             "spiral_tremor": 0.9, "spiral_deviation": 0.5,
             "meander_tremor": 0.9, "meander_deviation": 0.5, "meander_smoothness": -0.6,
@@ -216,7 +241,7 @@ class IntegratedGradientsExplainer:
             "spiral_tremor_score": 0.8, "meander_tremor_score": 0.8,
             "tapping_asymmetry": 0.5,
             "drawing_tremor_score": 0.7, "drawing_speed_variability": 0.5,
-            "tmt_b_time": 0.6, "errors_b": 0.7, "path_efficiency": -0.5,
+            # Facial
             "blink_rate": -0.4, "smile_velocity": -0.5, "smile_intensity": -0.5,
             "smile_symmetry": -0.3, "expression_range": -0.5,
             "hypomimia_score": 0.6, "facial_symmetry": -0.3,

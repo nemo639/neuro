@@ -18,6 +18,8 @@ CLINICAL_RANGES = {
     "nback_accuracy": {"normal": (0.75, 1.0), "mild": (0.55, 0.75), "label": "N-Back Accuracy"},
     "nback_dprime": {"normal": (1.5, 5.0), "mild": (0.5, 1.5), "label": "Signal Detection (d')"},
     "recall_accuracy": {"normal": (0.70, 1.0), "mild": (0.45, 0.70), "label": "Word Recall Accuracy"},
+    "recall_delayed_accuracy": {"normal": (0.65, 1.0), "mild": (0.40, 0.65), "label": "Delayed Recall"},
+    "recall_retention_rate": {"normal": (0.75, 1.0), "mild": (0.50, 0.75), "label": "Retention Rate"},
     "cognitive_composite": {"normal": (0.75, 1.0), "mild": (0.50, 0.75), "label": "Cognitive Composite"},
 
     # TMT (Trail Making Test)
