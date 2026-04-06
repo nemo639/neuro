@@ -4,13 +4,15 @@ GET /, POST /, GET /{id}, GET /{id}/download, DELETE /{id}
 """
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import os
 
 from app.db.database import get_db
 from app.core.security import get_current_user_id
 from app.services.report_service import ReportService
+from app.models.report import Report
 from app.schemas.report import (
     ReportCreate, ReportResponse, ReportDetailResponse, ReportListResponse
 )
@@ -71,34 +73,33 @@ async def download_report(
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Download report PDF.
-    
-    - Returns PDF file
-    """
-    service = ReportService(db)
-    report_detail = await service.get_report(user_id, report_id)
-    
-    if not report_detail.is_ready or not report_detail.pdf_path:
-        from fastapi import HTTPException, status
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Report PDF not ready"
-        )
-    
-    if not os.path.exists(report_detail.pdf_path):
-        from fastapi import HTTPException, status
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Report file not found"
-        )
-    
-    filename = f"NeuroVerse_Report_{report_id}.pdf"
-    return FileResponse(
-        path=report_detail.pdf_path,
-        filename=filename,
-        media_type="application/pdf"
+    """Download report PDF — served from DB (cloud-safe)."""
+    from fastapi import HTTPException, status as http_status
+
+    # Fetch raw report to access pdf_data
+    result = await db.execute(
+        select(Report).where(Report.id == report_id, Report.user_id == user_id)
     )
+    report = result.scalar_one_or_none()
+
+    if not report or not report.is_ready:
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Report not ready")
+
+    # Serve from DB binary if available
+    if report.pdf_data:
+        filename = f"NeuroVerse_Report_{report_id}.pdf"
+        return Response(
+            content=report.pdf_data,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    # Fallback: serve from filesystem (local dev)
+    if report.pdf_path and not report.pdf_path.startswith("db:") and os.path.exists(report.pdf_path):
+        filename = f"NeuroVerse_Report_{report_id}.pdf"
+        return FileResponse(path=report.pdf_path, filename=filename, media_type="application/pdf")
+
+    raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Report file not found")
 
 
 @router.post("/{report_id}/regenerate", response_model=ReportDetailResponse)

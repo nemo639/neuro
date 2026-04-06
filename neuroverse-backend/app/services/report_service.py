@@ -284,55 +284,61 @@ class ReportService:
         return f"{base_title} - {date_str}"
     
     async def _generate_pdf(self, report: Report, user: User, sessions: List[TestSession]):
-        """
-        Generate PDF report.
-        
-        This is a placeholder. In production, use a proper PDF library like:
-        - reportlab
-        - weasyprint
-        - fpdf2
-        """
+        """Generate PDF and store in DB (cloud-safe, no filesystem dependency)."""
         try:
-            # Ensure reports directory exists
-            reports_dir = os.path.join(settings.UPLOAD_DIR, "reports")
-            os.makedirs(reports_dir, exist_ok=True)
-            
-            # Generate filename
-            filename = f"report_{report.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            filepath = os.path.join(reports_dir, filename)
-            
-            # TODO: Generate actual PDF using reportlab or similar
-            # For now, create a placeholder file
-            with open(filepath, 'w') as f:
-                f.write(f"NeuroVerse Report\n")
-                f.write(f"================\n\n")
-                f.write(f"Patient: {user.full_name}\n")
-                f.write(f"Date: {datetime.now().strftime('%Y-%m-%d')}\n\n")
-                f.write(f"AD Risk Score: {report.ad_risk_score:.1f}%\n")
-                f.write(f"PD Risk Score: {report.pd_risk_score:.1f}%\n\n")
-                f.write(f"Sessions Included: {report.tests_count}\n")
-                
-                for session in sessions:
-                    f.write(f"\n- {session.category}: ")
-                    if session.test_result:
-                        f.write(f"Score {session.test_result.category_score:.1f}")
-                    f.write("\n")
-            
-            # Update report
-            report.pdf_path = filepath
-            report.is_ready = True
-
-            await self.db.commit()
-            await self.db.refresh(report)
-
-            # Notification for report ready
-            try:
-                await notify_report_generated(self.db, report.user_id, report.id)
-                await self.db.commit()
-            except Exception:
-                pass
-            
+            from app.services.report_pdf_generator import generate_report_pdf
+            pdf_bytes = await generate_report_pdf(report, user, sessions)
         except Exception as e:
-            print(f"Error generating PDF: {e}")
-            report.is_ready = False
+            print(f"PDF generator error: {e}, using plain text fallback")
+            pdf_bytes = self._plain_text_pdf(report, user, sessions)
+
+        report.pdf_data = pdf_bytes
+        report.pdf_path = f"db:report_{report.id}"  # marker so is_ready check passes
+        report.is_ready = True
+
+        await self.db.commit()
+        await self.db.refresh(report)
+
+        try:
+            await notify_report_generated(self.db, report.user_id, report.id)
             await self.db.commit()
+        except Exception:
+            pass
+
+    def _plain_text_pdf(self, report: Report, user: User, sessions: List[TestSession]) -> bytes:
+        """Minimal PDF fallback using only stdlib."""
+        lines = [
+            "NeuroVerse Neurological Assessment Report",
+            "=" * 50,
+            f"Patient: {getattr(user, 'full_name', str(user.id))}",
+            f"Date: {datetime.now().strftime('%Y-%m-%d')}",
+            f"AD Risk Score: {report.ad_risk_score:.1f}%",
+            f"PD Risk Score: {report.pd_risk_score:.1f}%",
+            f"Sessions: {report.tests_count}",
+            "",
+        ]
+        for session in sessions:
+            score = ""
+            if hasattr(session, 'test_result') and session.test_result:
+                score = f" — Score: {session.test_result.category_score:.1f}"
+            lines.append(f"  {session.category}{score}")
+
+        content = "\n".join(lines).encode("utf-8")
+
+        # Minimal valid PDF wrapping plain text
+        pdf = (
+            b"%PDF-1.4\n"
+            b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+            b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
+            b"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Courier >> >> >> >>\nendobj\n"
+        )
+        stream = b"BT\n/F1 11 Tf\n50 750 Td\n12 TL\n"
+        for line in lines:
+            safe = line.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)").replace("\r", "")
+            stream += f"({safe}) Tj T*\n".encode("latin-1", errors="replace")
+        stream += b"ET\n"
+
+        pdf += f"4 0 obj\n<< /Length {len(stream)} >>\nstream\n".encode()
+        pdf += stream + b"\nendstream\nendobj\n"
+        pdf += b"xref\n0 5\n0000000000 65535 f \ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n9\n%%EOF\n"
+        return pdf

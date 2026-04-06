@@ -2,7 +2,7 @@
 Report Model - Generated PDF reports with aggregated test results
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, JSON, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, JSON, Boolean, LargeBinary
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.db.database import Base
@@ -43,8 +43,9 @@ class Report(Base):
     # Wellness data included
     include_wellness = Column(Boolean, default=False)
 
-    # PDF file path
+    # PDF file path (legacy) and binary storage
     pdf_path = Column(String, nullable=True)
+    pdf_data = Column(LargeBinary, nullable=True)
 
     # Status
     is_ready = Column(Boolean, default=False)
