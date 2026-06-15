@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/cache_service.dart';
 import 'package:neuroverse/core/responsive.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 
@@ -14,8 +15,7 @@ class TestsScreen extends StatefulWidget {
 
 class _TestsScreenState extends State<TestsScreen> with SingleTickerProviderStateMixin {
   late AnimationController _pageController;
-  int _selectedNavIndex = 1; // Tests is selected
-  
+
   // Track expanded state for each category
   Map<int, bool> expandedCategories = {
     0: true,  // Speech & Language expanded by default
@@ -102,7 +102,7 @@ Map<String, int> _categoryCompletedTests = {};
     super.initState();
     _pageController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 400),
     )..forward();
     _loadData();  // Add this
     SystemChrome.setSystemUIOverlayStyle(
@@ -118,66 +118,49 @@ Map<String, int> _categoryCompletedTests = {};
     _pageController.dispose();
     super.dispose();
   }
-  Future<void> _loadData() async {
-  final result = await ApiService.getTestDashboard();
-
-  if (mounted) {
-    setState(() {
-      _isLoading = false;
-      // Reset counters before parsing to avoid double-counting on reload
-      _completedTestsCount = 0;
-      _categoryCompletedTests = {};
-      if (result['success']) {
-        _testDashboard = result['data'];
-
-        // Map backend category keys to local testCategories indices
-        const categoryIndexMap = {'speech': 0, 'cognitive': 1, 'motor': 2, 'facial': 3};
-
-        // Parse completed sessions per category
-        final categories = _testDashboard?['categories'] as List? ?? [];
-        for (var cat in categories) {
-          final catName = (cat['category'] ?? '') as String;
-          final completedSessions = (cat['total_completed'] ?? 0) as int;
-          _categoryCompletedTests[catName] = completedSessions;
-
-          // Each completed session = all mini-tests in that category done
-          if (completedSessions > 0) {
-            final idx = categoryIndexMap[catName];
-            if (idx != null && idx < testCategories.length) {
-              _completedTestsCount += testCategories[idx].tests.length;
-            }
+  void _applyTestData(Map<String, dynamic> result) {
+    _completedTestsCount = 0;
+    _categoryCompletedTests = {};
+    if (result['success'] == true) {
+      _testDashboard = result['data'] as Map<String, dynamic>?;
+      const categoryIndexMap = {'speech': 0, 'cognitive': 1, 'motor': 2, 'facial': 3};
+      final categories = _testDashboard?['categories'] as List? ?? [];
+      for (var cat in categories) {
+        final catName = (cat['category'] ?? '') as String;
+        final completedSessions = (cat['total_completed'] ?? 0) as int;
+        _categoryCompletedTests[catName] = completedSessions;
+        if (completedSessions > 0) {
+          final idx = categoryIndexMap[catName];
+          if (idx != null && idx < testCategories.length) {
+            _completedTestsCount += testCategories[idx].tests.length;
           }
         }
       }
-    });
-  }
-}
-  void _onNavItemTapped(int index) {
-    HapticFeedback.selectionClick();
-
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 1:
-        setState(() => _selectedNavIndex = index);
-        _loadData(); // Refresh progress when Tests tab re-selected
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/XAI');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/neuro-chat');
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/reports');
-        break;
-      case 5:
-        Navigator.pushNamed(context, '/profile');
-        break;
     }
   }
 
+  Future<void> _loadData() async {
+    // Show cached data instantly if available
+    final cached = await CacheService.get('tests_dashboard');
+    if (cached != null && mounted) {
+      setState(() {
+        _applyTestData(cached);
+        _isLoading = false;
+      });
+    }
+
+    final result = await ApiService.getTestDashboard();
+
+    // Cache the fresh data
+    await CacheService.set('tests_dashboard', result);
+
+    if (mounted) {
+      setState(() {
+        _applyTestData(result);
+        _isLoading = false;
+      });
+    }
+  }
   int get completedTests {
    return _completedTestsCount;
   }
@@ -262,7 +245,6 @@ Map<String, int> _categoryCompletedTests = {};
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(r),
     );
   }
 
@@ -737,77 +719,6 @@ Map<String, int> _categoryCompletedTests = {};
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNav(Responsive r) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: BoxDecoration(
-        color: navBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
-              _buildNavItem(4, Icons.description_outlined, 'Reports'),
-              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _selectedNavIndex == index;
-    return GestureDetector(
-      onTap: () => _onNavItemTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? darkCard : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : Colors.black38,
-              size: 22,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }

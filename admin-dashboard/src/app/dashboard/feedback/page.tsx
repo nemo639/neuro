@@ -214,17 +214,19 @@ export default function FeedbackPage() {
       {stats && (
         <motion.div variants={container} initial="hidden" animate="visible" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total', value: stats.total_feedbacks, icon: MessageSquareText, color: 'text-gray-700 dark:text-gray-300', bg: 'bg-gray-50 dark:bg-gray-800' },
-            { label: 'Pending', value: stats.pending_count, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-            { label: 'Resolved', value: stats.resolved_count, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-            { label: 'Avg Rating', value: stats.average_rating ? stats.average_rating.toFixed(1) : 'N/A', icon: Star, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
+            { label: 'Total Feedback', value: stats.total_feedbacks, icon: MessageSquareText, gradient: 'from-violet-500 to-purple-600', iconBg: 'bg-white/20' },
+            { label: 'Pending', value: stats.pending_count, icon: Clock, gradient: 'from-amber-400 to-orange-500', iconBg: 'bg-white/20' },
+            { label: 'Resolved', value: stats.resolved_count, icon: CheckCircle2, gradient: 'from-emerald-400 to-teal-500', iconBg: 'bg-white/20' },
+            { label: 'Avg Rating', value: stats.average_rating ? `${stats.average_rating.toFixed(1)} ★` : 'N/A', icon: Star, gradient: 'from-yellow-400 to-amber-500', iconBg: 'bg-white/20' },
           ].map((s) => (
-            <motion.div key={s.label} variants={item} className={`${s.bg} rounded-xl p-4 border border-gray-100 dark:border-gray-700`}>
-              <div className="flex items-center gap-2 mb-2">
-                <s.icon size={16} className={s.color} />
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{s.label}</span>
+            <motion.div key={s.label} variants={item} className={`bg-gradient-to-br ${s.gradient} rounded-xl p-4 text-white shadow-md`}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-white/80">{s.label}</span>
+                <div className={`${s.iconBg} rounded-lg p-1.5`}>
+                  <s.icon size={14} className="text-white" />
+                </div>
               </div>
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-2xl font-bold text-white">{s.value}</p>
             </motion.div>
           ))}
         </motion.div>

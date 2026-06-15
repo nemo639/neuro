@@ -49,6 +49,9 @@ dependencies:
   # Local push notifications with sound
   flutter_local_notifications: ^18.0.1
 
+  # On-disk image cache for network images (avatars, thumbnails)
+  cached_network_image: ^3.4.1
+
 
 
 

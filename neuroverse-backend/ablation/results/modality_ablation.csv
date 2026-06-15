@@ -1,0 +1,8 @@
+config,accuracy,auc,f1,precision,recall
+Speech only,0.5,0.5,0.0,0.0,0.0
+CDT only,1.0,1.0,1.0,1.0,1.0
+TMT only,0.9833,1.0,0.9831,1.0,0.9667
+Speech + CDT,0.5,1.0,0.0,0.0,0.0
+Speech + TMT,0.5,1.0,0.0,0.0,0.0
+CDT + TMT,1.0,1.0,1.0,1.0,1.0
+Full (all 3),0.8,1.0,0.75,1.0,0.6

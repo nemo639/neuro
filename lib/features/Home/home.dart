@@ -1,8 +1,11 @@
 import 'dart:math' as math;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/cache_service.dart';
+import 'package:neuroverse/core/main_shell.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:neuroverse/core/notification_service.dart';
 import 'package:neuroverse/core/responsive.dart';
@@ -17,7 +20,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _pageController;
   late PageController _tipsPageController;
-  int _selectedNavIndex = 0;
   int _currentTipIndex = 0;
 
   // State variables
@@ -145,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _pageController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 400),
     )..forward();
     _tipsPageController = PageController(viewportFraction: 0.85);
     _shuffleHealthTips();
@@ -165,69 +167,103 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  void _applyDashboardData(Map<String, dynamic> data) {
+    final dashResult = data['dash'] as Map<String, dynamic>? ?? {};
+    final wellnessResult = data['wellness'] as Map<String, dynamic>? ?? {};
+    final historyResult = data['history'] as Map<String, dynamic>? ?? {};
+    final profileResult = data['profile'] as Map<String, dynamic>? ?? {};
+
+    if (profileResult['success'] == true) {
+      final pData = profileResult['data'];
+      _profileImagePath = pData['profile_image_path']?.toString();
+      final fn = pData['first_name']?.toString() ?? '';
+      _userName = fn;
+      _userInitial = fn.isNotEmpty ? fn[0].toUpperCase() : 'U';
+    }
+
+    if (dashResult['success'] == true) {
+      _dashboardData = dashResult['data'];
+      _adRisk = (_dashboardData?['ad_risk_score'] ?? 0).toInt();
+      _pdRisk = (_dashboardData?['pd_risk_score'] ?? 0).toInt();
+      _overallRisk = ((_adRisk + _pdRisk) / 2).toInt();
+      _riskLevel = _getRiskLevel(_overallRisk);
+      final allCats = _dashboardData?['categories'] as List<dynamic>? ?? [];
+      _recentTests = allCats
+          .where((t) => (t['category'] ?? '').toString().toLowerCase() != 'gait')
+          .toList()
+        ..sort((a, b) {
+          final aCompleted = (a['tests_completed'] ?? 0) as int;
+          final bCompleted = (b['tests_completed'] ?? 0) as int;
+          if (aCompleted > 0 && bCompleted == 0) return -1;
+          if (aCompleted == 0 && bCompleted > 0) return 1;
+          final aDate = a['last_tested']?.toString() ?? '';
+          final bDate = b['last_tested']?.toString() ?? '';
+          return bDate.compareTo(aDate);
+        });
+      _riskTrend = _dashboardData?['risk_trend'] ?? [];
+      _totalTestsCompleted = (_dashboardData?['total_tests_completed'] ?? 0) as int;
+      _testsThisWeek = (_dashboardData?['tests_this_week'] ?? 0) as int;
+    }
+
+    if (wellnessResult['success'] == true) {
+      _wellnessData = wellnessResult['data'];
+      final today = _wellnessData?['today_entry'];
+      _screenTime = (today?['screen_time_hours'] ?? 0).toDouble();
+      _gamingHours = (today?['gaming_hours'] ?? 0).toDouble();
+      _socialHours = _screenTime * 0.35;
+      _notificationCount = (_screenTime * 12).toInt();
+      _avgScreenTime = (_wellnessData?['avg_screen_time'] ?? 0).toDouble();
+      _streak = (_wellnessData?['logging_streak'] ?? 0) as int;
+    }
+
+    if (historyResult['success'] == true) {
+      _buildWeeklyChartData(historyResult['data']);
+    }
+  }
+
   Future<void> _loadData() async {
-    final dashResult = await ApiService.getUserDashboard();
-    final wellnessResult = await ApiService.getWellnessDashboard();
-    final historyResult = await ApiService.getWellnessHistory(days: 7, limit: 7);
-    final profileResult = await ApiService.getUserProfile();
+    // Show cached data instantly if available
+    final cached = await CacheService.get('home_dashboard');
+    if (cached != null && mounted) {
+      _applyDashboardData(cached);
+      setState(() => _isLoading = false);
+    }
+
+    // Fetch all in parallel
+    final results = await Future.wait([
+      ApiService.getUserDashboard(),
+      ApiService.getWellnessDashboard(),
+      ApiService.getWellnessHistory(days: 7, limit: 7),
+      ApiService.getUserProfile(),
+    ]);
+
+    final dashResult = results[0];
+    final wellnessResult = results[1];
+    final historyResult = results[2];
+    final profileResult = results[3];
+
+    // Cache the fresh data
+    await CacheService.set('home_dashboard', {
+      'dash': dashResult,
+      'wellness': wellnessResult,
+      'history': historyResult,
+      'profile': profileResult,
+    });
+
+    // Reuse profile + dash for ProfileScreen cache (avoids duplicate fetch when user opens Profile tab)
+    await CacheService.set('profile_data', {
+      'profile': profileResult,
+      'dash': dashResult,
+    });
 
     if (mounted) {
-      setState(() {
-        _isLoading = false;
-
-
-        if (profileResult['success']) {
-          final pData = profileResult['data'];
-          _profileImagePath = pData['profile_image_path']?.toString();
-          final fn = pData['first_name']?.toString() ?? '';
-          _userName = fn;
-          _userInitial = fn.isNotEmpty ? fn[0].toUpperCase() : 'U';
-        }
-
-        if (dashResult['success']) {
-          _dashboardData = dashResult['data'];
-          _adRisk = (_dashboardData?['ad_risk_score'] ?? 0).toInt();
-          _pdRisk = (_dashboardData?['pd_risk_score'] ?? 0).toInt();
-          _overallRisk = ((_adRisk + _pdRisk) / 2).toInt();
-          _riskLevel = _getRiskLevel(_overallRisk);
-          final allCats = _dashboardData?['categories'] as List<dynamic>? ?? [];
-          // Remove gait, sort attempted tests first
-          _recentTests = allCats
-              .where((t) => (t['category'] ?? '').toString().toLowerCase() != 'gait')
-              .toList()
-            ..sort((a, b) {
-              final aCompleted = (a['tests_completed'] ?? 0) as int;
-              final bCompleted = (b['tests_completed'] ?? 0) as int;
-              if (aCompleted > 0 && bCompleted == 0) return -1;
-              if (aCompleted == 0 && bCompleted > 0) return 1;
-              // Both attempted — most recent first
-              final aDate = a['last_tested']?.toString() ?? '';
-              final bDate = b['last_tested']?.toString() ?? '';
-              return bDate.compareTo(aDate);
-            });
-          _riskTrend = _dashboardData?['risk_trend'] ?? [];
-          _totalTestsCompleted = (_dashboardData?['total_tests_completed'] ?? 0) as int;
-          _testsThisWeek = (_dashboardData?['tests_this_week'] ?? 0) as int;
-        }
-
-        if (wellnessResult['success']) {
-          _wellnessData = wellnessResult['data'];
-          // Today's entry (field is "today_entry" from backend)
-          final today = _wellnessData?['today_entry'];
-          _screenTime = (today?['screen_time_hours'] ?? 0).toDouble();
-          _gamingHours = (today?['gaming_hours'] ?? 0).toDouble();
-          _socialHours = _screenTime * 0.35; // Fallback until device data
-          _notificationCount = (_screenTime * 12).toInt();
-          // Weekly averages from dashboard
-          _avgScreenTime = (_wellnessData?['avg_screen_time'] ?? 0).toDouble();
-          _streak = (_wellnessData?['logging_streak'] ?? 0) as int;
-        }
-
-        // Build weekly chart from history
-        if (historyResult['success']) {
-          _buildWeeklyChartData(historyResult['data']);
-        }
+      _applyDashboardData({
+        'dash': dashResult,
+        'wellness': wellnessResult,
+        'history': historyResult,
+        'profile': profileResult,
       });
+      setState(() => _isLoading = false);
     }
 
     // Load notifications and ring for new unread ones
@@ -247,6 +283,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // Check streak milestones and fire notification
     _checkStreakMilestone();
+
+    // Prefetch other tabs' data into cache so navigation feels instant
+    _prefetchOtherTabs();
+  }
+
+  Future<void> _prefetchOtherTabs() async {
+    // Fire-and-forget; warms caches used by Tests, Reports, XAI screens.
+    // Profile cache is already populated above from the shared profile+dash fetch.
+    Future.wait([
+      ApiService.getTestDashboard().then((r) => CacheService.set('tests_dashboard', r)),
+      ApiService.listReports().then((r) {
+        if (r['success'] == true) return CacheService.set('reports_list', r);
+      }),
+      ApiService.getLatestTestResults().then((r) {
+        if (r['success'] == true && r['data'] != null) {
+          return CacheService.set('xai_latest_results', r['data'] as Map<String, dynamic>);
+        }
+      }),
+    ]).catchError((_) => <dynamic>[]);
   }
 
   Future<void> _checkStreakMilestone() async {
@@ -438,30 +493,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (score < 50) return const Color(0xFFF59E0B);  // amber
     if (score < 75) return const Color(0xFFF97316);  // orange
     return const Color(0xFFEF4444);                    // red
-  }
-
-  void _onNavItemTapped(int index) {
-    HapticFeedback.selectionClick();
-    switch (index) {
-      case 0:
-        setState(() => _selectedNavIndex = index);
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/tests');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/XAI');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/neuro-chat');
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/reports');
-        break;
-      case 5:
-        Navigator.pushNamed(context, '/profile');
-        break;
-    }
   }
 
   // Get test config (icon, subtitle, color) from category data
@@ -674,7 +705,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(r),
     ),
     );
   }
@@ -795,9 +825,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Navigator.pushNamed(context, '/profile').then((_) {
-                      _loadData();
-                    });
+                    MainShell.switchTab(context, 5);
                   },
                   child: Container(
                     width: r.dp(44),
@@ -810,12 +838,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(r.w(12)),
                       child: (_profileImagePath != null && _profileImagePath!.isNotEmpty)
-                          ? Image.network(
-                              '${ApiService.baseUrl}/uploads/$_profileImagePath',
+                          ? CachedNetworkImage(
+                              imageUrl: '${ApiService.baseUrl}/uploads/$_profileImagePath',
                               width: r.dp(44),
                               height: r.dp(44),
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Center(
+                              errorWidget: (_, __, ___) => Center(
                                 child: Text(_userInitial, style: TextStyle(fontSize: r.sp(18), fontWeight: FontWeight.w700, color: Colors.white)),
                               ),
                             )
@@ -960,7 +988,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 }
                                 if (n['action_type'] == 'view_report' && mounted) {
                                   Navigator.pop(ctx);
-                                  Navigator.pushNamed(context, '/reports');
+                                  MainShell.switchTab(context, 4);
                                 }
                               },
                               child: Container(
@@ -1088,7 +1116,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: GestureDetector(
           onTap: () {
             HapticFeedback.lightImpact();
-            Navigator.pushNamed(context, '/XAI');
+            MainShell.switchTab(context, 2);
           },
           child: Container(
             padding: EdgeInsets.all(r.w(24)),
@@ -1422,7 +1450,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/tests'),
+                  onTap: () => MainShell.switchTab(context, 1),
                   child: Row(
                     children: [
                       Text(
@@ -1522,7 +1550,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        Navigator.pushNamed(context, '/tests');
+        MainShell.switchTab(context, 1);
       },
       child: Container(
         width: 155,
@@ -1772,28 +1800,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'icon': Icons.assignment_outlined,
         'color': const Color(0xFF7C6AEF),
         'bgColor': const Color(0xFFEDE9FE),
-        'route': '/tests',
+        'tab': 1,
       },
       {
         'title': 'View Reports',
         'icon': Icons.description_outlined,
         'color': const Color(0xFF10B981),
         'bgColor': const Color(0xFFD1FAE5),
-        'route': '/reports',
+        'tab': 4,
       },
       {
         'title': 'Chat Neuro',
         'icon': Icons.stars_rounded,
         'color': const Color(0xFFF59E0B),
         'bgColor': const Color(0xFFFEF3C7),
-        'route': '/neuro-chat',
+        'tab': 3,
       },
       {
         'title': 'XAI Insights',
         'icon': Icons.auto_awesome_rounded,
         'color': const Color(0xFFEC4899),
         'bgColor': const Color(0xFFFCE7F3),
-        'route': '/XAI',
+        'tab': 2,
       },
     ];
 
@@ -1819,7 +1847,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: GestureDetector(
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      Navigator.pushNamed(context, action['route'] as String);
+                      MainShell.switchTab(context, action['tab'] as int);
                     },
                     child: Container(
                       margin: EdgeInsets.only(
@@ -3235,78 +3263,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
       ],
-    );
-  }
-
-  // ===================== BOTTOM NAV =====================
-  Widget _buildBottomNav(Responsive r) {
-    return Container(
-      margin: EdgeInsets.fromLTRB(r.w(16), 0, r.w(16), r.h(16)),
-      decoration: BoxDecoration(
-        color: navBg,
-        borderRadius: BorderRadius.circular(r.w(24)),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: r.w(20),
-            offset: Offset(0, r.h(4)),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(12)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.home_rounded, 'Home', r),
-              _buildNavItem(1, Icons.assignment_outlined, 'Tests', r),
-              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI', r),
-              _buildNavItem(3, Icons.stars_rounded, 'Neuro', r),
-              _buildNavItem(4, Icons.description_outlined, 'Reports', r),
-              _buildNavItem(5, Icons.person_outline_rounded, 'Profile', r),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label, Responsive r) {
-    final isSelected = _selectedNavIndex == index;
-    return GestureDetector(
-      onTap: () => _onNavItemTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(10)),
-        decoration: BoxDecoration(
-          color: isSelected ? darkCard : Colors.transparent,
-          borderRadius: BorderRadius.circular(r.w(16)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : Colors.black38,
-              size: r.dp(22),
-            ),
-            if (isSelected) ...[
-              SizedBox(width: r.w(8)),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: r.sp(13),
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 

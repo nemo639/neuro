@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/cache_service.dart';
+import 'package:neuroverse/core/main_shell.dart';
 import 'package:neuroverse/core/responsive.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:share_plus/share_plus.dart';
@@ -20,7 +22,6 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProviderStateMixin {
   late AnimationController _pageController;
-  int _selectedNavIndex = 4; // Reports is selected
 
   // Design colors matching home screen
   static const Color bgColor = Color(0xFFF7F7F7);
@@ -29,7 +30,6 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
   static const Color creamBeige = Color(0xFFF5EBE0);
   static const Color softYellow = Color(0xFFFFF3CD);
   static const Color darkCard = Color(0xFF1A1A1A);
-  static const Color navBg = Color(0xFFFAFAFA);
   static const Color blueAccent = Color(0xFF3B82F6);
   static const Color purpleAccent = Color(0xFF8B5CF6);
   static const Color greenAccent = Color(0xFF10B981);
@@ -44,7 +44,7 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     super.initState();
     _pageController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 400),
     )..forward();
     _loadReports();
     SystemChrome.setSystemUIOverlayStyle(
@@ -61,22 +61,35 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     super.dispose();
   }
 
+  void _applyReportsData(Map<String, dynamic> result) {
+    if (result['success'] == true) {
+      final items = (result['data'] as Map<String, dynamic>?)?['reports'] as List? ?? [];
+      reports = items.map((r) => ReportItem.fromJson(r as Map<String, dynamic>)).toList();
+      reports.sort((a, b) => b.id.compareTo(a.id));
+    }
+  }
+
   Future<void> _loadReports() async {
+    // Show cached data instantly if available
+    final cached = await CacheService.get('reports_list');
+    if (cached != null && mounted) {
+      setState(() {
+        _applyReportsData(cached);
+        _isLoading = false;
+      });
+    }
+
     try {
       final result = await ApiService.listReports();
-      
+
+      if (result['success'] == true) {
+        await CacheService.set('reports_list', result);
+      }
+
       if (mounted) {
         setState(() {
+          _applyReportsData(result);
           _isLoading = false;
-          if (result['success']) {
-            final items = result['data']['reports'] as List? ?? [];
-            reports = items.map((r) => ReportItem.fromJson(r)).toList();
-            // Sort by date (newest first)
-            reports.sort((a, b) => b.id.compareTo(a.id));
-          } else {
-            // Handle error
-            print('Error loading reports: ${result['error']}');
-          }
         });
       }
     } catch (e) {
@@ -193,31 +206,6 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
     }
   }
 
-  void _onNavItemTapped(int index) {
-    HapticFeedback.selectionClick();
-
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/tests');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/XAI');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/neuro-chat');
-        break;
-      case 4:
-        setState(() => _selectedNavIndex = index);
-        break;
-      case 5:
-        Navigator.pushNamed(context, '/profile');
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final r = Responsive(context);
@@ -292,7 +280,6 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(r),
     );
   }
 
@@ -802,77 +789,6 @@ class _ReportsScreenState extends State<ReportsScreen> with SingleTickerProvider
   }
 
 
-  Widget _buildBottomNav(Responsive r) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: BoxDecoration(
-        color: navBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(2, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(3, Icons.stars_rounded, 'Neuro'),
-              _buildNavItem(4, Icons.description_outlined, 'Reports'),
-              _buildNavItem(5, Icons.person_outline_rounded, 'Profile'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _selectedNavIndex == index;
-    return GestureDetector(
-      onTap: () => _onNavItemTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? darkCard : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : Colors.black38,
-              size: 22,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildAnimatedWidget({required double delay, required Widget child}) {
     return FadeTransition(
       opacity: CurvedAnimation(
@@ -1248,7 +1164,7 @@ class _GenerateReportSheetState extends State<_GenerateReportSheet> {
                           ElevatedButton.icon(
                             onPressed: () {
                               Navigator.pop(context);
-                              Navigator.pushNamed(context, '/tests');
+                              MainShell.switchTab(context, 1);
                             },
                             icon: const Icon(Icons.play_arrow_rounded),
                             label: const Text('Start Tests'),

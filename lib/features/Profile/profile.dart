@@ -1,7 +1,9 @@
 import 'dart:math' as math;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
+import 'package:neuroverse/core/cache_service.dart';
 import 'package:neuroverse/core/responsive.dart';
 import 'package:neuroverse/core/shimmer_loading.dart';
 import 'package:neuroverse/core/loading_bars.dart';
@@ -15,7 +17,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   late AnimationController _pageController;
-  int _selectedNavIndex = 5;
 
   bool _isLoading = true;
   Map<String, dynamic>? _userData;
@@ -45,7 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     super.initState();
     _pageController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 400),
     )..forward();
     
     _loadUserData();
@@ -57,37 +58,57 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Future<void> _loadUserData() async {
-    setState(() => _isLoading = true);
+  void _applyProfileData(Map<String, dynamic> cached) {
+    final result = cached['profile'] as Map<String, dynamic>?;
+    final dashResult = cached['dash'] as Map<String, dynamic>?;
 
-    final result = await ApiService.getUserProfile();
-    final dashResult = await ApiService.getUserDashboard();
+    if (result != null && result['success'] == true) {
+      final data = result['data'] as Map<String, dynamic>?;
+      _userData = data;
+      if (data != null && data['created_at'] != null) {
+        final date = DateTime.parse(data['created_at'] as String);
+        _memberSince = "${_monthName(date.month)} ${date.year}";
+      }
+    }
+
+    if (dashResult != null && dashResult['success'] == true) {
+      final dash = dashResult['data'] as Map<String, dynamic>?;
+      if (dash != null) {
+        _totalTestsCompleted = (dash['total_tests_completed'] ?? 0) as int;
+        _testsThisWeek = (dash['tests_this_week'] ?? 0) as int;
+        _streak = (dash['streak'] ?? dash['wellness_streak'] ?? 0) as int;
+        _adRisk = ((dash['ad_risk_score'] ?? 0) as num).toDouble();
+        _pdRisk = ((dash['pd_risk_score'] ?? 0) as num).toDouble();
+        _adStage = (dash['ad_stage'] as String?) ?? 'Not assessed';
+        _pdStage = (dash['pd_stage'] as String?) ?? 'Not assessed';
+        _lastAssessment = dash['last_assessment_date']?.toString();
+      }
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    // Show cached data instantly if available
+    final cached = await CacheService.get('profile_data');
+    if (cached != null && mounted) {
+      setState(() {
+        _applyProfileData(cached);
+        _isLoading = false;
+      });
+    }
+
+    // Fetch both in parallel
+    final results = await Future.wait([
+      ApiService.getUserProfile(),
+      ApiService.getUserDashboard(),
+    ]);
+
+    final fresh = {'profile': results[0], 'dash': results[1]};
+    await CacheService.set('profile_data', fresh);
 
     if (mounted) {
       setState(() {
+        _applyProfileData(fresh);
         _isLoading = false;
-
-        if (result['success']) {
-          final data = result['data'];
-          _userData = data;
-
-          if (data['created_at'] != null) {
-            final date = DateTime.parse(data['created_at']);
-            _memberSince = "${_monthName(date.month)} ${date.year}";
-          }
-        }
-
-        if (dashResult['success']) {
-          final dash = dashResult['data'];
-          _totalTestsCompleted = dash['total_tests_completed'] ?? 0;
-          _testsThisWeek = dash['tests_this_week'] ?? 0;
-          _streak = dash['streak'] ?? dash['wellness_streak'] ?? 0;
-          _adRisk = (dash['ad_risk_score'] ?? 0).toDouble();
-          _pdRisk = (dash['pd_risk_score'] ?? 0).toDouble();
-          _adStage = dash['ad_stage'] ?? 'Not assessed';
-          _pdStage = dash['pd_stage'] ?? 'Not assessed';
-          _lastAssessment = dash['last_assessment_date']?.toString();
-        }
       });
     }
   }
@@ -104,31 +125,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-
-  void _onNavItemTapped(int index) {
-    HapticFeedback.selectionClick();
-
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/tests');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/XAI');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/neuro-chat');
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/reports');
-        break;
-      case 5:
-        setState(() => _selectedNavIndex = index);
-        break;
-    }
   }
 
   @override
@@ -215,7 +211,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(r),
     );
   }
 
@@ -258,12 +253,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             ),
             clipBehavior: Clip.antiAlias,
             child: (profileImagePath != null && profileImagePath.toString().isNotEmpty)
-                ? Image.network(
-                    "${ApiService.baseUrl}/uploads/$profileImagePath",
+                ? CachedNetworkImage(
+                    imageUrl: "${ApiService.baseUrl}/uploads/$profileImagePath",
                     fit: BoxFit.cover,
                     width: r.w(100),
                     height: r.h(100),
-                    errorBuilder: (context, error, stackTrace) {
+                    errorWidget: (context, error, stackTrace) {
                       return Center(
                         child: Text(
                           initial,
@@ -1688,77 +1683,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav(Responsive r) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: BoxDecoration(
-        color: navBg,
-        borderRadius: BorderRadius.circular(r.dp(24)),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: r.dp(20),
-            offset: Offset(r.w(0), r.h(4)),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(12)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(r, 0, Icons.home_rounded, 'Home'),
-              _buildNavItem(r, 1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(r, 2, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(r, 3, Icons.stars_rounded, 'Neuro'),
-              _buildNavItem(r, 4, Icons.description_outlined, 'Reports'),
-              _buildNavItem(r, 5, Icons.person_outline_rounded, 'Profile'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(Responsive r, int index, IconData icon, String label) {
-    final isSelected = _selectedNavIndex == index;
-    return GestureDetector(
-      onTap: () => _onNavItemTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(10)),
-        decoration: BoxDecoration(
-          color: isSelected ? darkCard : Colors.transparent,
-          borderRadius: BorderRadius.circular(r.dp(16)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : Colors.black38,
-              size: r.dp(22),
-            ),
-            if (isSelected) ...[
-              SizedBox(width: r.w(8)),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: r.sp(13),
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ],
         ),
       ),
     );

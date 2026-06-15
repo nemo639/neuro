@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:neuroverse/features/Home/home.dart';
+import 'package:neuroverse/core/main_shell.dart';
 import 'package:neuroverse/features/auth/login.dart';
 import 'package:neuroverse/features/auth/register.dart';
 import 'package:neuroverse/features/auth/forgot_password_screen.dart';
 import 'package:neuroverse/features/auth/reset_password_screen.dart';
 import 'package:neuroverse/features/auth/otp-verification.dart';
-import 'package:neuroverse/features/profile/profile.dart';
 import 'package:neuroverse/features/profile/edit_profile.dart';
-import 'package:neuroverse/features/labs/testsscreen.dart';
 import 'package:neuroverse/features/labs/speech_language_test.dart';
 import 'package:neuroverse/features/labs/cognitive_memory_test.dart';
 import 'package:neuroverse/features/labs/motor_functions_test.dart';
 import 'package:neuroverse/features/labs/gait_movement_test.dart';
-import 'package:neuroverse/features/report/reports_screen.dart';
-import 'package:neuroverse/features/xai/xai.dart';
 import 'package:neuroverse/features/labs/tests/story-recall-test.dart';
 import 'package:neuroverse/features/labs/tests/sustained_vowel_test.dart';
 import 'package:neuroverse/features/labs/tests/picture_description_test.dart';
@@ -30,7 +26,6 @@ import 'package:neuroverse/features/labs/tests/trail_making_test.dart';
 import 'package:neuroverse/features/labs/tests/gait_assessment_test.dart';
 import 'package:neuroverse/features/labs/tests/facial_analysis_test.dart';
 import 'package:neuroverse/features/labs/facial_analysis_category.dart';
-import 'package:neuroverse/features/chat/neuro_chat_screen.dart';
 import 'package:neuroverse/core/notification_service.dart';
 
 void main() async {
@@ -76,10 +71,13 @@ class MyApp extends StatelessWidget {
             verificationType: args?['type'] ?? 'signup',
           );
         },
-        '/home': (context) => const HomeScreen(),
-        '/profile': (context) => const ProfileScreen(),
+        '/home': (context) => const MainShell(initialIndex: 0),
+        '/tests': (context) => const MainShell(initialIndex: 1),
+        '/XAI': (context) => const MainShell(initialIndex: 2),
+        '/neuro-chat': (context) => const MainShell(initialIndex: 3),
+        '/reports': (context) => const MainShell(initialIndex: 4),
+        '/profile': (context) => const MainShell(initialIndex: 5),
         '/edit-profile': (context) => const EditProfileScreen(),
-        '/tests': (context) => const TestsScreen(),
         '/test/speech-language': (context) => const SpeechLanguageTestScreen(),
         '/test/cognitive-memory': (context) => const CognitiveMemoryTestScreen(),
         '/test/motor-functions': (context) => const MotorFunctionsTestScreen(),
@@ -99,9 +97,6 @@ class MyApp extends StatelessWidget {
         '/test/clock-drawing-test': (context) => const ClockDrawingTestScreen(),
         '/test/trail-making-test': (context) => const TrailMakingTestScreen(),
         '/test/meander-drawing-test': (context) => const MeanderDrawingTestScreen(),
-        '/reports': (context) => const ReportsScreen(),
-        '/XAI': (context) => const XAIScreen(),
-        '/neuro-chat': (context) => const NeuroChatScreen(),
       },
     );
   }

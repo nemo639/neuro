@@ -641,34 +641,14 @@ bool _validateEmailSimple(String email) {
     return _buildAnimatedWidget(
       delay: 0.0,
       child: Center(
-        child: Container(
-          width: r.dp(44),
-          height: r.dp(44),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(r.dp(14)),
-            border: Border.all(color: Colors.black.withOpacity(0.08)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: r.dp(8),
-                offset: Offset(0, r.h(2)),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: EdgeInsets.all(r.dp(4)),
-            child: Image.asset(
-              'assets/images/logo.png',
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Center(
-                child: CustomPaint(
-                  size: Size(r.dp(24), r.dp(24)),
-                  painter: _LoginBrainIconPainter(),
-                ),
-              ),
-            ),
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: r.dp(100),
+          height: r.dp(100),
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => CustomPaint(
+            size: Size(r.dp(80), r.dp(80)),
+            painter: _LoginBrainIconPainter(),
           ),
         ),
       ),

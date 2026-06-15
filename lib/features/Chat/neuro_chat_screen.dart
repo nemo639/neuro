@@ -14,7 +14,6 @@ class NeuroChatScreen extends StatefulWidget {
 
 class _NeuroChatScreenState extends State<NeuroChatScreen>
     with SingleTickerProviderStateMixin {
-  int _selectedNavIndex = 3;
 
   // Design colors matching app theme
   static const Color bgColor = Color(0xFFF7F7F7);
@@ -347,7 +346,6 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
   @override
   Widget build(BuildContext context) {
     final r = Responsive(context);
-    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
@@ -374,7 +372,6 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
                         : _buildMessageList(r),
               ),
               _buildInputBar(r),
-              if (!keyboardOpen) _buildBottomNav(r),
             ],
           ),
           // Conversation drawer overlay
@@ -1085,91 +1082,6 @@ class _NeuroChatScreenState extends State<NeuroChatScreen>
   // BOTTOM NAV
   // ═══════════════════════════════════════════
 
-  void _onNavItemTapped(int index) {
-    HapticFeedback.selectionClick();
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/tests');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/XAI');
-        break;
-      case 3:
-        setState(() => _selectedNavIndex = index);
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/reports');
-        break;
-      case 5:
-        Navigator.pushNamed(context, '/profile');
-        break;
-    }
-  }
-
-  Widget _buildBottomNav(Responsive r) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: BoxDecoration(
-        color: navBg,
-        borderRadius: BorderRadius.circular(r.dp(24)),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: r.dp(20),
-            offset: Offset(r.w(0), r.h(4)),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: r.w(8), vertical: r.h(12)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(r, 0, Icons.home_rounded, 'Home'),
-              _buildNavItem(r, 1, Icons.assignment_outlined, 'Tests'),
-              _buildNavItem(r, 2, Icons.auto_awesome_rounded, 'XAI'),
-              _buildNavItem(r, 3, Icons.stars_rounded, 'Neuro'),
-              _buildNavItem(r, 4, Icons.description_outlined, 'Reports'),
-              _buildNavItem(r, 5, Icons.person_outline_rounded, 'Profile'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(Responsive r, int index, IconData icon, String label) {
-    final isSelected = _selectedNavIndex == index;
-    return GestureDetector(
-      onTap: () => _onNavItemTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(10)),
-        decoration: BoxDecoration(
-          color: isSelected ? darkCard : Colors.transparent,
-          borderRadius: BorderRadius.circular(r.dp(16)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: isSelected ? Colors.white : Colors.black38, size: r.dp(22)),
-            if (isSelected) ...[
-              SizedBox(width: r.w(8)),
-              Text(label,
-                style: TextStyle(fontSize: r.sp(13), fontWeight: FontWeight.w600, color: Colors.white),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ═══════════════════════════════════════════

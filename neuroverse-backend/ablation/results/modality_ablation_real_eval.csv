@@ -1,0 +1,5 @@
+config,n,accuracy,auc,f1,precision,recall,best_fusion
+Speech + CDT,83,0.9518,0.9977,0.9535,1.0,0.9111,max_confidence_risk
+Speech + TMT,96,0.9479,0.9874,0.9495,0.9792,0.9216,soft_voting_risk
+CDT + TMT,83,0.9759,0.995,0.9737,1.0,0.9487,max_confidence_risk
+Full (all 3),238,0.9706,0.9999,0.9683,1.0,0.9386,weighted_average_risk

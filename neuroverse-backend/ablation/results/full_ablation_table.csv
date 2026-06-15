@@ -1,0 +1,8 @@
+config,n,accuracy,auc,f1,precision,recall,source
+Speech only,883,0.9003,0.9682,0.8333,0.8627,0.8059,SpeechNeuroNet (held-out 20% binary test)
+CDT only,16926,0.9297,N/A,0.9292,N/A,N/A,EfficientNet-B0 (6-class Shulman test set)
+TMT only,47781,0.6343,0.7748,N/A,N/A,N/A,TMTNet MLP (3-class ADNI+NACC test set)
+Speech + CDT,83,0.9518,0.9977,0.9535,1.0,0.9111,NeuroVerse fusion (max_confidence_risk)
+Speech + TMT,96,0.9479,0.9874,0.9495,0.9792,0.9216,NeuroVerse fusion (soft_voting_risk)
+CDT + TMT,83,0.9759,0.995,0.9737,1.0,0.9487,NeuroVerse fusion (max_confidence_risk)
+Full (Speech + CDT + TMT),238,0.9706,0.9999,0.9683,1.0,0.9386,NeuroVerse fusion (weighted_average_risk)

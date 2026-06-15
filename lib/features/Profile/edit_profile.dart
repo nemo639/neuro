@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neuroverse/core/api_service.dart';
@@ -53,7 +54,7 @@ final TextEditingController _locationController = TextEditingController();
     super.initState();
     _pageController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 400),
     )..forward();
     _uploadSpinController = AnimationController(
       vsync: this,
@@ -493,7 +494,11 @@ String _monthName(int month) {
                   child: _selectedImage != null
                       ? Image.file(_selectedImage!, fit: BoxFit.cover)
                       : (_profileImagePath != null && _profileImagePath!.isNotEmpty
-                          ? Image.network("${ApiService.baseUrl}/uploads/${_profileImagePath!}", fit: BoxFit.cover)
+                          ? CachedNetworkImage(
+                              imageUrl: "${ApiService.baseUrl}/uploads/${_profileImagePath!}",
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Icon(Icons.person_rounded, size: r.dp(60), color: Colors.white),
+                            )
                           : Icon(Icons.person_rounded, size: r.dp(60), color: Colors.white)),
                 ),
               ),

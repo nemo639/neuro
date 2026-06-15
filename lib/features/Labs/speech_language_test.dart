@@ -63,7 +63,7 @@ class _SpeechLanguageTestScreenState extends State<SpeechLanguageTestScreen> wit
     super.initState();
     _pageController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 400),
     )..forward();
 
     SystemChrome.setSystemUIOverlayStyle(
